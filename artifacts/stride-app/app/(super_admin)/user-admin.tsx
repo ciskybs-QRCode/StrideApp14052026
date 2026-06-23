@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator, KeyboardAvoidingView, Modal, Platform,
@@ -306,6 +307,7 @@ function AddSuperAdminModal({ visible, onClose, onSuccess }: { visible: boolean;
 // ── User Administration Screen ────────────────────────────────────────────────
 
 export default function UserAdminScreen() {
+  const router = useRouter();
   const { user } = useAuth();
   const colors = useColors();
   const [admins,    setAdmins]    = useState<AdminRecord[]>([]);
@@ -328,6 +330,7 @@ export default function UserAdminScreen() {
       <ScreenHeader
         title="User Administration"
         subtitle={`${admins.length} account${admins.length !== 1 ? "s" : ""}`}
+        onBack={() => router.push("/(super_admin)/dashboard")}
         right={
           <Pressable
             style={({ pressed }) => [styles.addBtn, { opacity: pressed ? 0.75 : 1 }]}

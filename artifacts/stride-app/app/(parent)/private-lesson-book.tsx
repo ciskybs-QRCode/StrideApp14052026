@@ -222,7 +222,7 @@ export default function PrivateLessonBook() {
         step === "operator"   ? "Choose your operator" :
         step === "datetime"   ? "Preferred date & time" :
                                 "Review & pay"
-      } />
+      } onBack={() => router.back()} />
 
       <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4 }}>
         <StepBar current={step} />

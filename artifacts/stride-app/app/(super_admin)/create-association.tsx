@@ -56,7 +56,7 @@ export default function CreateAssociation() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="Create Association" />
+      <ScreenHeader title="Create Association" onBack={() => router.push("/(super_admin)/associations")} />
 
       <KeyboardAvoidingView
         style={{ flex: 1 }}

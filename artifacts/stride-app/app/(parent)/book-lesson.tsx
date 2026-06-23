@@ -364,6 +364,7 @@ export default function BookLessonScreen() {
           step === "location" ? "Choose a location" :
           step === "time" ? "Choose a time slot" : "Choose participants"
         }
+        onBack={() => router.back()}
       />
       <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4 }}>
         <StepIndicator current={step} />

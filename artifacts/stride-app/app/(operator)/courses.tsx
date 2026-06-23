@@ -3,7 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as DocumentPicker from "expo-document-picker";
 import * as Haptics from "expo-haptics";
 import * as ImagePicker from "expo-image-picker";
-import { useFocusEffect } from "expo-router";
+import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -401,6 +401,7 @@ function WaitlistOperatorSection({ courseId, isFull, colors }: {
 }
 
 export default function OperatorCoursesScreen() {
+  const router = useRouter();
   const colors = useColors();
   const { courses } = useAppData();
   const { user } = useAuth();
@@ -476,7 +477,7 @@ export default function OperatorCoursesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="My Courses" />
+      <ScreenHeader title="My Courses" onBack={() => router.back()} />
       <ScrollView
         contentContainerStyle={[styles.scroll, {
           paddingTop: 16,

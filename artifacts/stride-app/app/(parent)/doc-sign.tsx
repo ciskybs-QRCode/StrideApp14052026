@@ -70,7 +70,7 @@ export default function DocSignScreen() {
   if (!doc) {
     return (
       <View style={[s.container, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="Document" light />
+        <ScreenHeader title="Document" light onBack={() => router.back()} />
         <View style={s.center}>
           <Text style={{ color: colors.mutedForeground }}>Document not found.</Text>
         </View>
@@ -80,7 +80,7 @@ export default function DocSignScreen() {
 
   return (
     <View style={[s.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title={doc.title} subtitle="Mandatory Signature" light
+      <ScreenHeader title={doc.title} subtitle="Mandatory Signature" light onBack={() => router.back()}
         right={
           <View style={s.mandatoryBadge}>
             <Ionicons name="lock-closed" size={12} color="#EF4444" />

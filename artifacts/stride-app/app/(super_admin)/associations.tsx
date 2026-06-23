@@ -1,5 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
+import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -328,6 +329,7 @@ function ExtendModal({
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
 export default function AssociationsScreen() {
+  const router = useRouter();
   const colors = useColors();
   const styles = make_styles(colors.primary, colors.secondary);
   const { logout } = useAuth();
@@ -373,6 +375,7 @@ export default function AssociationsScreen() {
       <ScreenHeader
         title="Associations"
         subtitle={`${orgs.length} association${orgs.length !== 1 ? "s" : ""}`}
+        onBack={() => router.push("/(super_admin)/dashboard")}
       />
       <View style={{ flex: 1, backgroundColor: "#F8FAFC" }}>
           {loading ? (

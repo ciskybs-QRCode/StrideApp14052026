@@ -400,6 +400,7 @@ export default function TenantsScreen() {
       <ScreenHeader
         title="Tenant Management"
         subtitle={`${orgs.length} association${orgs.length !== 1 ? "s" : ""}`}
+        onBack={() => router.back()}
         right={
           <Pressable
             style={({ pressed }) => [styles.addBtn, { opacity: pressed ? 0.75 : 1 }]}

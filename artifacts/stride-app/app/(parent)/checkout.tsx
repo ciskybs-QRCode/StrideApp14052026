@@ -592,7 +592,7 @@ export default function CheckoutScreen() {
   if (payableItems.length === 0 && !success) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="Checkout" light />
+        <ScreenHeader title="Checkout" light onBack={() => router.back()} />
         <View style={styles.emptyCenter}>
           <Ionicons name="cart-outline" size={56} color={colors.mutedForeground} />
           <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No items ready for checkout.</Text>
@@ -737,7 +737,7 @@ export default function CheckoutScreen() {
   // ── Main Checkout Screen ──────────────────────────────────────────────────
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title={batchQuote ? `Checkout · ${batchCurrentPos}/${batchQuote.totalSessions}` : "Checkout"} light />
+      <ScreenHeader title={batchQuote ? `Checkout · ${batchCurrentPos}/${batchQuote.totalSessions}` : "Checkout"} light onBack={() => router.back()} />
 
       {/* Batch progress bar */}
       {batchQuote && (

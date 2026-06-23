@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import { Redirect } from "expo-router";
+import { Redirect, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator, Pressable, ScrollView,
@@ -14,6 +14,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
 
 export default function OwnerSettingsScreen() {
+  const router = useRouter();
   const colors = useColors();
   const styles = make_styles(colors.primary, colors.secondary);
   const { user, isOwner } = useAuth();
@@ -78,7 +79,7 @@ export default function OwnerSettingsScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="Owner Settings" subtitle="Platform credentials" />
+      <ScreenHeader title="Owner Settings" subtitle="Platform credentials" onBack={() => router.push("/(super_admin)/sa-settings")} />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 

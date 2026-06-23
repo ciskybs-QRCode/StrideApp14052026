@@ -139,6 +139,7 @@ export default function EmergencyPulseDashboard() {
       <ScreenHeader
         title="Emergency Pulse"
         subtitle={pulse.location_label}
+        onBack={() => router.back()}
         right={
           <View style={[S.statusBadge, { backgroundColor: isActive ? "#DC2626" : "#059669" }]}>
             {isActive && <View style={S.activeDot} />}

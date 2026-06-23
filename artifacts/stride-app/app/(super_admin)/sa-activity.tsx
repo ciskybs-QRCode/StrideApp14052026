@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator, Pressable, RefreshControl,
@@ -102,6 +103,7 @@ const make_fr = (primary: string, secondary: string) => StyleSheet.create({
 // ── Recent Activity Screen ────────────────────────────────────────────────────
 
 export default function SAActivityScreen() {
+  const router = useRouter();
   const colors = useColors();
   const styles = make_styles(colors.primary, colors.secondary);
   const [metrics,   setMetrics]   = useState<PlatformMetrics | null>(null);
@@ -125,7 +127,7 @@ export default function SAActivityScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="Recent Activity" subtitle="Platform events & financials" />
+      <ScreenHeader title="Recent Activity" subtitle="Platform events & financials" onBack={() => router.push("/(super_admin)/dashboard")} />
 
       {loading ? (
         <View style={styles.loadingBox}><ActivityIndicator size="large" color={colors.primary} /></View>
