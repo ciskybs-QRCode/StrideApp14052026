@@ -446,7 +446,9 @@ export default function AdminHome() {
           <NotificationBell light />
           <Pressable
             style={({ pressed }) => [styles.avatarCircle, { backgroundColor: colors.primary, opacity: pressed ? 0.8 : 1 }]}
-            onPress={handlePickProfilePhoto}
+            onPress={() => router.push("/(admin)/account")}
+            onLongPress={handlePickProfilePhoto}
+            accessibilityLabel="Open account"
           >
             {user?.profilePhotoUri ? (
               <Image source={{ uri: user.profilePhotoUri }} style={styles.avatarPhoto} contentFit="cover" />
