@@ -336,7 +336,7 @@ export default function ParentHome() {
 
   const handleMemberSOS = async () => {
     if (!sosType) {
-      setShowSosModal(true);
+      Alert.alert("Select Emergency Type", "Please select Fire, Police, or Medical before activating SOS.");
       return;
     }
     if (sosType === "MEDICAL" && !sosPatientName.trim()) {
@@ -543,79 +543,51 @@ export default function ParentHome() {
           <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
         </Pressable>
 
-        {/* ── SOS Emergency trigger ── */}
-        <Pressable
-          onPress={() => setShowSosModal(true)}
-          style={({ pressed }) => ({
-            flexDirection: "row", alignItems: "center", gap: 14,
-            paddingVertical: 14, paddingHorizontal: 16,
-            borderRadius: 16, marginTop: 4, marginBottom: 2, borderWidth: 1.5,
-            backgroundColor: "#FEF2F2", borderColor: "#FECACA",
-            opacity: pressed ? 0.85 : 1,
-          })}
-        >
-          <View style={{ width: 40, height: 40, borderRadius: 10, backgroundColor: "#DC2626", alignItems: "center", justifyContent: "center" }}>
-            <Ionicons name="warning-outline" size={20} color="#FFF" />
+        {/* ── SOS Emergency ── */}
+        <View style={{ marginTop: 4, marginBottom: 2 }}>
+          <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, letterSpacing: 0.8, marginBottom: 8 }}>
+            SELECT EMERGENCY TYPE
+          </Text>
+          <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
+            {(["FIRE", "POLICE", "MEDICAL"] as const).map(type => {
+              const typeInfo = {
+                FIRE:    { icon: "🔥", label: "Fire",    activeColor: "#EA580C" },
+                POLICE:  { icon: "🚔", label: "Police",  activeColor: "#1E3A8A" },
+                MEDICAL: { icon: "🚑", label: "Medical", activeColor: "#DC2626" },
+              }[type];
+              const isSel = sosType === type;
+              return (
+                <Pressable
+                  key={type}
+                  onPress={() => { setSosType(type); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                  style={({ pressed }) => ({
+                    flex: 1, alignItems: "center", paddingVertical: 10, borderRadius: 12,
+                    borderWidth: 2,
+                    backgroundColor: isSel ? typeInfo.activeColor : colors.card,
+                    borderColor: isSel ? typeInfo.activeColor : colors.border,
+                    opacity: pressed ? 0.8 : 1,
+                  })}
+                >
+                  <Text style={{ fontSize: 20 }}>{typeInfo.icon}</Text>
+                  <Text style={{ fontSize: 11, fontWeight: "700", marginTop: 3,
+                    color: isSel ? "#FFFFFF" : colors.foreground }}>{typeInfo.label}</Text>
+                </Pressable>
+              );
+            })}
           </View>
-          <View style={{ flex: 1 }}>
-            <Text style={{ fontSize: 14, fontWeight: "700", color: "#DC2626" }}>SOS Emergency</Text>
-            <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 1 }}>Tap to activate · Hold 3s for silent alarm</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color="#DC2626" />
-        </Pressable>
-
-        {/* ── SOS Modal ── */}
-        <Modal visible={showSosModal} transparent animationType="slide" onRequestClose={() => setShowSosModal(false)}>
-          <View style={{ flex: 1, justifyContent: "flex-end", backgroundColor: "rgba(0,0,0,0.5)" }}>
-            <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 }}>
-              <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, letterSpacing: 0.8, marginBottom: 12 }}>
-                SELECT EMERGENCY TYPE
-              </Text>
-              <View style={{ flexDirection: "row", gap: 8, marginBottom: 12 }}>
-                {(["FIRE", "POLICE", "MEDICAL"] as const).map(type => {
-                  const typeInfo = {
-                    FIRE:    { icon: "🔥", label: "Fire",    activeColor: "#EA580C" },
-                    POLICE:  { icon: "🚔", label: "Police",  activeColor: "#1E3A8A" },
-                    MEDICAL: { icon: "🚑", label: "Medical", activeColor: "#DC2626" },
-                  }[type];
-                  const isSel = sosType === type;
-                  return (
-                    <Pressable
-                      key={type}
-                      onPress={() => { setSosType(type); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                      style={({ pressed }) => ({
-                        flex: 1, alignItems: "center", paddingVertical: 12, borderRadius: 12,
-                        borderWidth: 2,
-                        backgroundColor: isSel ? typeInfo.activeColor : colors.card,
-                        borderColor: isSel ? typeInfo.activeColor : colors.border,
-                        opacity: pressed ? 0.8 : 1,
-                      })}
-                    >
-                      <Text style={{ fontSize: 22 }}>{typeInfo.icon}</Text>
-                      <Text style={{ fontSize: 12, fontWeight: "700", marginTop: 4,
-                        color: isSel ? "#FFFFFF" : colors.foreground }}>{typeInfo.label}</Text>
-                    </Pressable>
-                  );
-                })}
-              </View>
-              {sosType === "MEDICAL" && (
-                <TextInput
-                  style={{ backgroundColor: colors.card, borderColor: "#DC2626", borderWidth: 1.5,
-                    borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: colors.foreground,
-                    fontSize: 14, marginBottom: 12 }}
-                  placeholder="Patient's full name (required)"
-                  placeholderTextColor={colors.mutedForeground}
-                  value={sosPatientName}
-                  onChangeText={setSosPatientName}
-                />
-              )}
-              <SOSButton onConfirm={async () => { setShowSosModal(false); await handleMemberSOS(); }} onSilentAlarm={() => { setShowSosModal(false); handleSilentAlarm(); }} />
-              <Pressable onPress={() => { setShowSosModal(false); setSosType(null); setSosPatientName(""); }} style={{ marginTop: 14, alignItems: "center", padding: 10 }}>
-                <Text style={{ color: colors.mutedForeground, fontSize: 14 }}>Cancel</Text>
-              </Pressable>
-            </View>
-          </View>
-        </Modal>
+          {sosType === "MEDICAL" && (
+            <TextInput
+              style={{ backgroundColor: colors.card, borderColor: "#DC2626", borderWidth: 1.5,
+                borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: colors.foreground,
+                fontSize: 14, marginBottom: 10 }}
+              placeholder="Patient's full name (required)"
+              placeholderTextColor={colors.mutedForeground}
+              value={sosPatientName}
+              onChangeText={setSosPatientName}
+            />
+          )}
+          <SOSButton onConfirm={handleMemberSOS} onSilentAlarm={handleSilentAlarm} />
+        </View>
 
         {/* ── Private Lessons ── */}
         <Pressable
