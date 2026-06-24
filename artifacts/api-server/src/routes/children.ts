@@ -91,48 +91,48 @@ router.post("/members", requireAuth, async (req, res) => {
     }, { onConflict: "user_id,organization_id" });
   }
 
-  // Build safe insert payload — only columns in the original schema cache.
-  // Columns added via ALTER TABLE (first_name, last_name, name, phone, etc.)
-  // are NOT in PostgREST's schema cache and will cause PGRST204 if included
-  // in an INSERT. We accept both "full_name" and "name"/"first_name"/"last_name"
-  // from callers and normalise to "full_name" here.
+  // Build full name from the various possible caller conventions.
   const fullNameRaw =
     (body.full_name as string | undefined) ||
     (body.name as string | undefined) ||
     [body.first_name, body.last_name].filter(Boolean).join(" ").trim() ||
     "";
 
-  const safeInsert: Record<string, unknown> = {
-    user_id:         parseInt(user.id),
-    organization_id: resolvedOrg,
-    full_name:       fullNameRaw || "Unnamed",
-  };
-  if (body.date_of_birth) safeInsert["date_of_birth"] = body.date_of_birth;
-  if (body.notes)         safeInsert["notes"]         = body.notes;
+  // Use pool.query (raw PG) to bypass PostgREST schema-cache limitations.
+  // The members table has `name` as the original NOT-NULL column; all additional
+  // columns (full_name, first_name, last_name, date_of_birth, etc.) were added
+  // via ALTER TABLE and are invisible to Supabase INSERT/UPSERT.
+  const insertCols: string[] = ["user_id", "organization_id", "name"];
+  const insertVals: unknown[] = [parseInt(user.id), resolvedOrg, fullNameRaw || "Unnamed"];
 
-  const { data, error } = await supabase
-    .from("members")
-    .insert(safeInsert)
-    .select()
-    .single();
+  const optionalCols = [
+    "date_of_birth", "first_name", "last_name", "full_name",
+    "allergies", "allergies_list", "medications", "photo_url", "photo_uri",
+    "gold_stars", "ambulance_consent", "media_consent",
+  ] as const;
+  for (const col of optionalCols) {
+    if (col in body && body[col] != null && body[col] !== undefined) {
+      insertCols.push(col);
+      insertVals.push(body[col]);
+    }
+  }
 
-  // After insert, PATCH any extra columns via raw UPDATE (bypasses schema-cache check).
-  const extraCols: Record<string, unknown> = {};
-  const extras = ["first_name","last_name","phone","emergency_contact","allergies","photo_uri","medical_notes","status"] as const;
-  for (const col of extras) {
-    if (col in body && body[col] != null) extraCols[col] = body[col];
-  }
-  if (data && Object.keys(extraCols).length > 0) {
-    try {
-      await supabase.from("members").update(extraCols).eq("id", (data as { id: number }).id);
-    } catch { /* extra cols are best-effort */ }
-  }
-  if (error) {
-    req.log.error({ err: error, userId: user.id, orgId: resolvedOrg }, "POST /members insert failed");
-    res.status(500).json({ error: error.message });
+  const placeholders = insertVals.map((_, i) => `$${i + 1}`).join(", ");
+  const colList = insertCols.map(c => `"${c}"`).join(", ");
+
+  let newRow: Record<string, unknown>;
+  try {
+    const { rows } = await pool.query(
+      `INSERT INTO members (${colList}) VALUES (${placeholders}) RETURNING *`,
+      insertVals,
+    );
+    newRow = rows[0] as Record<string, unknown>;
+  } catch (err) {
+    req.log.error({ err, userId: user.id, orgId: resolvedOrg }, "POST /members insert failed");
+    res.status(500).json({ error: (err as Error).message });
     return;
   }
-  res.status(201).json(data);
+  res.status(201).json(newRow);
 });
 
 router.patch("/members/:id", requireAuth, requireRole("admin", "operator"), async (req, res) => {
