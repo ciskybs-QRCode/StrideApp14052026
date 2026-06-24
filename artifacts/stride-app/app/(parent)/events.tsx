@@ -143,51 +143,63 @@ function PurchaseModal({
 
   const handlePurchase = async () => {
     if (!selectedType) { Alert.alert("Select a ticket type"); return; }
-
-    // Paid tickets → add to cart (unified checkout)
-    if (totalCents > 0) {
-      addItem({
-        type:              "event_ticket",
-        courseId:          event.id,
-        courseName:        event.title,
-        courseSchedule:    selectedDate ? fmtDate(selectedDate.date) : "",
-        packageType:       "one_time",
-        label:             selectedType.name,
-        price:             unitPrice / 100,
-        participantName:   attendeeName.trim() || "Attendee",
-        quantity,
-        eventId:           event.id,
-        eventTicketTypeId: String(selectedType.id),
-      });
-      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      onClose();
-      Alert.alert(
-        "Added to Cart",
-        `${quantity}× ${selectedType.name} for "${event.title}" added to your cart.`,
-        [
-          { text: "Continue", style: "cancel" },
-          { text: "View Cart", onPress: () => router.push("/(parent)/cart") },
-        ],
-      );
-      return;
-    }
-
-    // Free tickets → issue immediately (existing flow)
     setLoading(true);
     try {
-      await purchaseEventTickets({
-        event_id:       event.id,
-        event_date_id:  selectedDate?.id,
-        ticket_type_id: selectedType.id,
-        quantity,
-        attendee_name:  attendeeName.trim() || undefined,
-      });
+      // Issue free tickets immediately via API
+      if (freeInOrder > 0) {
+        await purchaseEventTickets({
+          event_id:       event.id,
+          event_date_id:  selectedDate?.id,
+          ticket_type_id: selectedType.id,
+          quantity:       freeInOrder,
+          attendee_name:  attendeeName.trim() || undefined,
+        });
+      }
+      // Add paid tickets to cart
+      if (paidInOrder > 0) {
+        addItem({
+          type:              "event_ticket",
+          courseId:          event.id,
+          courseName:        event.title,
+          courseSchedule:    selectedDate ? fmtDate(selectedDate.date) : "",
+          packageType:       "one_time",
+          label:             selectedType.name,
+          price:             unitPrice / 100,
+          participantName:   attendeeName.trim() || "Attendee",
+          quantity:          paidInOrder,
+          eventId:           event.id,
+          eventTicketTypeId: String(selectedType.id),
+        });
+      }
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      onSuccess();
       onClose();
-      Alert.alert("Ticket Confirmed!", "Your free ticket has been issued. Check 'My Tickets' to view it.");
+      if (paidInOrder === 0) {
+        onSuccess();
+        Alert.alert(
+          "Tickets Confirmed!",
+          `${freeInOrder} free ticket${freeInOrder > 1 ? "s" : ""} issued. Check "My Tickets" to view them.`,
+        );
+      } else if (freeInOrder > 0) {
+        Alert.alert(
+          "Tickets Split!",
+          `${freeInOrder} free ticket${freeInOrder > 1 ? "s" : ""} issued + ${paidInOrder} paid added to cart.`,
+          [
+            { text: "Continue", style: "cancel" },
+            { text: "View Cart", onPress: () => router.push("/(parent)/cart") },
+          ],
+        );
+      } else {
+        Alert.alert(
+          "Added to Cart",
+          `${paidInOrder}× ${selectedType.name} added to your cart.`,
+          [
+            { text: "Continue", style: "cancel" },
+            { text: "View Cart", onPress: () => router.push("/(parent)/cart") },
+          ],
+        );
+      }
     } catch (e: unknown) {
-      Alert.alert("Error", e instanceof Error ? e.message : "Purchase failed");
+      Alert.alert("Error", e instanceof Error ? e.message : "Could not process tickets. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -280,7 +292,7 @@ function PurchaseModal({
                 </Pressable>
                 <Text style={[styles.qtyValue, { color: colors.text }]}>{quantity}</Text>
                 <Pressable
-                  onPress={() => setQuantity(q => Math.min(selectedType?.max_per_order ?? 10, q + 1))}
+                  onPress={() => setQuantity(q => Math.min(capacityLeft != null ? capacityLeft : 999, q + 1))}
                   style={[styles.qtyBtn, { borderColor: colors.border }]}
                 >
                   <Ionicons name="add" size={20} color={colors.text} />

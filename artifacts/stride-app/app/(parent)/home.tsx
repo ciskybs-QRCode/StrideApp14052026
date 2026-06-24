@@ -729,44 +729,43 @@ export default function ParentHome() {
         )}
 
 
-        {/* ── Stride Marketplace Banner (global flag ON + org has published products + plan) ── */}
+        {/* ── Marketplace Banner ── */}
         {marketplaceEnabled && hasPublishedProducts && planCan("marketplace") && (
           <Pressable
-            style={({ pressed }) => [styles.marketplaceBanner, { transform: pressed ? [{ scale: 0.98 }] : [] }]}
+            style={({ pressed }) => [styles.featureBanner, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
             onPress={() => router.push("/(parent)/marketplace" as Parameters<typeof router.push>[0])}
           >
-            <View style={styles.marketplaceBannerLeft}>
-              <View style={styles.marketplaceBannerIcon}>
-                <Ionicons name="storefront" size={24} color={colors.primary} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.marketplaceBannerTitle}>Stride Marketplace</Text>
-                <Text style={styles.marketplaceBannerSub}>Gear · Insurance · Accessories</Text>
-              </View>
+            <View style={[styles.featureBannerIcon, { backgroundColor: "rgba(251,191,36,0.12)" }]}>
+              <Ionicons name="storefront" size={22} color="#FBBF24" />
             </View>
-            <View style={styles.marketplaceVerifiedBadge}>
-              <Ionicons name="checkmark-circle" size={13} color="#D4AF37" />
-              <Text style={styles.marketplaceVerifiedText}>STRIDE{"\n"}VERIFIED</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.featureBannerTitle, { color: colors.primary }]}>Marketplace</Text>
+              <Text style={[styles.featureBannerSub, { color: colors.mutedForeground }]}>Gear · Insurance · Accessories</Text>
             </View>
+            <View style={styles.verifiedBadge}>
+              <Ionicons name="checkmark-circle" size={12} color="#D4AF37" />
+              <Text style={styles.verifiedText}>VERIFIED</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} style={{ marginLeft: 4 }} />
           </Pressable>
         )}
 
-        {/* ── Events Banner (only when org has published events + plan) ── */}
-        {hasPublishedEvents && planCan("events") && <Pressable
-          style={({ pressed }) => [styles.marketplaceBanner, { backgroundColor: colors.primary, transform: pressed ? [{ scale: 0.98 }] : [] }]}
-          onPress={() => router.push("/(parent)/events" as Parameters<typeof router.push>[0])}
-        >
-          <View style={styles.marketplaceBannerLeft}>
-            <View style={[styles.marketplaceBannerIcon, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
-              <Ionicons name="ticket" size={24} color="#FFF" />
+        {/* ── Events Banner ── */}
+        {hasPublishedEvents && planCan("events") && (
+          <Pressable
+            style={({ pressed }) => [styles.featureBanner, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
+            onPress={() => router.push("/(parent)/events" as Parameters<typeof router.push>[0])}
+          >
+            <View style={[styles.featureBannerIcon, { backgroundColor: "rgba(30,58,138,0.07)" }]}>
+              <Ionicons name="ticket" size={22} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.marketplaceBannerTitle}>Events & Tickets</Text>
-              <Text style={styles.marketplaceBannerSub}>Browse events · Buy tickets · My QR tickets</Text>
+              <Text style={[styles.featureBannerTitle, { color: colors.primary }]}>Events & Tickets</Text>
+              <Text style={[styles.featureBannerSub, { color: colors.mutedForeground }]}>Browse events · Buy tickets · My QR tickets</Text>
             </View>
-          </View>
-          <Ionicons name="chevron-forward" size={20} color="rgba(255,255,255,0.8)" />
-        </Pressable>}
+            <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+          </Pressable>
+        )}
 
         {/* Notifications */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Notifications & Alerts</Text>
@@ -1325,14 +1324,13 @@ const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   pulseDismissBtn: { marginTop: 6, borderWidth: 1, borderColor: "rgba(255,255,255,0.18)", borderRadius: 6, paddingHorizontal: 28, paddingVertical: 10 },
   pulseDismissText:{ color: "rgba(255,255,255,0.55)", fontWeight: "600", fontSize: 13 },
 
-  // Marketplace banner
-  marketplaceBanner:       { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: primary, borderRadius: 18, padding: 16, marginBottom: 20, marginTop: 4, shadowColor: primary, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.25, shadowRadius: 12, elevation: 6 },
-  marketplaceBannerLeft:   { flexDirection: "row", alignItems: "center", gap: 12, flex: 1 },
-  marketplaceBannerIcon:   { width: 44, height: 44, borderRadius: 12, backgroundColor: "rgba(212,175,55,0.15)", alignItems: "center", justifyContent: "center" },
-  marketplaceBannerTitle:  { color: "#FFF", fontWeight: "900", fontSize: 15, marginBottom: 2 },
-  marketplaceBannerSub:    { color: "rgba(255,255,255,0.6)", fontSize: 12 },
-  marketplaceVerifiedBadge:{ alignItems: "center", gap: 2, backgroundColor: "rgba(212,175,55,0.15)", borderRadius: 10, padding: 8 },
-  marketplaceVerifiedText: { color: "#D4AF37", fontSize: 9, fontWeight: "900", textAlign: "center", letterSpacing: 0.5 },
+  // Feature banners (Marketplace + Events)
+  featureBanner:      { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1 },
+  featureBannerIcon:  { width: 42, height: 42, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  featureBannerTitle: { fontWeight: "700", fontSize: 14, marginBottom: 2 },
+  featureBannerSub:   { fontSize: 12 },
+  verifiedBadge:      { flexDirection: "row", alignItems: "center", gap: 3, marginRight: 2 },
+  verifiedText:       { color: "#D4AF37", fontSize: 9, fontWeight: "800", letterSpacing: 0.5 },
 
   socialRow:    { flexDirection: "row", gap: 8, marginBottom: 14, marginTop: -2 },
   socialIconBtn:{ width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },

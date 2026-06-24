@@ -30,6 +30,7 @@ import { type QrScanParams, useOfflineSync } from "@/context/OfflineSyncContext"
 import { usePrivateLessons } from "@/context/PrivateLessonContext";
 import { useSecurityEscalation } from "@/context/SecurityEscalationContext";
 import { useColors } from "@/hooks/useColors";
+import { useFeatures } from "@/context/FeaturesContext";
 import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { api, request, type ApiScheduledCourse, getRescuePending, acknowledgeRescue, type CascadeContact, type ChildTransitWarning } from "@/lib/api";
 import {
@@ -320,6 +321,7 @@ export default function OperatorDashboard() {
   const { isOnline, enqueue, pendingCount: offlinePendingCount } = useOfflineSync();
   const colors = useColors();
   const styles = make_styles(colors.primary, colors.secondary);
+  const { marketplaceEnabled } = useFeatures();
   const cur    = useOrgCurrency();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -1631,6 +1633,23 @@ export default function OperatorDashboard() {
 
           {/* 4. Scan Member QR */}
           <QRScanButton onPress={handleScan} label="Scan QR Code" />
+
+          {/* 5. Marketplace (admin-gated) */}
+          {marketplaceEnabled && (
+            <Pressable
+              style={({ pressed }) => [styles.qrCodeBtn, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
+              onPress={() => router.push("/(operator)/marketplace" as never)}
+            >
+              <View style={[styles.qrCodeBtnIcon, { backgroundColor: "rgba(251,191,36,0.12)" }]}>
+                <Ionicons name="storefront" size={26} color="#FBBF24" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.qrCodeBtnLabel, { color: colors.primary }]}>Marketplace</Text>
+                <Text style={[styles.qrCodeBtnSub, { color: colors.mutedForeground }]}>Browse products for your association</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+            </Pressable>
+          )}
 
         </View>
 
