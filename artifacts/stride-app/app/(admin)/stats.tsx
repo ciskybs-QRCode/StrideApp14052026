@@ -548,22 +548,6 @@ export default function AdminHome() {
           </>
         )}
 
-        {/* ── Marketplace quick-link (admin-gated) ── */}
-        {!(user?.role === "super_admin" && (user?.orgId === 0 || !user?.orgId)) && marketplaceEnabled && (
-          <Pressable
-            style={({ pressed }) => [styles.qrPanel, { backgroundColor: colors.card, flexDirection: "row", alignItems: "center", gap: 12, padding: 14, marginBottom: 10, opacity: pressed ? 0.85 : 1 }]}
-            onPress={() => router.push("/(admin)/marketplace" as never)}
-          >
-            <View style={{ width: 42, height: 42, borderRadius: 11, backgroundColor: "rgba(251,191,36,0.12)", alignItems: "center", justifyContent: "center" }}>
-              <Ionicons name="storefront" size={22} color="#FBBF24" />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.qrPanelTitle, { color: colors.primary, fontSize: 14 }]}>Marketplace</Text>
-              <Text style={[styles.qrPanelId, { color: colors.mutedForeground }]}>Manage products · View orders · Commission</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
-          </Pressable>
-        )}
 
         {/* ── HUB CARDS ── */}
         {user?.role === "super_admin" && (user?.orgId && user?.orgId > 0) && (

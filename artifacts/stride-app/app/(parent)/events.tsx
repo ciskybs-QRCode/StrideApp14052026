@@ -4,6 +4,7 @@ import * as Linking from "expo-linking";
 import * as Print from "expo-print";
 import * as Sharing from "expo-sharing";
 import { useRouter } from "expo-router";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator, Alert, Modal, Pressable, RefreshControl,
@@ -106,12 +107,13 @@ function TicketCard({ ticket, onDownload }: { ticket: EventTicket; onDownload: (
 
 // ── Purchase Modal ────────────────────────────────────────────────────────────
 function PurchaseModal({
-  event, visible, onClose, onSuccess,
+  event, visible, onClose, onSuccess, myTickets,
 }: {
   event: StrideEvent | null;
   visible: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  myTickets: EventTicket[];
 }) {
   const colors  = useColors();
   const styles = make_styles(colors.primary, colors.secondary);
@@ -135,7 +137,13 @@ function PurchaseModal({
   if (!event) return null;
 
   const unitPrice = selectedType?.price_cents ?? 0;
-  const usedFreeQty = 0;
+  // Count free tickets already issued to this member for this ticket type
+  const usedFreeQty = myTickets.filter(
+    t => t.event_id === event.id &&
+         t.ticket_type_id === selectedType?.id &&
+         t.unit_price_cents === 0 &&
+         t.status !== "cancelled"
+  ).length;
   const freePer = selectedType?.member_free_qty ?? 0;
   const freeInOrder = Math.min(Math.max(0, freePer - usedFreeQty), quantity);
   const paidInOrder = quantity - freeInOrder;
@@ -370,6 +378,7 @@ export default function ParentEventsScreen() {
   const insets  = useSafeAreaInsets();
   const { user } = useAuth();
 
+  const router  = useRouter();
   const [tab, setTab]             = useState<"browse" | "tickets">("browse");
   const [events, setEvents]       = useState<StrideEvent[]>([]);
   const [myTickets, setMyTickets] = useState<EventTicket[]>([]);
@@ -461,8 +470,9 @@ export default function ParentEventsScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top + 12, backgroundColor: "${colors.primary}" }]}>
+      <ScreenHeader title="Events & Tickets" onBack={() => router.back()} />
+      {/* Tab bar */}
+      <View style={[styles.header, { paddingTop: 8, backgroundColor: colors.primary }]}>
         <Text style={styles.headerEyebrow}>STRIDE</Text>
         <Text style={styles.headerTitle}>Events & Tickets</Text>
         <View style={styles.tabs}>
@@ -564,6 +574,7 @@ export default function ParentEventsScreen() {
         visible={showModal}
         onClose={() => setShowModal(false)}
         onSuccess={loadEvents}
+        myTickets={myTickets}
       />
     </View>
   );

@@ -17,7 +17,6 @@ export default function FinanceHub() {
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { marketplaceEnabled } = useFeatures();
   const { payments } = useAppData();
   const { can } = usePlanFeatures();
 
@@ -100,16 +99,6 @@ export default function FinanceHub() {
           onPress={() => router.push("/(admin)/settings/promo-codes" as never)}
         />
 
-        {marketplaceEnabled && can("marketplace") && (
-          <HubCard
-            icon="storefront-outline"
-            title="Marketplace Revenue"
-            description="Commission earnings and product performance"
-            iconBg="#DBEAFE"
-            iconColor={colors.primary}
-            onPress={() => router.push("/(admin)/marketplace" as never)}
-          />
-        )}
 
       </ScrollView>
     </View>

@@ -153,7 +153,7 @@ export default function MarketplaceScreen() {
 
   return (
     <View style={[S.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Stride Marketplace" onBack={() => router.navigate("/(parent)/home")} />
+      <ScreenHeader title="Marketplace" onBack={() => router.navigate("/(parent)/home")} />
 
       <ScrollView
         contentContainerStyle={{ paddingBottom: insets.bottom + 32 }}
@@ -204,14 +204,11 @@ export default function MarketplaceScreen() {
           </View>
         )}
 
-        {/* ── Stride Verified Partners ─────────────────────────────────────── */}
+        {/* ── Partner Products ─────────────────────────────────────── */}
         {verifiedProducts.length > 0 && (
           <View style={[S.section, { marginTop: shopLinks.length > 0 ? 8 : 0 }]}>
             <View style={S.sectionHeader}>
-              <View style={S.verifiedBadgeLarge}>
-                <Ionicons name="checkmark-circle" size={16} color="#D4AF37" />
-                <Text style={S.verifiedBadgeLargeText}>STRIDE VERIFIED</Text>
-              </View>
+              <Text style={[S.sectionTitle, { color: colors.foreground }]}>Partner Products</Text>
               <Text style={[S.sectionSub, { color: colors.mutedForeground }]}>Trusted partner products</Text>
             </View>
 
