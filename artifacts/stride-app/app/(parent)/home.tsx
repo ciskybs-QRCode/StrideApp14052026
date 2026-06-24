@@ -401,8 +401,8 @@ export default function ParentHome() {
           <View style={styles.avatarWrapper}>
             <Pressable
               style={({ pressed }) => [styles.avatarCircle, { opacity: pressed ? 0.85 : 1 }]}
-              onPress={() => router.push("/(parent)/account")}
-              accessibilityLabel="Open account"
+              onPress={handlePickProfilePhoto}
+              accessibilityLabel="Change profile photo"
             >
               {user?.profilePhotoUri ? (
                 <Image source={{ uri: user.profilePhotoUri }} style={styles.avatarPhoto} contentFit="cover" />
