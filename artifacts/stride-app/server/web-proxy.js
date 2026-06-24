@@ -14,10 +14,16 @@
  */
 
 const http = require("http");
+const fs   = require("fs");
+const path = require("path");
 
 const PROXY_PORT = parseInt(process.env.PORT || "3000", 10);
 const EXPO_PORT = parseInt(process.env.EXPO_INTERNAL_PORT || "9090", 10);
 const BASE = "/app";
+const DIST = path.resolve(__dirname, "..", "web-dist");
+
+// Files that must be served from web-dist (not proxied to Metro)
+const STATIC_FROM_DIST = ["sw.js", "version.json", "manifest.json"];
 
 let expoReady = false;
 
@@ -79,6 +85,25 @@ const server = http.createServer((req, res) => {
     res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
     res.end(LOADING_HTML);
     return;
+  }
+
+  // Serve sw.js / version.json / manifest.json directly from web-dist
+  // (Metro doesn't know about these files and would return 404)
+  const reqBasename = path.basename((req.url || "").split("?")[0]);
+  if (STATIC_FROM_DIST.includes(reqBasename)) {
+    const filePath = path.join(DIST, reqBasename);
+    if (fs.existsSync(filePath)) {
+      const ext = path.extname(filePath);
+      const mime = ext === ".json" ? "application/json" : "application/javascript; charset=utf-8";
+      const content = fs.readFileSync(filePath);
+      res.writeHead(200, {
+        "Content-Type": mime,
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Content-Length": content.length,
+      });
+      res.end(content);
+      return;
+    }
   }
 
   let proxyPath = req.url || "/";

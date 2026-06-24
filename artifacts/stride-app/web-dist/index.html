@@ -45,5 +45,34 @@
     <!-- The root element for your Expo app. -->
     <div id="root"></div>
   <script src="/app/_expo/static/js/web/entry-d436f2a5152fbf973a5b4c46645604b2.js" defer></script>
+
+  <!-- Stride auto-update: polls version.json and reloads when a new build is deployed -->
+  <script>
+  (function(){
+    var INTERVAL = 2 * 60 * 1000; // check every 2 minutes
+    var currentVersion = null;
+    function check(){
+      fetch('/app/version.json?_=' + Date.now(), { cache: 'no-store' })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          if(currentVersion === null){ currentVersion = d.v; }
+          else if(currentVersion !== d.v){ window.location.reload(true); }
+        }).catch(function(){});
+    }
+    // First check after 30 s (app has time to init)
+    setTimeout(function(){ check(); setInterval(check, INTERVAL); }, 30000);
+    // Also check when user brings the app back to foreground
+    document.addEventListener('visibilitychange', function(){
+      if(!document.hidden) check();
+    });
+    // Register service worker
+    if('serviceWorker' in navigator){
+      window.addEventListener('load', function(){
+        navigator.serviceWorker.register('/app/sw.js', { scope: '/app/' })
+          .catch(function(){});
+      });
+    }
+  })();
+  </script>
 </body>
 </html>

@@ -117,7 +117,13 @@ const server = http.createServer((req, res) => {
     let cacheControl;
     if (ext === ".html") {
       cacheControl = "no-cache";
-    } else if (basename === "manifest.json" || basename.startsWith("icon-") || basename === "apple-touch-icon.png") {
+    } else if (
+      basename === "manifest.json" ||
+      basename === "version.json" ||
+      basename === "sw.js" ||
+      basename.startsWith("icon-") ||
+      basename === "apple-touch-icon.png"
+    ) {
       cacheControl = "no-cache, no-store, must-revalidate";
     } else {
       cacheControl = "public, max-age=31536000, immutable";
