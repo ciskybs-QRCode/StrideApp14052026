@@ -1327,11 +1327,11 @@ export default function ChildrenScreen() {
       {/* Add Child Modal */}
       <Modal visible={showAddChild} transparent animationType="slide" onRequestClose={() => { setShowAddChild(false); resetAddChildForm(); }}>
         <View style={styles.modalOverlay}>
-          <ScrollView style={{ flex: 1 }} contentContainerStyle={{ flexGrow: 1, justifyContent: "flex-end" }} keyboardShouldPersistTaps="handled">
-            <View style={[styles.modalCard, { position: "relative", paddingTop: 44 }]}>
-              <Pressable style={{ position: "absolute", top: 12, right: 14, zIndex: 20, padding: 4 }} onPress={() => { setShowAddChild(false); resetAddChildForm(); }} hitSlop={14}>
-                <Ionicons name="close-circle" size={30} color="#9CA3AF" />
-              </Pressable>
+          <View style={[styles.modalCard, { position: "relative", paddingTop: 44, maxHeight: "90%", paddingBottom: 0 }]}>
+            <Pressable style={{ position: "absolute", top: 12, right: 14, zIndex: 20, padding: 4 }} onPress={() => { setShowAddChild(false); resetAddChildForm(); }} hitSlop={14}>
+              <Ionicons name="close-circle" size={30} color="#9CA3AF" />
+            </Pressable>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 8 }}>
               <View style={styles.addChildHeader}>
                 <Pressable
                   style={[styles.addChildIconCircle, { backgroundColor: newChildPhotoUri ? "transparent" : colors.primary, overflow: "hidden" }]}
@@ -1625,16 +1625,18 @@ export default function ChildrenScreen() {
                 </Pressable>
               )}
 
-              <View style={{ flexDirection: "row", gap: 12, marginTop: 20 }}>
-                <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => { setShowAddChild(false); resetAddChildForm(); }}>
-                  <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
-                </Pressable>
-                <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={handleAddChild}>
-                  <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Add</Text>
-                </Pressable>
-              </View>
+            </ScrollView>
+
+            {/* Buttons pinned at the bottom — always visible */}
+            <View style={{ flexDirection: "row", gap: 12, marginTop: 12, paddingBottom: 24 }}>
+              <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => { setShowAddChild(false); resetAddChildForm(); }}>
+                <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
+              </Pressable>
+              <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={handleAddChild}>
+                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Add</Text>
+              </Pressable>
             </View>
-          </ScrollView>
+          </View>
         </View>
       </Modal>
 
