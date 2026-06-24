@@ -99,16 +99,14 @@ router.post("/members", requireAuth, async (req, res) => {
     "";
 
   // Use pool.query (raw PG) to bypass PostgREST schema-cache limitations.
-  // The members table has `name` as the original NOT-NULL column; all additional
-  // columns (full_name, first_name, last_name, date_of_birth, etc.) were added
-  // via ALTER TABLE and are invisible to Supabase INSERT/UPSERT.
-  const insertCols: string[] = ["user_id", "organization_id", "name"];
+  // The members table has `full_name` as the required NOT-NULL column.
+  const insertCols: string[] = ["user_id", "organization_id", "full_name"];
   const insertVals: unknown[] = [parseInt(user.id), resolvedOrg, fullNameRaw || "Unnamed"];
 
   const optionalCols = [
-    "date_of_birth", "first_name", "last_name", "full_name",
-    "allergies", "allergies_list", "medications", "photo_url", "photo_uri",
-    "gold_stars", "ambulance_consent", "media_consent",
+    "date_of_birth", "first_name", "last_name",
+    "allergies", "photo_uri", "notes", "medical_notes",
+    "phone", "emergency_contact",
   ] as const;
   for (const col of optionalCols) {
     if (col in body && body[col] != null && body[col] !== undefined) {
