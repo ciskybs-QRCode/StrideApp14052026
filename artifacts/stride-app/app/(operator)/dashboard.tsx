@@ -1279,18 +1279,22 @@ export default function OperatorDashboard() {
             )}
           </View>
           <NotificationBell light />
-          <Pressable
-            style={({ pressed }) => [styles.avatarCircle, { backgroundColor: colors.primary, opacity: pressed ? 0.8 : 1 }]}
-            onPress={() => router.push("/(operator)/account")}
-            onLongPress={handlePickProfilePhoto}
-            accessibilityLabel="Open account"
-          >
-            {user?.profilePhotoUri ? (
-              <Image source={{ uri: user.profilePhotoUri }} style={styles.avatarPhoto} contentFit="cover" />
-            ) : (
-              <Text style={styles.avatarText}>{user?.name?.charAt(0)}</Text>
-            )}
-          </Pressable>
+          <View style={styles.avatarWrapper}>
+            <Pressable
+              style={({ pressed }) => [styles.avatarCircle, { opacity: pressed ? 0.85 : 1 }]}
+              onPress={() => router.push("/(operator)/account")}
+              accessibilityLabel="Open account"
+            >
+              {user?.profilePhotoUri ? (
+                <Image source={{ uri: user.profilePhotoUri }} style={styles.avatarPhoto} contentFit="cover" />
+              ) : (
+                <Ionicons name="person" size={22} color={colors.primary} />
+              )}
+            </Pressable>
+            <Pressable style={styles.cameraBadge} onPress={handlePickProfilePhoto} accessibilityLabel="Change photo">
+              <Ionicons name="camera" size={10} color="#FFF" />
+            </Pressable>
+          </View>
         </View>
 
         {/* ── ROLE SWITCHER ── */}

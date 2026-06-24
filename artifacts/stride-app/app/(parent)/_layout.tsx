@@ -208,15 +208,7 @@ export default function ParentTabLayout() {
             : { href: null }
           }
         />
-        {membershipEnabled && (
-          <Tabs.Screen
-            name="membership"
-            options={{
-              title: t("tab.membership", "Membership"),
-              tabBarIcon: ({ color, size }) => <Ionicons name="id-card" size={size} color={color} />,
-            }}
-          />
-        )}
+        <Tabs.Screen name="membership" options={{ href: null }} />
         <Tabs.Screen name="profile"                options={{ href: null }} />
         <Tabs.Screen name="notification-settings"  options={{ href: null }} />
         <Tabs.Screen name="documents" options={{ title: t("tab.account", "Account"), tabBarIcon: ({ color, size }) => <AccountTabIcon color={color} size={size} /> }} />
