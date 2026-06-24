@@ -115,9 +115,22 @@ export default function ParentHome() {
   }, [orgId]);
 
   useEffect(() => {
-    AsyncStorage.getItem("stride_profile_extra_v1").then(raw => {
-      if (raw) { try { const p = JSON.parse(raw); if (p.preferredName) setPreferredName(p.preferredName); } catch {} }
-    }).catch(() => {});
+    // Load preferred name: server is authoritative, AsyncStorage is the fallback
+    api.getProfileExtra()
+      .then(data => {
+        if (data?.preferred_name) {
+          setPreferredName(data.preferred_name);
+        } else {
+          AsyncStorage.getItem("stride_profile_extra_v1").then(raw => {
+            if (raw) { try { const p = JSON.parse(raw); if (p.preferredName) setPreferredName(p.preferredName); } catch {} }
+          }).catch(() => {});
+        }
+      })
+      .catch(() => {
+        AsyncStorage.getItem("stride_profile_extra_v1").then(raw => {
+          if (raw) { try { const p = JSON.parse(raw); if (p.preferredName) setPreferredName(p.preferredName); } catch {} }
+        }).catch(() => {});
+      });
   }, []);
 
   // Future absence state
