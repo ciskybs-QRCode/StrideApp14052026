@@ -154,50 +154,16 @@ self.addEventListener('install', function(event) {
 });
 
 self.addEventListener('activate', function(event) {
-  // Claim all open clients immediately so updates take effect right away
+  // Purge ALL old caches and claim clients immediately
   event.waitUntil(
-    caches.keys().then(function(keys) {
-      return Promise.all(
-        keys.filter(function(k) { return k !== CACHE_NAME; })
-            .map(function(k) { return caches.delete(k); })
-      );
-    }).then(function() {
-      return self.clients.claim();
-    })
+    caches.keys()
+      .then(function(keys) { return Promise.all(keys.map(function(k) { return caches.delete(k); })); })
+      .then(function() { return self.clients.claim(); })
   );
 });
 
-self.addEventListener('fetch', function(event) {
-  var url = new URL(event.request.url);
-
-  // Only intercept same-origin /app/ requests
-  if (url.origin !== location.origin) return;
-  if (!url.pathname.startsWith('/app/')) return;
-
-  // Never cache: HTML pages, sw.js itself, version.json
-  if (
-    event.request.mode === 'navigate' ||
-    url.pathname.endsWith('sw.js') ||
-    url.pathname.endsWith('version.json') ||
-    url.pathname.endsWith('.html')
-  ) {
-    event.respondWith(fetch(event.request));
-    return;
-  }
-
-  // Cache-first for content-hashed assets (bundles, fonts, images)
-  event.respondWith(
-    caches.open(CACHE_NAME).then(function(cache) {
-      return cache.match(event.request).then(function(cached) {
-        if (cached) return cached;
-        return fetch(event.request).then(function(response) {
-          if (response.ok) cache.put(event.request, response.clone());
-          return response;
-        });
-      });
-    })
-  );
-});
+// No fetch interception — the browser handles all requests normally.
+// Auto-update is handled by version.json polling in index.html.
 `;
 
 fs.writeFileSync(path.join(DIST, "sw.js"), swContent);
