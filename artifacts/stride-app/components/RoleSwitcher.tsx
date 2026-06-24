@@ -139,10 +139,13 @@ function useRoleSwitcher() {
   const colors = useColors();
   const [open, setOpen] = useState(false);
 
+  const isSuperAdmin = user?.role === "super_admin";
   const availableRoles: UserRole[] = sortRoles(
-    allRoles.length > 0
-      ? allRoles.map(r => r.role).filter((v, i, a) => a.indexOf(v) === i)
-      : (user?.roles ?? [])
+    isSuperAdmin
+      ? ["super_admin", "admin", "operator", "parent"]
+      : allRoles.length > 0
+        ? allRoles.map(r => r.role).filter((v, i, a) => a.indexOf(v) === i)
+        : (user?.roles ?? [])
   );
 
   const activeRole: UserRole = user?.activeRole ?? user?.role ?? "parent";
