@@ -552,7 +552,7 @@ export default function AdminHome() {
         {!(user?.role === "super_admin" && (user?.orgId === 0 || !user?.orgId)) && marketplaceEnabled && (
           <Pressable
             style={({ pressed }) => [styles.qrPanel, { backgroundColor: colors.card, flexDirection: "row", alignItems: "center", gap: 12, padding: 14, marginBottom: 10, opacity: pressed ? 0.85 : 1 }]}
-            onPress={() => router.push("/(admin)/marketplace-manage" as never)}
+            onPress={() => router.push("/(admin)/marketplace" as never)}
           >
             <View style={{ width: 42, height: 42, borderRadius: 11, backgroundColor: "rgba(251,191,36,0.12)", alignItems: "center", justifyContent: "center" }}>
               <Ionicons name="storefront" size={22} color="#FBBF24" />
