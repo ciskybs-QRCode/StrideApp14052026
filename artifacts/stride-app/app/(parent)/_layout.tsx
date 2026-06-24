@@ -78,14 +78,6 @@ export default function ParentTabLayout() {
   const { legalAdminDocs, signedAdminDocIds, signAdminDoc } = useAppData();
   const { secondaryRoleName }                         = useTerminology();
 
-  // ── Membership tab visibility (admin-controlled) ─────────────────────────────
-  const [membershipEnabled, setMembershipEnabled] = useState(false);
-  useEffect(() => {
-    import("@/lib/api").then(m => m.api.getMembershipPlans())
-      .then(p => setMembershipEnabled(p.membershipEnabled))
-      .catch(() => setMembershipEnabled(false));
-  }, []);
-
   // ── Gate state ───────────────────────────────────────────────────────────────
   const [gatePhase,     setGatePhase]     = useState<"index" | "signing">("index");
   const [currentDocIdx, setCurrentDocIdx] = useState(0);

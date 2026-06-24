@@ -2940,9 +2940,10 @@ const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   headerRow: { flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 20 },
   pageTitle: { fontSize: 28, fontWeight: "800" },
   pageSubtitle: { fontSize: 13, marginTop: 2 },
-  avatarCircle: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center", overflow: "hidden" },
+  avatarWrapper: { position: "relative", width: 44, height: 44 },
+  avatarCircle: { width: 44, height: 44, borderRadius: 22, backgroundColor: "#FFF", borderWidth: 1.5, borderColor: `${primary}40`, alignItems: "center", justifyContent: "center", overflow: "hidden" },
   avatarPhoto:  { width: 44, height: 44, borderRadius: 22 },
-  avatarText:   { color: "#FFF", fontWeight: "700", fontSize: 18 },
+  cameraBadge:  { position: "absolute", bottom: 0, right: 0, width: 18, height: 18, borderRadius: 9, backgroundColor: primary, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderColor: "#FFF" },
   gpsBadge: { flexDirection: "row", alignItems: "center", gap: 6, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6 },
   gpsText: { fontSize: 13, fontWeight: "700" },
 
