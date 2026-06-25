@@ -702,7 +702,7 @@ export default function ParentHome() {
             onPress={() => router.push("/(parent)/marketplace" as Parameters<typeof router.push>[0])}
           >
             <View style={[styles.featureBannerIcon, { backgroundColor: "rgba(251,191,36,0.12)" }]}>
-              <Ionicons name="storefront" size={22} color="#FBBF24" />
+              <Ionicons name="storefront" size={22} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.featureBannerTitle, { color: colors.primary }]}>Marketplace</Text>

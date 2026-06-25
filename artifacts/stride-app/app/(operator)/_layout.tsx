@@ -106,6 +106,7 @@ export default function OperatorTabLayout() {
     <NotificationsProvider>
     <View style={{ flex: 1 }}>
       <Tabs
+        backBehavior="history"
         screenOptions={{
           tabBarActiveTintColor: colors.primary,
           tabBarInactiveTintColor: colors.mutedForeground,
