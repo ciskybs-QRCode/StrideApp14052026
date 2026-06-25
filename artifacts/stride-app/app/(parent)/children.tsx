@@ -1327,11 +1327,11 @@ export default function ChildrenScreen() {
       {/* Add Child Modal */}
       <Modal visible={showAddChild} transparent animationType="slide" onRequestClose={() => { setShowAddChild(false); resetAddChildForm(); }}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { position: "relative", paddingTop: 44, maxHeight: "90%", paddingBottom: 0, flex: 1 }]}>
+          <View style={[styles.modalCard, { position: "relative", paddingTop: 44, maxHeight: "90%", paddingBottom: 0 }]}>
             <Pressable style={{ position: "absolute", top: 12, right: 14, zIndex: 20, padding: 4 }} onPress={() => { setShowAddChild(false); resetAddChildForm(); }} hitSlop={14}>
               <Ionicons name="close-circle" size={30} color="#9CA3AF" />
             </Pressable>
-            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 8 }}>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 88 }}>
               <View style={styles.addChildHeader}>
                 <Pressable
                   style={[styles.addChildIconCircle, { backgroundColor: newChildPhotoUri ? "transparent" : colors.primary, overflow: "hidden" }]}
@@ -1625,17 +1625,18 @@ export default function ChildrenScreen() {
                 </Pressable>
               )}
 
-              {/* Buttons — inside ScrollView so they're always reachable */}
-              <View style={{ flexDirection: "row", gap: 12, marginTop: 20, paddingBottom: 32 }}>
-                <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => { setShowAddChild(false); resetAddChildForm(); }}>
-                  <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
-                </Pressable>
-                <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={handleAddChild}>
-                  <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Add</Text>
-                </Pressable>
-              </View>
 
             </ScrollView>
+
+            {/* Buttons — absolutely pinned to bottom of card, outside ScrollView */}
+            <View style={{ position: "absolute", bottom: 0, left: 0, right: 0, flexDirection: "row", gap: 12, padding: 16, backgroundColor: "#FFF", borderBottomLeftRadius: 24, borderBottomRightRadius: 24, zIndex: 30 }}>
+              <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => { setShowAddChild(false); resetAddChildForm(); }}>
+                <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
+              </Pressable>
+              <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={handleAddChild}>
+                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Add</Text>
+              </Pressable>
+            </View>
           </View>
         </View>
       </Modal>
