@@ -849,15 +849,32 @@ export default function OperatorCalendar() {
         })}
       </ScrollView>
 
-      {/* ── FAB ── */}
+      {/* ── Submit Availability Button ── */}
       <Pressable
-        style={[styles.fab, { backgroundColor: colors.primary, bottom: insets.bottom + 100 }]}
+        style={({ pressed }) => [{
+          marginHorizontal: 20,
+          marginBottom: insets.bottom + 12,
+          backgroundColor: colors.primary,
+          borderRadius: 16,
+          paddingVertical: 16,
+          flexDirection: "row" as const,
+          alignItems: "center" as const,
+          justifyContent: "center" as const,
+          gap: 10,
+          opacity: pressed ? 0.88 : 1,
+          shadowColor: colors.primary,
+          shadowOffset: { width: 0, height: 4 },
+          shadowOpacity: 0.3,
+          shadowRadius: 8,
+          elevation: 6,
+        }]}
         onPress={() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           router.navigate({ pathname: "/(operator)/private-lessons", params: { openTab: "availability" } } as never);
         }}
       >
-        <Ionicons name="calendar-outline" size={28} color={colors.secondary} />
+        <Ionicons name="calendar-outline" size={20} color={colors.secondary} />
+        <Text style={{ color: colors.secondary, fontWeight: "700", fontSize: 15 }}>Submit Availability</Text>
       </Pressable>
 
       {/* ══ Workshop Creation Sheet ══════════════════════════════════════════════ */}

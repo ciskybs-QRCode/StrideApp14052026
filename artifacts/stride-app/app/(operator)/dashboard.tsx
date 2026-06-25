@@ -32,7 +32,8 @@ import { useSecurityEscalation } from "@/context/SecurityEscalationContext";
 import { useColors } from "@/hooks/useColors";
 import { useFeatures } from "@/context/FeaturesContext";
 import { useOrgCurrency } from "@/hooks/useOrgCurrency";
-import { api, request, type ApiScheduledCourse, getRescuePending, acknowledgeRescue, type CascadeContact, type ChildTransitWarning } from "@/lib/api";
+import { api, request, listEvents, type ApiScheduledCourse, getRescuePending, acknowledgeRescue, type CascadeContact, type ChildTransitWarning } from "@/lib/api";
+import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 import {
   CASCADE_TIMEOUT_SECS,
   MOCK_SUBS,
@@ -322,6 +323,7 @@ export default function OperatorDashboard() {
   const colors = useColors();
   const styles = make_styles(colors.primary, colors.secondary);
   const { marketplaceEnabled } = useFeatures();
+  const { can: planCan } = usePlanFeatures();
   const cur    = useOrgCurrency();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -352,6 +354,8 @@ export default function OperatorDashboard() {
   const pulseAnim  = useRef(new Animated.Value(1)).current;
   const sosPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [activityLog, setActivityLog]     = useState<LogEntry[]>([]);
+  const [hasPublishedProducts, setHasPublishedProducts] = useState(false);
+  const [hasPublishedEvents,   setHasPublishedEvents]   = useState(false);
   const [lessonScanResult, setLessonScanResult] = useState<{
     discipline: string; student: string; earnings_cents: number; invoice_number: string; attended_at: string;
   } | null>(null);
@@ -627,6 +631,17 @@ export default function OperatorDashboard() {
       requestPermission();
     }
   }, [showScanner]);
+
+  useEffect(() => {
+    if (marketplaceEnabled && planCan("marketplace")) {
+      api.listMarketplaceProducts({ org_id: user?.orgId ?? 1 }).then(r => {
+        setHasPublishedProducts((r.products ?? []).length > 0);
+      }).catch(() => {});
+    }
+    if (planCan("events")) {
+      listEvents().then(evts => setHasPublishedEvents(evts.length > 0)).catch(() => {});
+    }
+  }, [marketplaceEnabled]);
 
   const triggerBorderFlash = useCallback((color: string) => {
     setBorderFlashColor(color);
@@ -1660,6 +1675,40 @@ export default function OperatorDashboard() {
           description="Scan QR codes at the door to validate event tickets"
           onPress={() => { router.push("/(operator)/ticket-scanner" as Parameters<typeof router.push>[0]); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
         />
+
+        {/* ── Marketplace Banner ── */}
+        {marketplaceEnabled && hasPublishedProducts && planCan("marketplace") && (
+          <Pressable
+            style={({ pressed }) => [styles.featureBanner, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
+            onPress={() => { router.push("/(parent)/marketplace" as Parameters<typeof router.push>[0]); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+          >
+            <View style={[styles.featureBannerIcon, { backgroundColor: "rgba(251,191,36,0.12)" }]}>
+              <Ionicons name="storefront" size={22} color="#FBBF24" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.featureBannerTitle, { color: colors.primary }]}>Marketplace</Text>
+              <Text style={[styles.featureBannerSub, { color: colors.mutedForeground }]}>Gear · Insurance · Accessories</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+          </Pressable>
+        )}
+
+        {/* ── Events Banner ── */}
+        {hasPublishedEvents && planCan("events") && (
+          <Pressable
+            style={({ pressed }) => [styles.featureBanner, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
+            onPress={() => { router.push("/(parent)/events" as Parameters<typeof router.push>[0]); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+          >
+            <View style={[styles.featureBannerIcon, { backgroundColor: "rgba(30,58,138,0.07)" }]}>
+              <Ionicons name="ticket" size={22} color={colors.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.featureBannerTitle, { color: colors.primary }]}>Events & Tickets</Text>
+              <Text style={[styles.featureBannerSub, { color: colors.mutedForeground }]}>Browse events · Buy tickets · Scan at door</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+          </Pressable>
+        )}
 
         {/* ── Clock Out ── */}
         <HubCard
@@ -3211,6 +3260,12 @@ const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   sosProcStepRight: { flex: 1, padding: 14 },
   sosProcStepText: { color: "#FFF", fontSize: 14, lineHeight: 21, fontWeight: "500" },
   sosLogNote: { color: "rgba(255,255,255,0.45)", fontSize: 11, textAlign: "center", marginBottom: 10 },
+
+  // Feature banners (Marketplace + Events)
+  featureBanner:      { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, padding: 14, marginBottom: 10, borderWidth: 1 },
+  featureBannerIcon:  { width: 42, height: 42, borderRadius: 11, alignItems: "center", justifyContent: "center" },
+  featureBannerTitle: { fontWeight: "700", fontSize: 14, marginBottom: 2 },
+  featureBannerSub:   { fontSize: 12 },
 
   // Medical member picker
   sosPickerScroll: { maxHeight: 220, marginBottom: 8 },
