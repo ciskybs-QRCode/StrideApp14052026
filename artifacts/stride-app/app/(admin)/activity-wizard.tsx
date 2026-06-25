@@ -796,7 +796,7 @@ export default function ActivityWizard() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 120 }]}
+        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 200 }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
@@ -804,7 +804,7 @@ export default function ActivityWizard() {
       </ScrollView>
 
       {/* Bottom nav */}
-      <View style={[styles.navBar, { backgroundColor: colors.background, borderTopColor: colors.border, paddingBottom: insets.bottom + 10 }]}>
+      <View style={[styles.navBar, { backgroundColor: colors.background, borderTopColor: colors.border, paddingBottom: insets.bottom + 90 }]}>
         {step > 1 && (
           <Pressable style={[styles.navBack, { borderColor: colors.border }]} onPress={handleBack}>
             <Ionicons name="arrow-back" size={18} color={colors.foreground} />

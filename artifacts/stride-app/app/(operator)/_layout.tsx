@@ -12,6 +12,7 @@ import { usePrivateLessons } from "@/context/PrivateLessonContext";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
 import { NotificationsProvider } from "@/context/NotificationsContext";
 import { useT } from "@/context/TranslationContext";
+import { useAuth } from "@/context/AuthContext";
 import { getMyOperatorSkills } from "@/lib/api";
 
 // ── Booking notification banner ───────────────────────────────────────────────
@@ -89,6 +90,7 @@ export default function OperatorTabLayout() {
   const colors = useColors();
   const t      = useT();
   const router = useRouter();
+  const { user } = useAuth();
   const { bookingNotifications, dismissBookingNotification } = useRealtime();
   const { unreadCount } = usePrivateLessons();
   const isIOS = Platform.OS === "ios";
@@ -96,10 +98,11 @@ export default function OperatorTabLayout() {
 
   const activeNotif = bookingNotifications[0] ?? null;
 
-  // ── Skills onboarding gate ──────────────────────────────────────────────────
+  // ── Skills onboarding gate (operators only) ─────────────────────────────────
   const gateChecked = useRef(false);
   useEffect(() => {
     if (gateChecked.current) return;
+    if (user?.role !== "operator") return;
     gateChecked.current = true;
     getMyOperatorSkills()
       .then(({ skills_completed }) => {
@@ -108,7 +111,7 @@ export default function OperatorTabLayout() {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [user?.role]);
 
   // Auto-dismiss after 10 s
   useEffect(() => {

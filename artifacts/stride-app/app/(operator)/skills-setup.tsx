@@ -190,7 +190,7 @@ export default function SkillsSetup() {
       </ScrollView>
 
       {/* Footer */}
-      <View style={[styles.footer, { paddingBottom: Math.max(insets.bottom, 20), borderTopColor: colors.border }]}>
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 90, borderTopColor: colors.border }]}>
         <Pressable
           style={[styles.saveBtn, { backgroundColor: colors.primary, opacity: saving ? 0.7 : 1 }]}
           onPress={handleSave}
@@ -227,7 +227,7 @@ const makeStyles = (
   headerIcon:  { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
   headerTitle: { fontSize: 20, fontWeight: "800", color: fg },
   headerSub:   { fontSize: 14, color: muted, marginTop: 1 },
-  scroll:      { paddingHorizontal: 20, paddingBottom: 32 },
+  scroll:      { paddingHorizontal: 20, paddingBottom: 120 },
   section:     { marginTop: 20 },
   sectionLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.8, color: muted, marginBottom: 10 },
   chipWrap:    { flexDirection: "row", flexWrap: "wrap", gap: 8 },

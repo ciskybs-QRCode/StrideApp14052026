@@ -352,6 +352,8 @@ export default function AdminTabLayout() {
       <Tabs.Screen name="support"              options={{ href: null }} />
       <Tabs.Screen name="sa-support-tickets"   options={{ href: null }} />
       <Tabs.Screen name="sa-feature-analytics" options={{ href: null }} />
+      <Tabs.Screen name="activity-wizard"      options={{ href: null }} />
+      <Tabs.Screen name="skill-presets"        options={{ href: null }} />
     </Tabs>
     <SecurityAlarmOverlay alertsRoute="/(admin)/alerts" />
     <BrandingLogoOverlay />
