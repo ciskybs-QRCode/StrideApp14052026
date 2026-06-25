@@ -38,8 +38,6 @@ export default function OperationsHub() {
           icon="add-circle-outline"
           title="New Activity"
           description="Create a course, workshop, private lesson or single session"
-          iconBg={colors.secondary}
-          iconColor={colors.primary}
           onPress={() => router.push("/(admin)/activity-wizard" as never)}
         />
         <HubCard
