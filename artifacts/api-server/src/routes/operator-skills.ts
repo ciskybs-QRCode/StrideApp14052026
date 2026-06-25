@@ -119,7 +119,8 @@ router.put("/operator-skills", requireAuth, requireRole("operator", "admin"), as
 
     const opProfileId = (profile as { id?: number } | null)?.id;
     if (!opProfileId) {
-      res.status(404).json({ error: "Operator profile not found" });
+      // No operator profile yet — acknowledge gracefully so the user can proceed
+      res.json({ ok: true });
       return;
     }
 

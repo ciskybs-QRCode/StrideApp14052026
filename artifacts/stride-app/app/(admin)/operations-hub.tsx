@@ -35,6 +35,14 @@ export default function OperationsHub() {
       >
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SCHEDULING</Text>
         <HubCard
+          icon="add-circle-outline"
+          title="New Activity"
+          description="Create a course, workshop, private lesson or single session"
+          iconBg={colors.secondary}
+          iconColor={colors.primary}
+          onPress={() => router.push("/(admin)/activity-wizard" as never)}
+        />
+        <HubCard
           icon="calendar-outline"
           title="Activity Planner"
           description="Manage lessons, disciplines and class schedule"

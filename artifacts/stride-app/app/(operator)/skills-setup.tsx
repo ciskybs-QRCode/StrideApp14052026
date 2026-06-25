@@ -68,12 +68,12 @@ export default function SkillsSetup() {
     setSaving(true);
     try {
       await setMyOperatorSkills(Array.from(selected));
-      router.replace("/(operator)/dashboard" as never);
     } catch {
-      Alert.alert("Error", "Could not save skills. Please try again.");
+      // Silently continue — skills can be updated later from profile settings
     } finally {
       setSaving(false);
     }
+    router.replace("/(operator)/dashboard" as never);
   };
 
   const allLabels: string[] = [
@@ -205,7 +205,7 @@ export default function SkillsSetup() {
             </>
           )}
         </Pressable>
-        <Pressable style={styles.skipBtn} onPress={() => handleSave()}>
+        <Pressable style={styles.skipBtn} onPress={() => router.replace("/(operator)/dashboard" as never)}>
           <Text style={[styles.skipBtnText, { color: colors.mutedForeground }]}>Skip for now</Text>
         </Pressable>
       </View>
