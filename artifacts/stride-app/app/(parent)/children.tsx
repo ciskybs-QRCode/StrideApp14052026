@@ -109,6 +109,7 @@ export default function ChildrenScreen() {
   const [newChildMedCertExpiry, setNewChildMedCertExpiry] = useState<string | null>(null);
   const [medCertAnalyzing, setMedCertAnalyzing] = useState(false);
   const [newChildPreferredName, setNewChildPreferredName] = useState("");
+  const [guardianChecked, setGuardianChecked] = useState(false);
 
   // Per-child cert data stored locally (keyed by child id)
   const [certDataByChild, setCertDataByChild] = useState<Record<string, { uri: string; expiry: string | null }>>({});
@@ -309,6 +310,7 @@ export default function ChildrenScreen() {
     setNewChildMedCertUri(null);
     setNewChildMedCertExpiry(null);
     setNewChildPreferredName("");
+    setGuardianChecked(false);
   };
 
   const openImagePicker = async (): Promise<string | null> => {
@@ -387,16 +389,8 @@ export default function ChildrenScreen() {
       Alert.alert("Invalid Date", "Date of birth appears incorrect.");
       return;
     }
-    // Task 5: under-18 dependent requires explicit guardian authorization before write
-    if (age < 18) {
-      Alert.alert(
-        "Guardian Authorisation",
-        "This dependent is a minor (under 18). By proceeding you confirm you are the legal parent or guardian and accept full responsibility for their enrolment.",
-        [
-          { text: "Cancel", style: "cancel" },
-          { text: "Confirm", onPress: () => { commitAddChild(dobStr, age).catch(() => {}); } },
-        ]
-      );
+    if (age < 18 && !guardianChecked) {
+      Alert.alert("Guardian Confirmation Required", "Please tick the guardian authorisation box before adding a minor.");
       return;
     }
     await commitAddChild(dobStr, age);
@@ -1622,6 +1616,21 @@ export default function ChildrenScreen() {
                       <Text style={{ fontSize: 13, color: colors.primary, fontWeight: "600" }}>Upload medical certificate</Text>
                     </>
                   )}
+                </Pressable>
+              )}
+
+              {/* Guardian authorisation checkbox — shown only for minors */}
+              {newChildDob && calcAgeFromDob(newChildDob.toISOString().split("T")[0]) < 18 && (
+                <Pressable
+                  onPress={() => setGuardianChecked(v => !v)}
+                  style={{ flexDirection: "row", alignItems: "flex-start", gap: 12, marginTop: 16, padding: 14, borderRadius: 12, borderWidth: 1, borderColor: guardianChecked ? colors.primary : colors.border, backgroundColor: guardianChecked ? "rgba(30,58,138,0.06)" : "transparent" }}
+                >
+                  <View style={{ width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: guardianChecked ? colors.primary : colors.border, backgroundColor: guardianChecked ? colors.primary : "transparent", alignItems: "center", justifyContent: "center", marginTop: 1, flexShrink: 0 }}>
+                    {guardianChecked && <Ionicons name="checkmark" size={14} color="#FFF" />}
+                  </View>
+                  <Text style={{ flex: 1, fontSize: 13, color: colors.foreground, lineHeight: 19 }}>
+                    I confirm I am the legal parent or guardian of this minor and accept full responsibility for their enrolment. <Text style={{ color: "#EF4444" }}>*</Text>
+                  </Text>
                 </Pressable>
               )}
 
