@@ -174,7 +174,7 @@ export default function OperatorSupport() {
       }
     }
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ["images"] as const,
       quality: 0.9,
       base64: true,
       allowsEditing: false,

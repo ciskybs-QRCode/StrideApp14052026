@@ -181,7 +181,7 @@ function CourseMaterialsPanel({ courseId, courseName, colors }: { courseId: stri
         if (status !== "granted") { setUploading(false); return; }
       }
       const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.All,
+        mediaTypes: ["images", "videos"] as const,
         quality: 0.8,
         allowsEditing: false,
       });

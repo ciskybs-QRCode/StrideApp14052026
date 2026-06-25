@@ -103,7 +103,7 @@ export default function OperatorCommunications() {
       Alert.alert("Permission needed", "Allow access to your photo library in Settings."); return;
     }
     const res = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
+      mediaTypes: ["images", "videos"] as const,
       quality:    0.85,
     });
     if (!res.canceled && res.assets[0]) {
