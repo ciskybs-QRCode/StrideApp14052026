@@ -343,7 +343,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       // ── 1. Permission check ────────────────────────────────────────────────
       // super_admin holds all 4 roles by design and bypasses the DB check.
-      const isSuperAdmin      = user.role === 'super_admin';
+      // Check allRoles too — user.role changes when super_admin switches to another role.
+      const isSuperAdmin      = user.role === 'super_admin' || allRoles.some(r => r.role === 'super_admin');
       const permittedInAllRoles = allRoles.some(r => r.role === newRole);
       const permittedInDerived  = user.roles.includes(newRole);
 

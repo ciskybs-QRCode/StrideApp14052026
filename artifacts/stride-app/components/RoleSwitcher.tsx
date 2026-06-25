@@ -139,7 +139,8 @@ function useRoleSwitcher() {
   const colors = useColors();
   const [open, setOpen] = useState(false);
 
-  const isSuperAdmin = user?.role === "super_admin";
+  // Use allRoles from DB so the check survives role-switching (user.role changes on switch)
+  const isSuperAdmin = user?.role === "super_admin" || allRoles.some(r => r.role === "super_admin");
   const availableRoles: UserRole[] = sortRoles(
     isSuperAdmin
       ? ["super_admin", "admin", "operator", "parent"]
