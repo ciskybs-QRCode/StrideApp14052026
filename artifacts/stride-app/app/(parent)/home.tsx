@@ -34,6 +34,7 @@ import { useColors } from "@/hooks/useColors";
 import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { api, listEvents } from "@/lib/api";
 import { SOSButton } from "@/components/SOSButton";
+import { SOSModal } from "@/components/SOSModal";
 import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 
 const LOGO = require("@/assets/images/stride-logo.png");
@@ -145,8 +146,7 @@ export default function ParentHome() {
   const [futureAbsNote, setFutureAbsNote] = useState("");
   const [futureAbsSuccess, setFutureAbsSuccess] = useState(false);
   const [orgLogoUri, setOrgLogoUri] = useState<string | null>(null);
-  const [sosType, setSosType]           = useState<"FIRE" | "POLICE" | "MEDICAL" | null>(null);
-  const [sosPatientName, setSosPatientName] = useState("");
+  const [showSOSModal, setShowSOSModal] = useState(false);
   const [orgContactPhone, setOrgContactPhone] = useState("");
   const [orgContactEmail, setOrgContactEmail] = useState("");
   const [social, setSocial] = useState<Record<string, string>>({});
@@ -347,28 +347,8 @@ export default function ParentHome() {
     api.triggerSilentAlarm({ location_label: user?.schoolName ?? "Association" }).catch(() => {});
   };
 
-  const handleMemberSOS = async () => {
-    if (!sosType) {
-      Alert.alert("Select Emergency Type", "Please select Fire, Police, or Medical before activating SOS.");
-      return;
-    }
-    if (sosType === "MEDICAL" && !sosPatientName.trim()) {
-      Alert.alert("Patient Name Required", "Please enter the name of the person who needs medical assistance.");
-      return;
-    }
-    try {
-      await api.triggerEmergencyPulse({
-        category:       sosType,
-        location_label: user?.schoolName ?? "Association",
-        patient_name:   sosType === "MEDICAL" ? sosPatientName.trim() : undefined,
-      });
-      const msg = sosType === "MEDICAL"
-        ? `Emergency contacts and on-site staff have been notified about ${sosPatientName.trim()}. Stay with the patient.`
-        : "All members have been notified. Follow evacuation procedures and await instructions.";
-      Alert.alert("SOS Activated", msg, [{ text: "OK", onPress: () => { setSosType(null); setSosPatientName(""); } }]);
-    } catch {
-      Alert.alert("SOS Alert", "Could not reach the server. Please call emergency services directly.");
-    }
+  const handleMemberSOS = () => {
+    setShowSOSModal(true);
   };
 
   const firstName = preferredName || user?.name?.split(" ")[0] || "User";
@@ -557,50 +537,7 @@ export default function ParentHome() {
         </Pressable>
 
         {/* ── SOS Emergency ── */}
-        <View style={{ marginTop: 4, marginBottom: 2 }}>
-          <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, letterSpacing: 0.8, marginBottom: 8 }}>
-            SELECT EMERGENCY TYPE
-          </Text>
-          <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
-            {(["FIRE", "POLICE", "MEDICAL"] as const).map(type => {
-              const typeInfo = {
-                FIRE:    { icon: "🔥", label: "Fire",    activeColor: "#EA580C" },
-                POLICE:  { icon: "🚔", label: "Police",  activeColor: "#1E3A8A" },
-                MEDICAL: { icon: "🚑", label: "Medical", activeColor: "#DC2626" },
-              }[type];
-              const isSel = sosType === type;
-              return (
-                <Pressable
-                  key={type}
-                  onPress={() => { setSosType(type); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                  style={({ pressed }) => ({
-                    flex: 1, alignItems: "center", paddingVertical: 10, borderRadius: 12,
-                    borderWidth: 2,
-                    backgroundColor: isSel ? typeInfo.activeColor : colors.card,
-                    borderColor: isSel ? typeInfo.activeColor : colors.border,
-                    opacity: pressed ? 0.8 : 1,
-                  })}
-                >
-                  <Text style={{ fontSize: 20 }}>{typeInfo.icon}</Text>
-                  <Text style={{ fontSize: 11, fontWeight: "700", marginTop: 3,
-                    color: isSel ? "#FFFFFF" : colors.foreground }}>{typeInfo.label}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-          {sosType === "MEDICAL" && (
-            <TextInput
-              style={{ backgroundColor: colors.card, borderColor: "#DC2626", borderWidth: 1.5,
-                borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, color: colors.foreground,
-                fontSize: 14, marginBottom: 10 }}
-              placeholder="Patient's full name (required)"
-              placeholderTextColor={colors.mutedForeground}
-              value={sosPatientName}
-              onChangeText={setSosPatientName}
-            />
-          )}
-          <SOSButton onConfirm={handleMemberSOS} onSilentAlarm={handleSilentAlarm} />
-        </View>
+        <SOSButton onConfirm={handleMemberSOS} onSilentAlarm={handleSilentAlarm} />
 
         {/* ── Private Lessons ── */}
         <Pressable
@@ -1244,6 +1181,13 @@ export default function ParentHome() {
           </View>
         </View>
       </Modal>
+
+      <SOSModal
+        visible={showSOSModal}
+        onClose={() => setShowSOSModal(false)}
+        orgId={orgId}
+        campusAddress={user?.schoolName ?? ""}
+      />
     </View>
   );
 }
