@@ -47,6 +47,7 @@ export default function AppCustomizationPage() {
   const [buttonStyle, setButtonStyle] = useState<"rounded" | "square">("rounded");
   const [applied, setApplied] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [nameError, setNameError] = useState(false);
 
   // Rehydrate persisted theme prefs + org name on mount
   useEffect(() => {
@@ -76,20 +77,22 @@ export default function AppCustomizationPage() {
   };
 
   const handleApply = async () => {
+    if (!schoolName.trim()) {
+      setNameError(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+      return;
+    }
+    setNameError(false);
     setSaving(true);
     try {
-      const nameToSave = schoolName.trim() || user?.schoolName || "";
       await updateUser({
-        schoolName:    nameToSave,
-        primaryColor:  PRESET_COLORS[selectedColorIdx].primary,
+        schoolName,
+        primaryColor:   PRESET_COLORS[selectedColorIdx].primary,
         secondaryColor: PRESET_COLORS[selectedColorIdx].secondary,
       });
       await AsyncStorage.setItem(FONT_KEY, selectedFont);
       await AsyncStorage.setItem(BTN_STYLE_KEY, buttonStyle);
-      // Persist org name to backend so it survives logout/login
-      if (nameToSave) {
-        api.updateOrg({ name: nameToSave }).catch(() => {});
-      }
+      api.updateOrg({ name: schoolName }).catch(() => {});
       setApplied(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       Alert.alert("Theme Applied!", `The "${PRESET_COLORS[selectedColorIdx].name}" theme is now active.`);
@@ -144,12 +147,15 @@ export default function AppCustomizationPage() {
         {/* Organisation name */}
         <Text style={[styles.sectionLabel, { color: colors.primary }]}>Organisation Name</Text>
         <TextInput
-          style={[styles.nameInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
+          style={[styles.nameInput, { borderColor: nameError ? "#EF4444" : colors.border, color: colors.foreground, backgroundColor: colors.card }]}
           value={schoolName}
-          onChangeText={t => { setSchoolName(t); setApplied(false); }}
+          onChangeText={t => { setSchoolName(t); setApplied(false); if (t.trim()) setNameError(false); }}
           placeholder="e.g. Rising Stars Academy"
           placeholderTextColor={colors.mutedForeground}
         />
+        {nameError && (
+          <Text style={styles.nameErrorText}>⚠️  Association name is required before saving.</Text>
+        )}
 
         {/* Colour palette */}
         <Text style={[styles.sectionLabel, { color: colors.primary }]}>Colour Palette</Text>
@@ -254,7 +260,8 @@ const styles = StyleSheet.create({
   logoThumb: { width: 40, height: 40, borderRadius: 10, alignItems: "center", justifyContent: "center" },
   logoBtnTitle: { fontSize: 14, fontWeight: "700" },
   logoBtnSub: { fontSize: 11, marginTop: 2 },
-  nameInput: { borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, marginBottom: 20 },
+  nameInput: { borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 14, paddingVertical: 12, fontSize: 15, marginBottom: 6 },
+  nameErrorText: { fontSize: 12, fontWeight: "600", color: "#EF4444", marginBottom: 14, marginLeft: 4 },
   colorGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 20 },
   colorTile: { width: "31%", borderRadius: 14, overflow: "hidden", borderWidth: 2.5, backgroundColor: "#F8FAFF" },
   colorTileSwatch: { flexDirection: "row", height: 48 },
