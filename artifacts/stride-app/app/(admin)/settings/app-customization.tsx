@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { api } from "@/lib/api";
 
 const FONT_KEY      = "stride_theme_font";
 const BTN_STYLE_KEY = "stride_theme_button_style";
@@ -47,13 +48,17 @@ export default function AppCustomizationPage() {
   const [applied, setApplied] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  // Rehydrate persisted theme prefs on mount
+  // Rehydrate persisted theme prefs + org name on mount
   useEffect(() => {
     AsyncStorage.getItem(FONT_KEY).then(v => {
       if (v && FONTS.includes(v)) setSelectedFont(v);
     }).catch(() => {});
     AsyncStorage.getItem(BTN_STYLE_KEY).then(v => {
       if (v === "rounded" || v === "square") setButtonStyle(v);
+    }).catch(() => {});
+    // Load org name from backend so the field is never empty
+    api.getOrg().then(org => {
+      if (org?.name) setSchoolName(prev => prev || org.name);
     }).catch(() => {});
   }, []);
 
@@ -71,22 +76,26 @@ export default function AppCustomizationPage() {
   };
 
   const handleApply = async () => {
-    if (!schoolName.trim()) { Alert.alert("Error", "Please enter the organisation name."); return; }
     setSaving(true);
     try {
+      const nameToSave = schoolName.trim() || user?.schoolName || "";
       await updateUser({
-        schoolName,
-        primaryColor: PRESET_COLORS[selectedColorIdx].primary,
+        schoolName:    nameToSave,
+        primaryColor:  PRESET_COLORS[selectedColorIdx].primary,
         secondaryColor: PRESET_COLORS[selectedColorIdx].secondary,
       });
       await AsyncStorage.setItem(FONT_KEY, selectedFont);
       await AsyncStorage.setItem(BTN_STYLE_KEY, buttonStyle);
+      // Persist org name to backend so it survives logout/login
+      if (nameToSave) {
+        api.updateOrg({ name: nameToSave }).catch(() => {});
+      }
       setApplied(true);
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert("Theme Applied!", `The "${PRESET_COLORS[selectedColorIdx].name}" theme is now active across all interfaces.`);
+      Alert.alert("Theme Applied!", `The "${PRESET_COLORS[selectedColorIdx].name}" theme is now active.`);
     } catch {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-      Alert.alert("Error", "Could not save theme settings. Please check your connection and try again.");
+      Alert.alert("Error", "Could not save theme settings. Please try again.");
     } finally {
       setSaving(false);
     }
