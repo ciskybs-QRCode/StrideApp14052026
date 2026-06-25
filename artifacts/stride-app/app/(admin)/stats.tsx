@@ -257,7 +257,7 @@ export default function AdminHome() {
   // ── QR Scanner ───────────────────────────────────────────────────────────────
 
   const handleScan = async () => {
-    if (Platform.OS !== "web" && !permission?.granted) {
+    if (!permission?.granted) {
       const res = await requestPermission();
       if (!res.granted) { Alert.alert("Camera Permission", "Enable camera access in Settings to scan QR codes."); return; }
     }
@@ -754,14 +754,14 @@ export default function AdminHome() {
             <View style={{ width: 28 }} />
           </View>
 
-          {Platform.OS === "web" ? (
+          {!permission?.granted ? (
             <View style={styles.scannerPreview}>
               <Ionicons name="qr-code-outline" size={80} color="rgba(255,255,255,0.5)" />
               <Text style={{ color: "rgba(255,255,255,0.7)", marginTop: 16, textAlign: "center" }}>
-                QR Scanner unavailable in web preview.{"\n"}Simulate a scan:
+                Camera permission required.{"\n"}Tap below to grant access:
               </Text>
-              <Pressable style={styles.simulateBtn} onPress={simulateScan}>
-                <Text style={styles.simulateBtnText}>Simulate Scan</Text>
+              <Pressable style={styles.simulateBtn} onPress={requestPermission}>
+                <Text style={styles.simulateBtnText}>Grant Permission</Text>
               </Pressable>
             </View>
           ) : (
@@ -828,7 +828,7 @@ export default function AdminHome() {
             </View>
           )}
 
-          {!scanResult && Platform.OS !== "web" && (
+          {!scanResult && (
             <View style={styles.scannerFooter}>
               <Text style={{ color: "rgba(255,255,255,0.7)", textAlign: "center" }}>Member · Ticket · Guardian · Check-in</Text>
             </View>
