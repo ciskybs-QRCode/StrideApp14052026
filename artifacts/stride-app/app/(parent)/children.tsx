@@ -1625,17 +1625,17 @@ export default function ChildrenScreen() {
                 </Pressable>
               )}
 
-            </ScrollView>
+              {/* Buttons — inside ScrollView so they're always reachable */}
+              <View style={{ flexDirection: "row", gap: 12, marginTop: 20, paddingBottom: 32 }}>
+                <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => { setShowAddChild(false); resetAddChildForm(); }}>
+                  <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
+                </Pressable>
+                <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={handleAddChild}>
+                  <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Add</Text>
+                </Pressable>
+              </View>
 
-            {/* Buttons pinned at the bottom — always visible */}
-            <View style={{ flexDirection: "row", gap: 12, marginTop: 12, paddingBottom: 24 }}>
-              <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted, flex: 1 }]} onPress={() => { setShowAddChild(false); resetAddChildForm(); }}>
-                <Text style={[styles.modalBtnText, { color: colors.primary }]}>Cancel</Text>
-              </Pressable>
-              <Pressable style={[styles.modalBtn, { backgroundColor: colors.primary, flex: 1 }]} onPress={handleAddChild}>
-                <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Add</Text>
-              </Pressable>
-            </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
