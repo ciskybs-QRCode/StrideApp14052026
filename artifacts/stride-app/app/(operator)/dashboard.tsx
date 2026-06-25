@@ -2763,13 +2763,23 @@ export default function OperatorDashboard() {
                               </Text>
                             )}
                           </View>
-                          {callPhone ? (
+                          {m.ambulance_consent !== false ? (
                             <Pressable
-                              onPress={() => { Haptics.selectionAsync(); Linking.openURL(`tel:${callPhone}`); }}
-                              style={{ padding: 8, backgroundColor: "#22C55E22", borderRadius: 10 }}
+                              onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); Linking.openURL(`tel:${emergency.number}`); }}
+                              style={{ padding: 8, backgroundColor: "#22C55E22", borderRadius: 10, alignItems: "center" }}
                               hitSlop={8}
                             >
                               <Ionicons name="call" size={18} color="#22C55E" />
+                              <Text style={{ fontSize: 10, color: "#22C55E", fontWeight: "700", marginTop: 2 }}>{emergency.number}</Text>
+                            </Pressable>
+                          ) : callPhone ? (
+                            <Pressable
+                              onPress={() => { Haptics.selectionAsync(); Linking.openURL(`tel:${callPhone}`); }}
+                              style={{ padding: 8, backgroundColor: "#F59E0B22", borderRadius: 10, alignItems: "center" }}
+                              hitSlop={8}
+                            >
+                              <Ionicons name="call" size={18} color="#F59E0B" />
+                              <Text style={{ fontSize: 10, color: "#F59E0B", fontWeight: "700", marginTop: 2 }}>NOK</Text>
                             </Pressable>
                           ) : null}
                         </Pressable>
