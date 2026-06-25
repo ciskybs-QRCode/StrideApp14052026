@@ -193,6 +193,7 @@ export default function AdminHome() {
   const [campusAddress, setCampusAddress]   = useState("1 Main Street, Sydney NSW 2000");
   const [orgName, setOrgName]               = useState<string>("");
   const [orgLoadError, setOrgLoadError]     = useState(false);
+  const [orgLogoUri, setOrgLogoUri]         = useState<string | null>(null);
   const [preferredName, setPreferredName]   = useState("");
   const [orgContactPhone, setOrgContactPhone] = useState("");
   const [orgContactEmail, setOrgContactEmail] = useState("");
@@ -225,6 +226,7 @@ export default function AdminHome() {
       if (org?.name) setOrgName(org.name);
       if (org?.contact_phone)  setOrgContactPhone(org.contact_phone);
       if (org?.official_email) setOrgContactEmail(org.official_email);
+      if (org?.logo_url)       setOrgLogoUri(org.logo_url);
     }).catch(() => setOrgLoadError(true));
     api.getAdminSettings().then(s => {
       const regionCode = (s as unknown as Record<string, unknown>).region_code as string | undefined;
@@ -589,7 +591,7 @@ export default function AdminHome() {
                 onPress={() => { setShowQRFullscreen(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
               >
                 <View style={[styles.qrMiniBox, { backgroundColor: "#EFF6FF" }]}>
-                  <QRCode value={qrValue} size={72} color={colors.primary} backgroundColor="transparent" />
+                  <QRCode value={qrValue} size={72} color={colors.primary} backgroundColor="transparent" {...(orgLogoUri ? { logo: { uri: orgLogoUri }, logoSize: 18, logoBackgroundColor: "#FFFFFF" } : {})} />
                 </View>
                 <View style={styles.qrPanelRight}>
                   <Text style={[styles.qrPanelTitle, { color: colors.primary }]}>ADMIN PASS</Text>
@@ -1054,7 +1056,7 @@ export default function AdminHome() {
               </Pressable>
             </View>
             <View style={styles.qrFullscreenBox}>
-              <QRCode value={qrValue} size={260} color={colors.primary} backgroundColor="#FFFFFF" />
+              <QRCode value={qrValue} size={260} color={colors.primary} backgroundColor="#FFFFFF" {...(orgLogoUri ? { logo: { uri: orgLogoUri }, logoSize: 52, logoBackgroundColor: "#FFFFFF" } : {})} />
             </View>
             <View style={styles.qrFullscreenInfo}>
               <Text style={styles.qrFullscreenName}>{user?.name}</Text>

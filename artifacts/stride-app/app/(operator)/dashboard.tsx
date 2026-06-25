@@ -1630,7 +1630,7 @@ export default function OperatorDashboard() {
             onPress={() => setShowQRPanel(true)}
           >
             <View style={[styles.qrMiniBox, { backgroundColor: "#EFF6FF" }]}>
-              <QRCode value={operatorQrValue} size={72} color={colors.primary} backgroundColor="transparent" />
+              <QRCode value={operatorQrValue} size={72} color={colors.primary} backgroundColor="transparent" {...(orgLogoUri ? { logo: { uri: orgLogoUri }, logoSize: 18, logoBackgroundColor: "#FFFFFF" } : {})} />
             </View>
             <View style={styles.qrPanelRight}>
               <Text style={[styles.qrPanelTitle, { color: colors.primary }]}>OPERATOR PASS</Text>
@@ -2595,7 +2595,7 @@ export default function OperatorDashboard() {
             )}
             <Text style={[styles.qrFullTitle, { color: colors.primary }]}>Operator Pass</Text>
             <View style={[styles.qrFullBox, { backgroundColor: "#F0F4FF" }]}>
-              <QRCode value={operatorQrValue} size={180} color={colors.primary} backgroundColor="transparent" />
+              <QRCode value={operatorQrValue} size={180} color={colors.primary} backgroundColor="transparent" {...(orgLogoUri ? { logo: { uri: orgLogoUri }, logoSize: 36, logoBackgroundColor: "#FFFFFF" } : {})} />
             </View>
             <Text style={[styles.qrFullName, { color: colors.primary }]}>{user?.name ?? "Operator"}</Text>
             <Text style={[styles.qrFullId, { color: colors.mutedForeground }]}>Operator · ID: {user?.id}</Text>
