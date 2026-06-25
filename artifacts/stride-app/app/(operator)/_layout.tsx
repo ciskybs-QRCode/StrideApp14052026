@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { BlurView } from "expo-blur";
 import { Tabs, useRouter } from "expo-router";
 import { BackButton } from "@/components/BackButton";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Animated, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
@@ -12,6 +12,7 @@ import { usePrivateLessons } from "@/context/PrivateLessonContext";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
 import { NotificationsProvider } from "@/context/NotificationsContext";
 import { useT } from "@/context/TranslationContext";
+import { getMyOperatorSkills } from "@/lib/api";
 
 // ── Booking notification banner ───────────────────────────────────────────────
 
@@ -95,6 +96,20 @@ export default function OperatorTabLayout() {
 
   const activeNotif = bookingNotifications[0] ?? null;
 
+  // ── Skills onboarding gate ──────────────────────────────────────────────────
+  const gateChecked = useRef(false);
+  useEffect(() => {
+    if (gateChecked.current) return;
+    gateChecked.current = true;
+    getMyOperatorSkills()
+      .then(({ skills_completed }) => {
+        if (!skills_completed) {
+          router.replace("/(operator)/skills-setup" as never);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Auto-dismiss after 10 s
   useEffect(() => {
     if (!activeNotif) return;
@@ -160,6 +175,7 @@ export default function OperatorTabLayout() {
         <Tabs.Screen name="profile-edit"    options={{ href: null }} />
         <Tabs.Screen name="ticket-scanner"    options={{ href: null }} />
         <Tabs.Screen name="availability-prefs" options={{ href: null }} />
+        <Tabs.Screen name="skills-setup"      options={{ href: null }} />
         <Tabs.Screen name="contract"           options={{ href: null }} />
         <Tabs.Screen name="resign"             options={{ href: null }} />
       </Tabs>

@@ -3861,3 +3861,66 @@ export function inviteAdmin(data: {
 }): Promise<{ ok: boolean; userId: number; email: string; name: string }> {
   return request("POST", "/admin/invite-admin", data);
 }
+
+// ── Operator Skills ────────────────────────────────────────────────────────────
+
+export interface ApiOperatorSkill {
+  id: number;
+  label: string;
+  source: "discipline" | "custom";
+}
+
+export interface ApiSkillPreset {
+  id: number | null;
+  label: string;
+  source: "discipline" | "custom";
+}
+
+export interface ApiOperatorSkillSummary {
+  operator_profile_id: number;
+  operator_user_id?: number;
+  name: string;
+  skills_completed: boolean;
+  skills: string[];
+}
+
+export interface ApiAiMatchResult {
+  operator_profile_id: number;
+  name: string;
+  reason: string;
+  confidence: "high" | "medium" | "low";
+}
+
+export function getMyOperatorSkills(profileId?: number): Promise<{ skills: ApiOperatorSkill[]; skills_completed: boolean }> {
+  const q = profileId ? `?profileId=${profileId}` : "";
+  return request("GET", `/operator-skills${q}`);
+}
+
+export function setMyOperatorSkills(labels: string[]): Promise<{ ok: boolean }> {
+  return request("PUT", "/operator-skills", { labels });
+}
+
+export function getAllOperatorSkills(): Promise<ApiOperatorSkillSummary[]> {
+  return request("GET", "/operator-skills/all");
+}
+
+export function getSkillPresets(): Promise<{ presets: ApiSkillPreset[] }> {
+  return request("GET", "/skill-presets");
+}
+
+export function addSkillPreset(label: string): Promise<{ id: number; label: string }> {
+  return request("POST", "/skill-presets", { label });
+}
+
+export function deleteSkillPreset(id: number): Promise<{ ok: boolean }> {
+  return request("DELETE", `/skill-presets/${id}`);
+}
+
+export function aiMatchOperator(data: {
+  activityType: string;
+  discipline?: string;
+  requiredSkills?: string[];
+  notes?: string;
+}): Promise<{ matches: ApiAiMatchResult[] }> {
+  return request("POST", "/operator-skills/ai-match", data);
+}

@@ -629,6 +629,14 @@ export default function AdminHome() {
             onPress={() => { router.push("/(admin)/activity-wizard" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
           />
         )}
+        {!(user?.role === "super_admin" && (!user?.orgId || user?.orgId === 0)) && (
+          <HubCard
+            icon="ribbon-outline"
+            title="Skill Labels"
+            description="Manage the preset skills operators can pick from when setting up their profile"
+            onPress={() => { router.push("/(admin)/skill-presets" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+          />
+        )}
 
         {user?.role === "super_admin" && (user?.orgId && user?.orgId > 0) && (
           <HubCard

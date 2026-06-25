@@ -1835,5 +1835,30 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_ndl_notif     ON notification_delivery_log(notification_id);
   `).catch(() => {});
 
+  // ── Operator Skills system ────────────────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS operator_skills (
+      id                  SERIAL      PRIMARY KEY,
+      operator_profile_id INTEGER     NOT NULL,
+      organization_id     INTEGER     NOT NULL,
+      label               TEXT        NOT NULL,
+      source              TEXT        NOT NULL DEFAULT 'custom',
+      created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(operator_profile_id, label)
+    );
+    CREATE INDEX IF NOT EXISTS idx_opskills_profile ON operator_skills(operator_profile_id);
+    CREATE TABLE IF NOT EXISTS skill_label_presets (
+      id              SERIAL  PRIMARY KEY,
+      organization_id INTEGER NOT NULL,
+      label           TEXT    NOT NULL,
+      UNIQUE(organization_id, label)
+    );
+  `).catch(() => {});
+
+  await pool.query(`
+    ALTER TABLE IF EXISTS operator_profiles
+    ADD COLUMN IF NOT EXISTS skills_completed BOOLEAN NOT NULL DEFAULT FALSE;
+  `).catch(() => {});
+
   initialized = true;
 }

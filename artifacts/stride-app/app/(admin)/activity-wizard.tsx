@@ -18,9 +18,11 @@ import { useColors } from "@/hooks/useColors";
 import {
   api,
   request,
-  type ApiCourseAvailTemplate,
+  aiMatchOperator,
+  getAllOperatorSkills,
+  type ApiAiMatchResult,
   type ApiDiscipline,
-  type ApiOperatorProfile,
+  type ApiOperatorSkillSummary,
 } from "@/lib/api";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -55,26 +57,6 @@ function eurosToCents(s: string): number {
 function toMins(t: string): number {
   const [h, m] = t.split(":").map(Number);
   return (h || 0) * 60 + (m || 0);
-}
-
-function compat(
-  avail: ApiCourseAvailTemplate[],
-  opUserId: number,
-  slots: WizardSlot[],
-  discId: number | null,
-): "full" | "partial" | "none" {
-  if (!slots.length) return "none";
-  const opA = avail.filter(a => a.operator_id === opUserId && (discId == null || a.discipline_id === discId));
-  let covered = 0;
-  for (const s of slots) {
-    if (opA.some(a =>
-      a.day_of_week === s.dayOfWeek &&
-      toMins(a.start_time) <= toMins(s.startTime) &&
-      toMins(a.end_time) >= toMins(s.endTime),
-    )) covered++;
-  }
-  if (covered === 0) return "none";
-  return covered === slots.length ? "full" : "partial";
 }
 
 function newSlot(): WizardSlot {
@@ -128,24 +110,24 @@ export default function ActivityWizard() {
 
   // Step 4
   const [operatorProfileId, setOperatorProfileId] = useState<number | null>(null);
+  const [operatorSkillsAll, setOperatorSkillsAll] = useState<ApiOperatorSkillSummary[]>([]);
+  const [aiMatches, setAiMatches]                 = useState<ApiAiMatchResult[]>([]);
+  const [aiLoading, setAiLoading]                 = useState(false);
+  const [aiMatchDone, setAiMatchDone]             = useState(false);
 
   // Remote data
-  const [disciplines, setDisciplines]       = useState<ApiDiscipline[]>([]);
-  const [operators, setOperators]           = useState<ApiOperatorProfile[]>([]);
-  const [avail, setAvail]                   = useState<ApiCourseAvailTemplate[]>([]);
-  const [loadingData, setLoadingData]       = useState(false);
-  const [saving, setSaving]                 = useState(false);
+  const [disciplines, setDisciplines] = useState<ApiDiscipline[]>([]);
+  const [loadingData, setLoadingData] = useState(false);
+  const [saving, setSaving]           = useState(false);
 
   useEffect(() => {
     setLoadingData(true);
     Promise.all([
       api.getDisciplines().catch(() => [] as ApiDiscipline[]),
-      api.getOperatorProfiles().catch(() => [] as ApiOperatorProfile[]),
-      api.getCourseAvailability().catch(() => [] as ApiCourseAvailTemplate[]),
-    ]).then(([d, o, a]) => {
+      getAllOperatorSkills().catch(() => [] as ApiOperatorSkillSummary[]),
+    ]).then(([d, ops]) => {
       setDisciplines(d.filter(x => x.active));
-      setOperators(o);
-      setAvail(a);
+      setOperatorSkillsAll(ops);
     }).finally(() => setLoadingData(false));
   }, []);
 
@@ -156,6 +138,26 @@ export default function ActivityWizard() {
 
   const addSlot = () => { setSlots(p => [...p, newSlot()]); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); };
   const removeSlot = (id: string) => setSlots(p => p.filter(s => s.id !== id));
+
+  // ── AI instructor match ──────────────────────────────────────────────────────
+  const handleAiMatch = async () => {
+    setAiLoading(true);
+    try {
+      const disc = disciplines.find(d => d.id === disciplineId);
+      const result = await aiMatchOperator({
+        activityType: activityType ?? "course",
+        discipline: disc?.name,
+        notes,
+      });
+      setAiMatches(result.matches);
+      setAiMatchDone(true);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert("AI Match", "Could not run AI match right now. Please select an instructor manually.");
+    } finally {
+      setAiLoading(false);
+    }
+  };
 
   // ── Navigation ──────────────────────────────────────────────────────────────
 
@@ -561,7 +563,7 @@ export default function ActivityWizard() {
     );
   };
 
-  // ── STEP 4 — instructor ───────────────────────────────────────────────────
+  // ── STEP 4 — instructor (skills-based + AI match) ────────────────────────
 
   const renderStep4 = () => {
     if (activityType === "private") {
@@ -580,41 +582,96 @@ export default function ActivityWizard() {
     return (
       <View style={styles.stepContent}>
         <Text style={[styles.stepTitle, { color: colors.foreground }]}>Assign an instructor</Text>
-        <Text style={[styles.stepSub, { color: colors.mutedForeground }]}>Based on the schedule you set, here is who is available. You can also skip and assign later.</Text>
+        <Text style={[styles.stepSub, { color: colors.mutedForeground }]}>Select based on skills, or let AI find the best match. You can also skip and assign later.</Text>
 
+        {/* ── AI match button ── */}
+        <Pressable
+          style={[styles.aiMatchBtn, { backgroundColor: colors.primary, opacity: aiLoading ? 0.75 : 1 }]}
+          onPress={handleAiMatch}
+          disabled={aiLoading}
+        >
+          {aiLoading ? (
+            <ActivityIndicator color="#FFF" size="small" />
+          ) : (
+            <>
+              <Ionicons name="flash" size={18} color="#FFF" />
+              <Text style={styles.aiMatchBtnText}>Find Best Match (AI)</Text>
+            </>
+          )}
+        </Pressable>
+
+        {/* ── AI results ── */}
+        {aiMatchDone && aiMatches.length > 0 && (
+          <View style={[styles.aiResultsCard, { backgroundColor: colors.primary + "0D", borderColor: colors.primary + "40" }]}>
+            <View style={styles.aiResultsHeader}>
+              <Ionicons name="sparkles" size={16} color={colors.primary} />
+              <Text style={[styles.aiResultsTitle, { color: colors.primary }]}>AI Suggestions</Text>
+            </View>
+            {aiMatches.map((m, i) => {
+              const isSelected = operatorProfileId === m.operator_profile_id;
+              const confColor = m.confidence === "high" ? "#22C55E" : m.confidence === "medium" ? "#F59E0B" : "#9CA3AF";
+              return (
+                <Pressable
+                  key={m.operator_profile_id}
+                  style={[styles.aiMatchRow, { backgroundColor: colors.card, borderColor: isSelected ? colors.primary : colors.border, borderWidth: isSelected ? 2 : 1 }]}
+                  onPress={() => { setOperatorProfileId(isSelected ? null : m.operator_profile_id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                >
+                  <View style={[styles.opAvatar, { backgroundColor: colors.secondary + "40" }]}>
+                    <Text style={[styles.opAvatarText, { color: colors.primary }]}>{i + 1}</Text>
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.opName, { color: colors.foreground }]}>{m.name}</Text>
+                    <Text style={[styles.aiReason, { color: colors.mutedForeground }]} numberOfLines={2}>{m.reason}</Text>
+                  </View>
+                  <View style={[styles.confBadge, { backgroundColor: confColor + "20" }]}>
+                    <Text style={[styles.confBadgeText, { color: confColor }]}>{m.confidence}</Text>
+                  </View>
+                  {isSelected && <Ionicons name="checkmark-circle" size={22} color={colors.primary} />}
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+
+        {/* ── All instructors ── */}
         {loadingData ? (
           <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
-        ) : operators.length === 0 ? (
+        ) : operatorSkillsAll.length === 0 ? (
           <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Ionicons name="person-add-outline" size={32} color={colors.primary} />
             <Text style={[styles.infoTitle, { color: colors.foreground }]}>No instructors yet</Text>
-            <Text style={[styles.infoBody, { color: colors.mutedForeground }]}>Add staff first from Lessons → Staff, then you can assign them to courses.</Text>
+            <Text style={[styles.infoBody, { color: colors.mutedForeground }]}>Add staff first from Lessons → Staff, then you can assign them to activities.</Text>
           </View>
         ) : (
           <>
-            {operators.map(op => {
-              const c = (activityType === "course" && slots.length > 0)
-                ? compat(avail, op.user_id ?? Number(op.id), slots, disciplineId)
-                : "full";
-              const emoji = c === "full" ? "✅" : c === "partial" ? "⚠️" : "❌";
-              const badgeText = c === "full" ? "All slots covered" : c === "partial" ? "Covers some slots" : "Not available";
-              const badgeColor = c === "full" ? "#22C55E" : c === "partial" ? "#F59E0B" : "#EF4444";
-              const isSelected = operatorProfileId === op.id;
+            <Text style={[styles.allOpsLabel, { color: colors.mutedForeground }]}>ALL INSTRUCTORS</Text>
+            {operatorSkillsAll.map(op => {
+              const isSelected = operatorProfileId === op.operator_profile_id;
               return (
                 <Pressable
-                  key={op.id}
+                  key={op.operator_profile_id}
                   style={[styles.opCard, { backgroundColor: colors.card, borderColor: isSelected ? colors.primary : colors.border, borderWidth: isSelected ? 2.5 : 1.5 }]}
-                  onPress={() => { setOperatorProfileId(isSelected ? null : op.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                  onPress={() => { setOperatorProfileId(isSelected ? null : op.operator_profile_id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
                 >
                   <View style={[styles.opAvatar, { backgroundColor: colors.primary + "18" }]}>
-                    <Text style={[styles.opAvatarText, { color: colors.primary }]}>{(op.user?.name || "?")[0].toUpperCase()}</Text>
+                    <Text style={[styles.opAvatarText, { color: colors.primary }]}>{(op.name || "?")[0].toUpperCase()}</Text>
                   </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.opName, { color: colors.foreground }]}>{op.user?.name || "Operator"}</Text>
-                    <View style={styles.opBadgeRow}>
-                      <Text style={{ fontSize: 14 }}>{emoji}</Text>
-                      <Text style={[styles.opBadgeText, { color: badgeColor }]}>{badgeText}</Text>
-                    </View>
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <Text style={[styles.opName, { color: colors.foreground }]}>{op.name}</Text>
+                    {op.skills.length > 0 ? (
+                      <View style={styles.skillChipRow}>
+                        {op.skills.slice(0, 4).map(sk => (
+                          <View key={sk} style={[styles.skillChip, { backgroundColor: colors.primary + "12" }]}>
+                            <Text style={[styles.skillChipText, { color: colors.primary }]}>{sk}</Text>
+                          </View>
+                        ))}
+                        {op.skills.length > 4 && (
+                          <Text style={[styles.skillChipMore, { color: colors.mutedForeground }]}>+{op.skills.length - 4}</Text>
+                        )}
+                      </View>
+                    ) : (
+                      <Text style={[styles.noSkillsText, { color: colors.mutedForeground }]}>No skills listed yet</Text>
+                    )}
                   </View>
                   {isSelected && <Ionicons name="checkmark-circle" size={22} color={colors.primary} />}
                 </Pressable>
@@ -633,7 +690,7 @@ export default function ActivityWizard() {
 
   const renderStep5 = () => {
     const disc = disciplines.find(d => d.id === disciplineId);
-    const op = operators.find(o => o.id === operatorProfileId);
+    const op = operatorSkillsAll.find(o => o.operator_profile_id === operatorProfileId);
     const typeLabel: Record<ActivityType, string> = { course: "Recurring Course", workshop: "Workshop", private: "Private Lesson", single: "Single Session" };
     const fg = colors.foreground;
     const muted = colors.mutedForeground;
@@ -656,7 +713,7 @@ export default function ActivityWizard() {
           {activityType === "private" && operatorPayoutStr && <ReviewRow label="Instructor payout" value={`€${operatorPayoutStr}`} fg={fg} muted={muted} />}
           {activityType === "private" && <ReviewRow label="Duration" value={`${duration} min`} fg={fg} muted={muted} />}
           {op
-            ? <ReviewRow label="Instructor" value={op.user?.name || "Operator"} fg={fg} muted={muted} />
+            ? <ReviewRow label="Instructor" value={op.name || "Operator"} fg={fg} muted={muted} />
             : activityType !== "private" && <ReviewRow label="Instructor" value="Assign later" fg={fg} muted={muted} isNote />
           }
         </View>
@@ -841,14 +898,31 @@ const styles = StyleSheet.create({
   infoBody: { fontSize: 14, lineHeight: 22, textAlign: "center" },
 
   // Operator cards (step 4)
-  opCard: { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 16, padding: 14 },
-  opAvatar: { width: 46, height: 46, borderRadius: 23, alignItems: "center", justifyContent: "center" },
-  opAvatarText: { fontSize: 18, fontWeight: "700" },
-  opName: { fontSize: 15, fontWeight: "700" },
-  opBadgeRow: { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },
-  opBadgeText: { fontSize: 12, fontWeight: "600" },
-  skipBtn: { borderRadius: 14, borderWidth: 1.5, borderStyle: "dashed", paddingVertical: 14, alignItems: "center" },
-  skipBtnText: { fontSize: 14, fontWeight: "600" },
+  opCard:        { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 16, padding: 14 },
+  opAvatar:      { width: 46, height: 46, borderRadius: 23, alignItems: "center", justifyContent: "center" },
+  opAvatarText:  { fontSize: 18, fontWeight: "700" },
+  opName:        { fontSize: 15, fontWeight: "700" },
+  opBadgeRow:    { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },
+  opBadgeText:   { fontSize: 12, fontWeight: "600" },
+  skipBtn:       { borderRadius: 14, borderWidth: 1.5, borderStyle: "dashed", paddingVertical: 14, alignItems: "center" },
+  skipBtnText:   { fontSize: 14, fontWeight: "600" },
+
+  // AI match (step 4)
+  aiMatchBtn:       { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 20, marginBottom: 4 },
+  aiMatchBtnText:   { fontSize: 15, fontWeight: "700", color: "#FFF" },
+  aiResultsCard:    { borderRadius: 16, borderWidth: 1.5, padding: 14, gap: 10, marginBottom: 4 },
+  aiResultsHeader:  { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 },
+  aiResultsTitle:   { fontSize: 13, fontWeight: "700", letterSpacing: 0.5 },
+  aiMatchRow:       { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, padding: 12 },
+  aiReason:         { fontSize: 12, marginTop: 2, lineHeight: 18 },
+  confBadge:        { borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
+  confBadgeText:    { fontSize: 11, fontWeight: "700" },
+  allOpsLabel:      { fontSize: 11, fontWeight: "700", letterSpacing: 0.8, marginTop: 8, marginBottom: 4 },
+  skillChipRow:     { flexDirection: "row", flexWrap: "wrap", gap: 4 },
+  skillChip:        { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
+  skillChipText:    { fontSize: 11, fontWeight: "600" },
+  skillChipMore:    { fontSize: 11, alignSelf: "center" },
+  noSkillsText:     { fontSize: 12, fontStyle: "italic" },
 
   // Review (step 5)
   reviewCard: { borderRadius: 16, borderWidth: 1.5, padding: 16, gap: 10 },

@@ -67,6 +67,7 @@ import accountantPaymentsRouter from "./accountant-payments.js";
 import feeEventsRouter from "./fee-events.js";
 import expensesRouter from "./expenses.js";
 import communicationSettingsRouter from "./communication-settings.js";
+import operatorSkillsRouter      from "./operator-skills.js";
 import reviewsRouter from "./reviews.js";
 import enrollmentsRouter from "./enrollments.js";
 import accountRouter from "./account.js";
@@ -154,5 +155,6 @@ router.use(directMessagesRouter);
 router.use(supportRouter);
 router.use(saFeatureAnalyticsRouter);
 router.use(translationsRouter);
+router.use(operatorSkillsRouter);
 
 export default router;
