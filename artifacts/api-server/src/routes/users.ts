@@ -114,6 +114,14 @@ router.patch("/users/:id/role", requireAuth, requireRole("admin"), async (req, r
   // Owner lock — must come before any write
   if (await rejectIfOwner(res, targetId)) return;
 
+  // Org-scope check — target must belong to the same org as the admin
+  const orgId = user.orgId ?? 0;
+  const { rows: scopeRows } = await pool.query(
+    `SELECT id FROM users WHERE id = $1 AND organization_id = $2 LIMIT 1`,
+    [targetId, orgId],
+  );
+  if (!scopeRows.length) { res.status(404).json({ error: "User not found in this organization" }); return; }
+
   const { role } = req.body as { role: string };
   const { data, error } = await supabase
     .from("users")
@@ -136,6 +144,14 @@ router.patch("/users/:id/roles", requireAuth, requireRole("admin"), async (req, 
   const targetId = parseInt(String(req.params["id"] ?? ""), 10);
   if (isNaN(targetId)) { res.status(400).json({ error: "Invalid user id" }); return; }
   if (await rejectIfOwner(res, targetId)) return;
+
+  // Org-scope check — target must belong to the same org as the admin
+  const adminOrgId = admin.orgId ?? 0;
+  const { rows: scopeRows } = await pool.query(
+    `SELECT id FROM users WHERE id = $1 AND organization_id = $2 LIMIT 1`,
+    [targetId, adminOrgId],
+  );
+  if (!scopeRows.length) { res.status(404).json({ error: "User not found in this organization" }); return; }
 
   const { roles } = req.body as { roles: string[] };
   if (!Array.isArray(roles) || roles.length === 0) {
