@@ -1290,9 +1290,14 @@ export default function OperatorDashboard() {
           <View style={{ flex: 1 }}>
             <Text style={[styles.pageTitle, { color: colors.primary }]}>Hi, {firstName}</Text>
             {!!user?.schoolName && (
-              <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
-                {user.schoolName}
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginTop: 1 }}>
+                {!!orgLogoUri && (
+                  <Image source={{ uri: orgLogoUri }} style={{ width: 16, height: 16, borderRadius: 3 }} contentFit="contain" />
+                )}
+                <Text style={[styles.pageSubtitle, { color: colors.mutedForeground, fontWeight: "200", letterSpacing: 0.4 }]}>
+                  {user.schoolName}
+                </Text>
+              </View>
             )}
           </View>
           <NotificationBell light />

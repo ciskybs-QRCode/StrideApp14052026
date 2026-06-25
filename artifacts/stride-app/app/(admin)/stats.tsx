@@ -504,9 +504,14 @@ export default function AdminHome() {
               Hi, {preferredName || user?.name?.split(" ")[0] || "Admin"}
             </Text>
             {!!(orgName || user?.schoolName) && (
-              <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
-                {orgName || user?.schoolName}
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginTop: 1 }}>
+                {!!orgLogoUri && (
+                  <Image source={{ uri: orgLogoUri }} style={{ width: 16, height: 16, borderRadius: 3 }} contentFit="contain" />
+                )}
+                <Text style={[styles.pageSubtitle, { color: colors.mutedForeground, fontWeight: "200", letterSpacing: 0.4 }]}>
+                  {orgName || user?.schoolName}
+                </Text>
+              </View>
             )}
           </View>
           <NotificationBell light />

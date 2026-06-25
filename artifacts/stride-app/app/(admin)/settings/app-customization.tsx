@@ -7,6 +7,7 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -33,6 +34,30 @@ const PRESET_COLORS = [
 ];
 
 const FONTS = ["Montserrat", "Open Sans", "Poppins", "Roboto", "Lato", "Inter"];
+
+async function removeWhiteBackground(uri: string): Promise<string> {
+  return new Promise((resolve) => {
+    const img = new window.Image();
+    img.crossOrigin = "anonymous";
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) { resolve(uri); return; }
+      ctx.drawImage(img, 0, 0);
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const px = data.data;
+      for (let i = 0; i < px.length; i += 4) {
+        if (px[i] > 220 && px[i + 1] > 220 && px[i + 2] > 220) px[i + 3] = 0;
+      }
+      ctx.putImageData(data, 0, 0);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => resolve(uri);
+    img.src = uri;
+  });
+}
 
 export default function AppCustomizationPage() {
   const { user, updateUser } = useAuth();
@@ -69,10 +94,30 @@ export default function AppCustomizationPage() {
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ["images"], quality: 1, allowsEditing: true, aspect: [1, 1] });
     if (!result.canceled) {
       const name = result.assets[0].fileName || "logo.png";
+      const rawUri = result.assets[0].uri;
       setLogoFileName(name);
-      await updateUser({ logoUri: result.assets[0].uri });
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert("Logo Uploaded", `"${name}" has been set as your logo.`);
+      const save = async (uri: string, label: string) => {
+        await updateUser({ logoUri: uri });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert("Logo Saved", label);
+      };
+      if (Platform.OS === "web") {
+        Alert.alert(
+          "White Background?",
+          "Does your logo have a white border that doesn't match the app background? We can remove it automatically.",
+          [
+            { text: "Keep as-is", onPress: () => save(rawUri, `"${name}" saved.`) },
+            {
+              text: "Remove Background", onPress: async () => {
+                const processed = await removeWhiteBackground(rawUri).catch(() => rawUri);
+                await save(processed, `"${name}" saved with transparent background.`);
+              }
+            },
+          ]
+        );
+      } else {
+        await save(rawUri, `"${name}" has been set as your logo.`);
+      }
     }
   };
 
