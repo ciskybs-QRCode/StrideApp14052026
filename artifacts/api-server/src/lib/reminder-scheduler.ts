@@ -363,12 +363,14 @@ async function sendScheduledCourseReminders(
   }
 }
 
-// ── Part C: No-Show Safety Alert (10 min after session start) ─────────────────
+// ── Part C: No-Show Safety Alert (15 min after session start) ─────────────────
 // Fires an urgent safety alert to the PARENT, all OPERATORS, and all ADMINS
-// of the org when a child's QR has not been scanned 10 minutes after class start.
-// Automatically disarmed if any attendance record (QR or manual) exists.
+// of the org when a child's QR has not been scanned 15 minutes after class start.
+// Automatically disarmed if any attendance record (QR or manual) exists,
+// or if a planned absence (student_absences) covers today for that child.
+// 5-minute grace window absorbs most offline-sync delays before firing.
 
-const NO_SHOW_WINDOW_MINUTES = 10;
+const NO_SHOW_WINDOW_MINUTES = 15;
 
 async function checkNoShowAlerts(): Promise<void> {
   const now      = new Date();
@@ -436,6 +438,17 @@ async function checkNoShowAlerts(): Promise<void> {
 
       // ▶ DISARM: child has checked in — skip alert
       if (attendanceRows?.length) continue;
+
+      // ▶ PLANNED ABSENCE: child has a declared absence that covers today — skip silently
+      const { data: absenceRows } = await supabase
+        .from("student_absences")
+        .select("id")
+        .eq("student_id", child.id)
+        .neq("status", "cancelled")
+        .lte("absence_date", todayStr)
+        .or(`end_date.is.null,end_date.gte.${todayStr}`)
+        .limit(1);
+      if (absenceRows?.length) continue;
 
       // Dedup: skip if we already sent a no-show alert for this child+course today
       const { data: existing } = await supabase

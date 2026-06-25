@@ -15,6 +15,59 @@ const AttendanceInsertSchema = z.object({
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
 
+// ── No-show retraction ────────────────────────────────────────────────────────
+// Called after any attendance record is created (live or offline-sync).
+// If a no_show_alert was already sent today for this child, sends a resolved
+// notification to all original recipients so they know it was a false alarm.
+async function retractNoShowAlertIfNeeded(childId: number, orgId: number): Promise<void> {
+  const todayStr = new Date().toISOString().substring(0, 10);
+  const timeStr  = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+
+  // Find any no_show_alert sent today for this child (match the ref tag format)
+  const { data: alerts } = await supabase
+    .from("private_notifications")
+    .select("id, recipient_id")
+    .eq("organization_id", orgId)
+    .eq("type", "no_show_alert")
+    .ilike("body", `%|child:${childId}%`);
+
+  // Filter to today only (ref tag contains the date)
+  const todayAlerts = (alerts ?? []).filter((a: Record<string, unknown>) =>
+    typeof a.body === "string" && a.body.includes(`ref:${todayStr}`)
+  );
+  if (!todayAlerts.length) return;
+
+  // Check no resolution was already sent today
+  const { data: existing } = await supabase
+    .from("private_notifications")
+    .select("id")
+    .eq("organization_id", orgId)
+    .eq("type", "no_show_resolved")
+    .ilike("body", `%child:${childId}%`);
+  const alreadyResolved = (existing ?? []).some((r: Record<string, unknown>) =>
+    typeof r.body === "string" && r.body.includes(todayStr)
+  );
+  if (alreadyResolved) return;
+
+  // Get child name
+  const { rows } = await pool.query<{ first_name: string; last_name: string }>(
+    `SELECT first_name, last_name FROM children WHERE id = $1`, [childId],
+  );
+  const name = rows[0] ? `${rows[0].first_name} ${rows[0].last_name}`.trim() : "The child";
+
+  const recipientIds = [...new Set(todayAlerts.map((a: Record<string, unknown>) => a.recipient_id as number))];
+  const resolutionRows = recipientIds.map(recipientId => ({
+    organization_id: orgId,
+    recipient_id:    recipientId,
+    type:            "no_show_resolved",
+    title:           `✅ All clear — ${name}`,
+    body:            `${name} has now checked in (QR registered at ${timeStr}). False alarm resolved. ref:${todayStr}|child:${childId}`,
+    read:            false,
+  }));
+
+  await supabase.from("private_notifications").insert(resolutionRows);
+}
+
 router.get("/students", requireAuth, requireRole("admin", "operator"), async (req, res) => {
   const user = (req as AuthReq).user;
 
@@ -81,6 +134,8 @@ router.post("/attendance", requireAuth, requireRole("admin", "operator"), async 
     .single();
   if (error) { res.status(500).json({ error: error.message }); return; }
   res.status(201).json(data);
+  // ▶ Retract any no_show_alert sent earlier today for this child (fire-and-forget)
+  retractNoShowAlertIfNeeded(child_id, user.orgId).catch(() => {});
   // Fire-and-forget — SecurityObserver never delays or blocks the response
   SecurityObserver.logActivity(String(child_id), "CHECK_IN", {
     operator:   user.email,
@@ -362,6 +417,12 @@ router.post("/attendance/batch", requireAuth, requireRole("admin", "operator"), 
 
   req.log.info({ synced: data?.length, operator: user.id }, "offline batch sync");
   res.status(201).json({ synced: data?.length ?? 0, results: data ?? [] });
+
+  // ▶ Retract any no_show_alert for each synced child (fire-and-forget, best-effort)
+  const syncedChildIds = [...new Set((data ?? []).map((r: { child_id: number | null }) => r.child_id).filter((id): id is number => id !== null))];
+  for (const cid of syncedChildIds) {
+    retractNoShowAlertIfNeeded(cid, user.orgId).catch(() => {});
+  }
 });
 
 export default router;
