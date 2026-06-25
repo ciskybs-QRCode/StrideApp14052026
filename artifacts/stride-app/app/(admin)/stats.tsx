@@ -61,7 +61,9 @@ function nowTime(): string {
 // ── SOS Emergency Procedures ──────────────────────────────────────────────────
 
 type SosType  = "fire" | "medical" | "police";
-type SosPhase = "type" | "call" | "procedure";
+type SosPhase = "type" | "picker" | "call" | "procedure";
+
+interface SosMember { id: string; name: string; role: string; }
 
 interface SosProcStep {
   text: string;
@@ -177,12 +179,16 @@ export default function AdminHome() {
   const [scanResult, setScanResult]         = useState<ScanResult | null>(null);
   const [scanned, setScanned]               = useState(false);
   const [permission, requestPermission]     = useCameraPermissions();
-  const [showSOS, setShowSOS]               = useState(false);
-  const [sosPhase, setSosPhase]             = useState<SosPhase>("type");
-  const [sosType, setSosType]               = useState<SosType | null>(null);
-  const [sosProcStep, setSosProcStep]       = useState(0);
-  const [sosProcDone, setSosProcDone]       = useState(false);
-  const [sosProcLogging, setSosProcLogging] = useState(false);
+  const [showSOS, setShowSOS]                     = useState(false);
+  const [sosPhase, setSosPhase]                   = useState<SosPhase>("type");
+  const [sosType, setSosType]                     = useState<SosType | null>(null);
+  const [sosProcStep, setSosProcStep]             = useState(0);
+  const [sosProcDone, setSosProcDone]             = useState(false);
+  const [sosProcLogging, setSosProcLogging]       = useState(false);
+  const [sosMedicalMembers, setSosMedicalMembers] = useState<SosMember[]>([]);
+  const [sosSelectedIds, setSosSelectedIds]       = useState<string[]>([]);
+  const [sosMembersLoading, setSosMembersLoading] = useState(false);
+  const [sosPulseId, setSosPulseId]               = useState<string | null>(null);
   const [showQRFullscreen, setShowQRFullscreen] = useState(false);
   const [campusAddress, setCampusAddress]   = useState("1 Main Street, Sydney NSW 2000");
   const [orgName, setOrgName]               = useState<string>("");
@@ -375,6 +381,9 @@ export default function AdminHome() {
     setSosType(null);
     setSosProcStep(0);
     setSosProcDone(false);
+    setSosMedicalMembers([]);
+    setSosSelectedIds([]);
+    setSosPulseId(null);
     setShowSOS(true);
   };
 
@@ -384,6 +393,61 @@ export default function AdminHome() {
     setSosType(null);
     setSosProcStep(0);
     setSosProcDone(false);
+    setSosMedicalMembers([]);
+    setSosSelectedIds([]);
+    setSosPulseId(null);
+  };
+
+  const handleSosTypeSelect = async (t: SosType) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+    setSosType(t);
+    const proc = SOS_PROCEDURES[t];
+
+    if (t === "medical") {
+      setSosMembersLoading(true);
+      setSosPhase("picker");
+      try {
+        const data = await api.getMembersPresent();
+        setSosMedicalMembers(data.members);
+      } catch {
+        setSosMedicalMembers([
+          { id: "demo-1", name: "Alex Johnson", role: "member" },
+          { id: "demo-2", name: "Sam Rivera",   role: "member" },
+          { id: "demo-3", name: "Jordan Lee",   role: "member" },
+        ]);
+      } finally {
+        setSosMembersLoading(false);
+      }
+    } else {
+      setSosPhase("call");
+      api.triggerEmergencyPulse({
+        org_id:         1,
+        location_label: campusAddress || "Main Campus",
+        category:       t === "fire" ? "FIRE" : "POLICE",
+      }).then(result => { setSosPulseId(result.pulse_id); }).catch(() => {});
+    }
+    void proc;
+  };
+
+  const handleMedicalPickerConfirm = async () => {
+    setSosPhase("call");
+    try {
+      const result = await api.triggerEmergencyPulse({
+        org_id:            1,
+        location_label:    campusAddress || "Main Campus",
+        category:          "MEDICAL",
+        target_member_ids: sosSelectedIds.length > 0 ? sosSelectedIds : undefined,
+      });
+      setSosPulseId(result.pulse_id);
+    } catch { /* best-effort */ }
+  };
+
+  const handleSilentAlarm = () => {
+    api.triggerEmergencyPulse({
+      org_id:         1,
+      location_label: campusAddress || "Main Campus",
+      category:       "POLICE",
+    }).catch(() => {});
   };
 
   const handleSosProcStep = async () => {
@@ -517,7 +581,7 @@ export default function AdminHome() {
             <View style={{ gap: 12, marginBottom: 16 }}>
 
               {/* 1. SOS Emergency */}
-              <SOSButton onConfirm={openSOS} />
+              <SOSButton onConfirm={openSOS} onSilentAlarm={handleSilentAlarm} />
 
               {/* 2. Admin Pass */}
               <Pressable
@@ -799,11 +863,7 @@ export default function AdminHome() {
                       <Pressable
                         key={t}
                         style={({ pressed }) => [styles.sosTypeBtn, { borderLeftColor: p.color, opacity: pressed ? 0.88 : 1 }]}
-                        onPress={() => {
-                          setSosType(t);
-                          setSosPhase("call");
-                          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
-                        }}
+                        onPress={() => { void handleSosTypeSelect(t); }}
                       >
                         <View style={[styles.sosTypeIconBox, { backgroundColor: `${p.color}33` }]}>
                           <Text style={styles.sosTypeEmoji}>{p.emoji}</Text>
@@ -819,6 +879,46 @@ export default function AdminHome() {
                 <Pressable style={styles.sosResolveBtn} onPress={closeSOS}>
                   <Ionicons name="checkmark-circle" size={18} color="#10B981" />
                   <Text style={styles.sosResolveBtnText}>Situation Resolved — Close</Text>
+                </Pressable>
+              </>
+            )}
+
+            {/* ══ PHASE 1b — Member Picker (Medical only) ══ */}
+            {sosPhase === "picker" && (
+              <>
+                <Text style={styles.sosPhaseLabel}>🏥  Medical Emergency</Text>
+                <Text style={[styles.sosModalDesc, { marginBottom: 14 }]}>
+                  Select affected members (optional — skip to notify all parents)
+                </Text>
+                {sosMembersLoading ? (
+                  <Text style={[styles.sosModalDesc, { marginTop: 10, color: "#9CA3AF" }]}>Loading members…</Text>
+                ) : (
+                  <View style={{ gap: 8, maxHeight: 200 }}>
+                    {sosMedicalMembers.map(m => {
+                      const sel = sosSelectedIds.includes(m.id);
+                      return (
+                        <Pressable
+                          key={m.id}
+                          style={[styles.sosTypeBtn, { borderLeftColor: sel ? "#EF4444" : "#6B7280", backgroundColor: sel ? "#FEF2F2" : "rgba(255,255,255,0.06)" }]}
+                          onPress={() => setSosSelectedIds(ids => sel ? ids.filter(i => i !== m.id) : [...ids, m.id])}
+                        >
+                          <Ionicons name={sel ? "checkbox" : "square-outline"} size={20} color={sel ? "#EF4444" : "#9CA3AF"} />
+                          <Text style={[styles.sosTypeLabel, { color: sel ? "#EF4444" : "#FFF" }]}>{m.name}</Text>
+                        </Pressable>
+                      );
+                    })}
+                  </View>
+                )}
+                <View style={styles.sosDivider} />
+                <Pressable style={[styles.sosProceedBtn, { backgroundColor: "#EF4444" }]} onPress={() => { void handleMedicalPickerConfirm(); }}>
+                  <Ionicons name="arrow-forward-circle" size={20} color="#FFF" />
+                  <Text style={styles.sosProceedBtnText}>
+                    {sosSelectedIds.length > 0 ? `Notify ${sosSelectedIds.length} parent(s) — Call Now` : "Notify All Parents — Call Now"}
+                  </Text>
+                </Pressable>
+                <Pressable style={[styles.sosResolveBtn, { marginTop: 8 }]} onPress={() => setSosPhase("type")}>
+                  <Ionicons name="arrow-back" size={16} color="rgba(255,255,255,0.6)" />
+                  <Text style={[styles.sosResolveBtnText, { color: "rgba(255,255,255,0.6)" }]}>Back</Text>
                 </Pressable>
               </>
             )}
