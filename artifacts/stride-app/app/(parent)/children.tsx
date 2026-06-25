@@ -1327,11 +1327,11 @@ export default function ChildrenScreen() {
       {/* Add Child Modal */}
       <Modal visible={showAddChild} transparent animationType="slide" onRequestClose={() => { setShowAddChild(false); resetAddChildForm(); }}>
         <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { position: "relative", paddingTop: 44, maxHeight: "90%", paddingBottom: 0 }]}>
+          <View style={[styles.modalCard, { position: "relative", paddingTop: 44, maxHeight: "90%", paddingBottom: 0, flex: 1 }]}>
             <Pressable style={{ position: "absolute", top: 12, right: 14, zIndex: 20, padding: 4 }} onPress={() => { setShowAddChild(false); resetAddChildForm(); }} hitSlop={14}>
               <Ionicons name="close-circle" size={30} color="#9CA3AF" />
             </Pressable>
-            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" contentContainerStyle={{ paddingBottom: 8 }}>
+            <ScrollView showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" style={{ flex: 1 }} contentContainerStyle={{ paddingBottom: 8 }}>
               <View style={styles.addChildHeader}>
                 <Pressable
                   style={[styles.addChildIconCircle, { backgroundColor: newChildPhotoUri ? "transparent" : colors.primary, overflow: "hidden" }]}
