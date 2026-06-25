@@ -620,6 +620,19 @@ router.post("/org/configure", requireAuth, requireRole("admin"), async (req, res
     }
   }
 
+  // Auto-provision operator + parent profiles for the founder so they start
+  // with all three roles (admin + operator + member) out of the box.
+  // Uses upsert (onConflict = no-op) so it's safe to call multiple times.
+  await supabase.from("operator_profiles").upsert(
+    { user_id: parseInt(String(authUser.id), 10), organization_id: oid, profile_type: "volunteer", active: true },
+    { onConflict: "user_id,organization_id" },
+  ).then(({ error: e }) => { if (e) req.log.warn({ e }, "org configure: operator_profiles auto-provision failed — non-fatal"); });
+
+  await supabase.from("parent_profiles").upsert(
+    { user_id: String(authUser.id), organization_id: oid, active: true },
+    { onConflict: "user_id,organization_id" },
+  ).then(({ error: e }) => { if (e) req.log.warn({ e }, "org configure: parent_profiles auto-provision failed — non-fatal"); });
+
   res.json({ configured: true, orgId: oid, ageGroups, skillLevels, ...(newToken ? { token: newToken } : {}) });
 });
 
