@@ -171,29 +171,54 @@ console.log("[pwa-patch] Written sw.js");
 
 // ── 7. Inject version-poll + SW registration into index.html ─────────────────
 const autoUpdateScript = `
-  <!-- Stride auto-update: polls version.json and reloads when a new build is deployed -->
+  <!-- Stride auto-update: SW controllerchange + version.json polling -->
   <script>
   (function(){
-    var INTERVAL = 2 * 60 * 1000; // check every 2 minutes
+    var INTERVAL = 2 * 60 * 1000;
     var currentVersion = null;
+    var swReg = null;
+    var reloading = false;
+
+    function doReload(){
+      if(reloading) return;
+      reloading = true;
+      window.location.reload();
+    }
+
     function check(){
       fetch('/app/version.json?_=' + Date.now(), { cache: 'no-store' })
         .then(function(r){ return r.json(); })
         .then(function(d){
-          if(currentVersion === null){ currentVersion = d.v; }
-          else if(currentVersion !== d.v){ window.location.reload(true); }
+          if(currentVersion === null){ currentVersion = d.v; return; }
+          if(currentVersion === d.v) return;
+          // New build detected — ask the SW to update itself, then reload
+          currentVersion = d.v;
+          if(swReg){
+            swReg.update().then(doReload).catch(doReload);
+          } else {
+            doReload();
+          }
         }).catch(function(){});
     }
-    // First check after 30 s (app has time to init)
+
+    // First check after 30 s, then every INTERVAL
     setTimeout(function(){ check(); setInterval(check, INTERVAL); }, 30000);
-    // Also check when user brings the app back to foreground
+
+    // Also check when user brings the tab back to foreground
     document.addEventListener('visibilitychange', function(){
       if(!document.hidden) check();
     });
-    // Register service worker
+
+    // Register service worker — listen for controllerchange so we reload
+    // the moment a newly-deployed SW takes over (even without version.json noticing)
     if('serviceWorker' in navigator){
       window.addEventListener('load', function(){
         navigator.serviceWorker.register('/app/sw.js', { scope: '/app/' })
+          .then(function(reg){
+            swReg = reg;
+            // controllerchange fires when a new SW activates and claims this client
+            navigator.serviceWorker.addEventListener('controllerchange', doReload);
+          })
           .catch(function(){});
       });
     }
@@ -201,12 +226,10 @@ const autoUpdateScript = `
   </script>`;
 
 let htmlContent = fs.readFileSync(indexPath, "utf8");
-if (!htmlContent.includes("Stride auto-update")) {
-  htmlContent = htmlContent.replace("</body>", `${autoUpdateScript}\n</body>`);
-  fs.writeFileSync(indexPath, htmlContent);
-  console.log("[pwa-patch] Injected auto-update + SW registration into index.html");
-} else {
-  console.log("[pwa-patch] Auto-update script already present in index.html");
-}
+// Always strip any existing auto-update block, then re-inject the latest version
+htmlContent = htmlContent.replace(/\n?\s*<!-- Stride auto-update[\s\S]*?<\/script>/m, "");
+htmlContent = htmlContent.replace("</body>", `${autoUpdateScript}\n</body>`);
+fs.writeFileSync(indexPath, htmlContent);
+console.log("[pwa-patch] Injected auto-update + SW registration into index.html");
 
 console.log("[pwa-patch] Done ✓");
