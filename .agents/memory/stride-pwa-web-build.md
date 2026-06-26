@@ -41,11 +41,21 @@ This catches any future case where `experiments.baseUrl` doesn't take effect.
 
 ## How to apply
 
-Never run `expo export` from a shell without the experiments.baseUrl set. Always run via:
+**Every time code changes are made to the Stride App, run this before deploying:**
 ```
 pnpm --filter @workspace/stride-app run build:web
 ```
-which chains pwa-patch.js automatically.
+This chains pwa-patch.js automatically. The new bundle files in `web-dist/_expo/static/js/web/` will have new hashes (different filenames). Both old and new filenames must be committed — the expo export `--clear` flag removes old ones automatically.
+
+**Deploy pipeline for PWA changes:**
+1. Make code changes
+2. Run `pnpm --filter @workspace/stride-app run build:web` (takes ~3-4 min)
+3. Commit (Replit auto-commits at end of session — new bundle files are untracked until then)
+4. Click Deploy button
+
+**Important:** artifact.toml `build` command runs `scripts/build.js` (Metro native build for iOS/Android), NOT `build:web`. The PWA web bundle must be pre-built and committed separately. The production `serve` script (`static-serve.js`) just serves whatever is in `web-dist/`.
+
+**Bash timeout note:** `build:web` takes ~3-4 minutes. The bash tool timeout max is 120s. Run with `| head -N` will SIGPIPE-kill the build early. Run without pipe but accept that the command may appear to "fail" — check `web-dist/` afterwards to confirm new bundle hashes appeared.
 
 ## PWA home screen icon update
 
