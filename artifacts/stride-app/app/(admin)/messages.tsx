@@ -482,58 +482,41 @@ export default function AdminMessagesScreen() {
             <Ionicons name="arrow-forward-circle" size={28} color={GOLD} />
           </Pressable>
 
-          {/* Feature cards */}
-          <Text style={[s.sectionTitle, { color: colors.primary }]}>Features</Text>
-
-          <View style={s.featureGrid}>
-            {[
-              { icon: "newspaper-outline",    label: "Broadcasts",    sub: "Send to all members",      color: colors.primary },
-              { icon: "sparkles-outline",     label: "Templates",     sub: "Quick message templates",   color: "#8B5CF6"  },
-              { icon: "eye-outline",          label: "Read Receipts", sub: "Track who opened messages", color: "#10B981"  },
-              { icon: "alarm-outline",           label: "Auto Messages", sub: "Birthday & welcome DMs",  color: "#F59E0B"  },
-              { icon: "attach-outline",       label: "Attachments",   sub: "PDF, images, documents",    color: "#EF4444"  },
-              { icon: "logo-whatsapp",        label: "WhatsApp",      sub: "Optional broadcast channel",color: "#16A34A"  },
-            ].map(item => (
-              <Pressable
-                key={item.label}
-                style={s.featureCard}
-                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(admin)/communications" as never); }}
-              >
-                <View style={[s.featureIcon, { backgroundColor: `${item.color}18` }]}>
-                  <Ionicons name={item.icon as never} size={20} color={item.color} />
+          {/* Nav buttons */}
+          <Text style={s.sectionTitle}>Manage</Text>
+          {([
+            {
+              icon: "document-text-outline" as const,
+              label: "Message Templates",
+              sub: "Edit automated notifications — birthday, welcome, reminders",
+              onPress: () => { setTab("templates"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); },
+            },
+            {
+              icon: "radio-outline" as const,
+              label: "Channel Settings",
+              sub: "Configure Email (Resend), SMS (Twilio) and WhatsApp",
+              onPress: () => { setTab("channels"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); },
+            },
+            {
+              icon: "logo-whatsapp" as const,
+              label: "WhatsApp Setup Guide",
+              sub: "Step-by-step AI assistant to activate WhatsApp broadcasts",
+              onPress: () => { setShowGuide(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); },
+            },
+          ] as { icon: React.ComponentProps<typeof Ionicons>["name"]; label: string; sub: string; onPress: () => void }[]).map(item => (
+            <Pressable key={item.label} style={s.navBtn} onPress={item.onPress}>
+              <View style={s.navBtnLeft}>
+                <View style={s.navBtnIconWrap}>
+                  <Ionicons name={item.icon} size={22} color="#fff" />
                 </View>
-                <Text style={s.featureLabel}>{item.label}</Text>
-                <Text style={s.featureSub} numberOfLines={2}>{item.sub}</Text>
-              </Pressable>
-            ))}
-          </View>
-
-          {/* Channel status strip */}
-          <Text style={[s.sectionTitle, { color: colors.primary }]}>Channel Status</Text>
-          <View style={s.channelStrip}>
-            {[
-              { label: "Email",     icon: "mail-outline",              ok: resendConfigured },
-              { label: "SMS",       icon: "chatbubble-ellipses-outline",ok: twilioConfigured },
-              { label: "WhatsApp",  icon: "logo-whatsapp",             ok: waConfigured    },
-            ].map(ch => (
-              <Pressable
-                key={ch.label}
-                style={[s.channelPill, { borderColor: ch.ok ? "#86EFAC" : "#E5E7EB", backgroundColor: ch.ok ? "#F0FDF4" : "#F9FAFB" }]}
-                onPress={() => { setTab("channels"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-              >
-                <Ionicons name={ch.icon as never} size={15} color={ch.ok ? "#16A34A" : "#9CA3AF"} />
-                <Text style={[s.channelPillLabel, { color: ch.ok ? "#15803D" : "#6B7280" }]}>{ch.label}</Text>
-                <Ionicons name={ch.ok ? "checkmark-circle" : "ellipse-outline"} size={13} color={ch.ok ? "#16A34A" : "#D1D5DB"} />
-              </Pressable>
-            ))}
-          </View>
-          <Pressable
-            style={[s.configureBtn, { borderColor: colors.primary }]}
-            onPress={() => { setTab("channels"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-          >
-            <Ionicons name="settings-outline" size={15} color={colors.primary} />
-            <Text style={[s.configureBtnText, { color: colors.primary }]}>Configure Channels</Text>
-          </Pressable>
+                <View style={{ flex: 1 }}>
+                  <Text style={s.navBtnLabel}>{item.label}</Text>
+                  <Text style={s.navBtnSub}>{item.sub}</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color={GOLD} />
+            </Pressable>
+          ))}
         </ScrollView>
       )}
 
@@ -915,21 +898,14 @@ const s = StyleSheet.create({
   composeSub:     { fontSize: 12, color: "rgba(255,255,255,0.75)", marginTop: 2 },
 
   // Section title
-  sectionTitle: { fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12 },
+  sectionTitle: { fontSize: 13, fontWeight: "700", textTransform: "uppercase", letterSpacing: 0.5, marginBottom: 12, color: NAVY },
 
-  // Feature grid
-  featureGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10, marginBottom: 22 },
-  featureCard: { width: "47%", backgroundColor: "#fff", borderRadius: 14, padding: 14, borderWidth: 1, borderColor: "#E5E7EB" },
-  featureIcon: { width: 38, height: 38, borderRadius: 19, alignItems: "center", justifyContent: "center", marginBottom: 8 },
-  featureLabel:{ fontSize: 13, fontWeight: "700", color: "#111827", marginBottom: 3 },
-  featureSub:  { fontSize: 11, color: "#6B7280", lineHeight: 15 },
-
-  // Channel strip
-  channelStrip: { gap: 8, marginBottom: 12 },
-  channelPill:  { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 12, borderWidth: 1, padding: 12 },
-  channelPillLabel: { flex: 1, fontSize: 13, fontWeight: "600" },
-  configureBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1.5, borderRadius: 12, padding: 12, marginBottom: 8 },
-  configureBtnText: { fontSize: 13, fontWeight: "700" },
+  // Nav buttons
+  navBtn:        { flexDirection: "row", alignItems: "center", justifyContent: "space-between", backgroundColor: NAVY, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 18, marginBottom: 10 },
+  navBtnLeft:    { flexDirection: "row", alignItems: "center", gap: 14, flex: 1, marginRight: 10 },
+  navBtnIconWrap:{ width: 42, height: 42, borderRadius: 21, backgroundColor: "rgba(255,255,255,0.15)", alignItems: "center", justifyContent: "center" },
+  navBtnLabel:   { fontSize: 15, fontWeight: "700", color: "#fff" },
+  navBtnSub:     { fontSize: 12, color: "rgba(255,255,255,0.65)", marginTop: 2, lineHeight: 17 },
 
   // Channels tab
   infoBanner: { flexDirection: "row", alignItems: "flex-start", gap: 10, backgroundColor: "#EFF6FF", borderRadius: 12, borderWidth: 1, borderColor: "#BFDBFE", padding: 14, marginBottom: 20 },
