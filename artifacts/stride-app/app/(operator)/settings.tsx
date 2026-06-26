@@ -161,7 +161,7 @@ export default function OperatorSettingsScreen() {
           style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
           onPress={() => { tap(); router.navigate("/(operator)/certificates" as never); }}
         >
-          <View style={[styles.featureIconBox, { backgroundColor: "#DBEAFE" }]}>
+          <View style={[styles.featureIconBox, { backgroundColor: (colors.primary + "12") }]}>
             <Ionicons name="ribbon-outline" size={26} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
@@ -178,7 +178,7 @@ export default function OperatorSettingsScreen() {
           style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
           onPress={() => { tap(); router.navigate("/(operator)/workspace" as never); }}
         >
-          <View style={[styles.featureIconBox, { backgroundColor: (colors.secondary + "15") }]}>
+          <View style={[styles.featureIconBox, { backgroundColor: (colors.primary + "12") }]}>
             <Ionicons name="grid-outline" size={26} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
@@ -195,8 +195,8 @@ export default function OperatorSettingsScreen() {
           style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
           onPress={() => { tap(); router.navigate("/(operator)/notification-settings" as never); }}
         >
-          <View style={[styles.featureIconBox, { backgroundColor: "#EF444415" }]}>
-            <Ionicons name="notifications-outline" size={26} color="#EF4444" />
+          <View style={[styles.featureIconBox, { backgroundColor: (colors.primary + "12") }]}>
+            <Ionicons name="notifications-outline" size={26} color={colors.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.featureTitle, { color: colors.foreground }]}>Notification Preferences</Text>

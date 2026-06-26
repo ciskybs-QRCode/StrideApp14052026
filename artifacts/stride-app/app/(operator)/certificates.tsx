@@ -278,7 +278,7 @@ export default function CertificatesScreen() {
         </View>
       ) : (
         <ScrollView
-          contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
+          contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 160 }]}
           showsVerticalScrollIndicator={false}
         >
           {/* Info banner */}

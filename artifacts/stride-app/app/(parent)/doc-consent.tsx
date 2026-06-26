@@ -1,7 +1,8 @@
 import { Ionicons } from "@expo/vector-icons";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -13,9 +14,12 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { useAuth } from "@/context/AuthContext";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 import { SignaturePad } from "@/components/SignaturePad";
+
+const SUBMITTED_KEY = "stride_media_release_submitted_v1";
 
 const MEDIA_RELEASE_TEXT = `MEDIA RELEASE CONSENT
 
@@ -61,28 +65,42 @@ By signing this form, you confirm that you have read and understood all three op
 type ConsentOption = "full" | "internal" | "none";
 
 const getOptions = (primary: string): { key: ConsentOption; label: string; labelEn: string; icon: "camera" | "shield-outline" | "eye-off"; color: string; bg: string }[] => [
-  { key: "full",     label: "Full Public & Promotional",  labelEn: "Full public & promotional use",    icon: "camera",  color: primary, bg: "#DBEAFE" },
-  { key: "internal", label: "Internal & Educational Only", labelEn: "Internal & educational use only",  icon: "shield-outline",  color: primary, bg: "#DBEAFE" },
-  { key: "none",     label: "No Consent — Opt-Out",       labelEn: "No consent — full opt-out",        icon: "eye-off", color: "#DC2626", bg: "rgba(220,38,38,0.08)" },
-];;
+  { key: "full",     label: "Full Public & Promotional",  labelEn: "Full public & promotional use",    icon: "camera",         color: primary,    bg: "#DBEAFE" },
+  { key: "internal", label: "Internal & Educational Only", labelEn: "Internal & educational use only",  icon: "shield-outline", color: primary,    bg: "#DBEAFE" },
+  { key: "none",     label: "No Consent — Opt-Out",        labelEn: "No consent — full opt-out",        icon: "eye-off",        color: "#DC2626",  bg: "rgba(220,38,38,0.08)" },
+];
+
+const OPTION_LABELS: Record<ConsentOption, { label: string; icon: "camera" | "shield-outline" | "eye-off"; color: string; bg: string }> = {
+  full:     { label: "Full Public & Promotional Consent",  icon: "camera",         color: "#1E3A8A", bg: "#DBEAFE" },
+  internal: { label: "Internal & Educational Use Only",    icon: "shield-outline", color: "#1E3A8A", bg: "#EFF6FF" },
+  none:     { label: "No Consent — Full Opt-Out",          icon: "eye-off",        color: "#DC2626", bg: "rgba(220,38,38,0.08)" },
+};
 
 export default function DocConsentScreen() {
   const { mediaConsent, setMediaConsent } = useAppData();
+  const { user } = useAuth();
   const colors = useColors();
   const OPTIONS = getOptions(colors.primary);
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const initialOption: ConsentOption | null =
-    mediaConsent === "full" || mediaConsent === "internal" ? (mediaConsent as ConsentOption) : null;
+  const [alreadySubmitted, setAlreadySubmitted] = useState<boolean | null>(null);
+  const [updatingConsent, setUpdatingConsent] = useState(false);
 
-  const [hasScrolled, setHasScrolled] = useState(false);
-  const [agreedToRead, setAgreedToRead] = useState(false);
-  const [selectedOption, setSelectedOption] = useState<ConsentOption | null>(initialOption);
-  const [hasSignature, setHasSignature] = useState(false);
-  const [signatureConfirmed, setSignatureConfirmed] = useState(false);
-  const [padKey, setPadKey] = useState(0);
-  const [submitting, setSubmitting] = useState(false);
+  const [hasScrolled,        setHasScrolled]        = useState(false);
+  const [agreedToRead,       setAgreedToRead]        = useState(false);
+  const [selectedOption,     setSelectedOption]      = useState<ConsentOption | null>(null);
+  const [hasSignature,       setHasSignature]        = useState(false);
+  const [signatureConfirmed, setSignatureConfirmed]  = useState(false);
+  const [padKey,             setPadKey]              = useState(0);
+  const [submitting,         setSubmitting]          = useState(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    AsyncStorage.getItem(`${SUBMITTED_KEY}:${user.id}`).then(val => {
+      setAlreadySubmitted(val === "true");
+    }).catch(() => setAlreadySubmitted(false));
+  }, [user?.id]);
 
   const handleScroll = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
     if (hasScrolled) return;
@@ -119,7 +137,10 @@ export default function DocConsentScreen() {
     if (!selectedOption || !signatureConfirmed) return;
     setSubmitting(true);
     try {
-      setMediaConsent(selectedOption);
+      await setMediaConsent(selectedOption);
+      if (user?.id) {
+        await AsyncStorage.setItem(`${SUBMITTED_KEY}:${user.id}`, "true");
+      }
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       router.back();
     } catch {
@@ -127,12 +148,99 @@ export default function DocConsentScreen() {
     }
   };
 
-  const padUnlocked = agreedToRead && selectedOption !== null;
+  const padUnlocked    = agreedToRead && selectedOption !== null;
   const submitUnlocked = signatureConfirmed && selectedOption !== null;
+
+  if (alreadySubmitted === null) {
+    return (
+      <View style={[s.container, { backgroundColor: colors.background }]}>
+        <ScreenHeader title="Media Release" onBack={() => router.back()} />
+      </View>
+    );
+  }
+
+  if (alreadySubmitted && !updatingConsent) {
+    const current = mediaConsent as ConsentOption;
+    const meta    = OPTION_LABELS[current] ?? OPTION_LABELS.none;
+    return (
+      <View style={[s.container, { backgroundColor: colors.background }]}>
+        <ScreenHeader title="Media Release" onBack={() => router.back()} />
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 40, gap: 16 }}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={{ backgroundColor: "#ECFDF5", borderRadius: 16, borderWidth: 1.5, borderColor: "#6EE7B7", padding: 18, flexDirection: "row", gap: 12, alignItems: "flex-start" }}>
+            <Ionicons name="checkmark-circle" size={24} color="#059669" style={{ marginTop: 1 }} />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: "700", color: "#065F46", marginBottom: 4 }}>Consent Already Recorded</Text>
+              <Text style={{ fontSize: 13, color: "#047857", lineHeight: 18 }}>
+                Your media release consent has been submitted and saved. You do not need to sign it again unless you want to change your selection.
+              </Text>
+            </View>
+          </View>
+
+          <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, letterSpacing: 0.5, textTransform: "uppercase", marginTop: 4 }}>
+            Your Current Consent Level
+          </Text>
+
+          <View style={{ backgroundColor: colors.card, borderRadius: 16, borderWidth: 1.5, borderColor: colors.border, flexDirection: "row", alignItems: "center", gap: 14, padding: 16 }}>
+            <View style={{ width: 48, height: 48, borderRadius: 13, backgroundColor: meta.bg, alignItems: "center", justifyContent: "center" }}>
+              <Ionicons name={meta.icon} size={22} color={meta.color} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: "700", color: colors.foreground }}>{meta.label}</Text>
+            </View>
+            <Ionicons name="radio-button-on" size={22} color={colors.primary} />
+          </View>
+
+          <Pressable
+            style={({ pressed }) => [{
+              marginTop: 8,
+              backgroundColor: colors.muted,
+              borderRadius: 14,
+              paddingVertical: 14,
+              flexDirection: "row" as const,
+              alignItems: "center" as const,
+              justifyContent: "center" as const,
+              gap: 8,
+              opacity: pressed ? 0.82 : 1,
+            }]}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              setUpdatingConsent(true);
+              setSelectedOption(current ?? null);
+              setHasScrolled(false);
+              setAgreedToRead(false);
+              setSignatureConfirmed(false);
+              setHasSignature(false);
+              setPadKey(k => k + 1);
+            }}
+          >
+            <Ionicons name="pencil-outline" size={18} color={colors.primary} />
+            <Text style={{ fontSize: 14, fontWeight: "700", color: colors.primary }}>Update My Consent</Text>
+          </Pressable>
+
+          <View style={{ backgroundColor: "#FEF3C7", borderRadius: 12, borderWidth: 1, borderColor: "#FDE68A", padding: 14, flexDirection: "row", gap: 10, alignItems: "flex-start" }}>
+            <Ionicons name="information-circle-outline" size={18} color="#D97706" style={{ marginTop: 1 }} />
+            <Text style={{ flex: 1, fontSize: 12, color: "#92400E", lineHeight: 18 }}>
+              To formally withdraw consent, contact the association administration directly. Changes take effect from the date of receipt.
+            </Text>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  }
 
   return (
     <View style={[s.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Media Release" onBack={() => router.back()} />
+      <ScreenHeader
+        title="Media Release"
+        onBack={() => {
+          if (updatingConsent) { setUpdatingConsent(false); }
+          else { router.back(); }
+        }}
+      />
 
       <ScrollView
         style={{ flex: 1 }}
@@ -171,7 +279,6 @@ export default function DocConsentScreen() {
           </Pressable>
         )}
 
-        {/* Consent option matrix */}
         <View style={[s.matrixSection, { opacity: agreedToRead ? 1 : 0.3 }]} pointerEvents={agreedToRead ? "auto" : "none"}>
           <Text style={[s.matrixLabel, { color: colors.primary }]}>SELECT YOUR CONSENT LEVEL</Text>
           {OPTIONS.map(opt => {
@@ -202,7 +309,6 @@ export default function DocConsentScreen() {
           })}
         </View>
 
-        {/* Signature section */}
         <View style={[s.padSection, { opacity: padUnlocked ? 1 : 0.3 }]} pointerEvents={padUnlocked ? "auto" : "none"}>
           <Text style={[s.padSectionTitle, { color: colors.primary }]}>SIGNATURE</Text>
           {!padUnlocked && (
@@ -217,7 +323,6 @@ export default function DocConsentScreen() {
             strokeColor={colors.primary}
           />
 
-          {/* Reset + Confirm */}
           <View style={s.sigActions}>
             <Pressable
               style={[s.sigBtn, s.sigBtnReset, { backgroundColor: colors.muted, opacity: (hasSignature || signatureConfirmed) ? 1 : 0.4 }]}
@@ -247,7 +352,6 @@ export default function DocConsentScreen() {
           </View>
         </View>
 
-        {/* Submit */}
         <Pressable
           style={[s.submitBtn, { backgroundColor: submitUnlocked ? colors.primary : colors.border }]}
           onPress={handleSubmit}
@@ -277,16 +381,10 @@ export default function DocConsentScreen() {
 
 const s = StyleSheet.create({
   container: { flex: 1 },
-  header: { flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingBottom: 14, borderBottomWidth: 1, gap: 12 },
-  backBtn: { padding: 4 },
-  headerTitle: { fontSize: 16, fontWeight: "700" },
-  headerSub: { fontSize: 11, marginTop: 1 },
   scrollHint: { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 12, borderWidth: 1, padding: 14, margin: 16, marginBottom: 8 },
   scrollHintText: { flex: 1, fontSize: 13, lineHeight: 18 },
   docBody: { borderRadius: 16, borderWidth: 1, margin: 16, marginTop: 8, padding: 20 },
   docText: { fontSize: 13, lineHeight: 21 },
-  stepBanner: { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 12, borderWidth: 1, padding: 12, marginHorizontal: 16, marginBottom: 8 },
-  stepBannerText: { flex: 1, fontSize: 13, fontWeight: "600" },
   matrixSection: { paddingHorizontal: 16, marginBottom: 12 },
   matrixLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5, marginBottom: 10 },
   optionCard: { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, borderWidth: 1.5, padding: 14, marginBottom: 10 },
