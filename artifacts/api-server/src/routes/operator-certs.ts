@@ -42,7 +42,7 @@ router.post("/operator-certs", requireAuth, requireRole("operator", "admin"), as
   if (!cert_name?.trim()) { res.status(400).json({ error: "cert_name is required" }); return; }
   if (!image_base64)      { res.status(400).json({ error: "image_base64 is required" }); return; }
 
-  const operatorId = parseInt(user.id, 10);
+  const operatorId = parseInt(String(user.id), 10);
   const orgId = parseInt(String(user.orgId ?? 1), 10);
 
   // Upload file to Supabase Storage
@@ -97,7 +97,7 @@ router.get("/operator-certs/my", requireAuth, async (req, res) => {
     `SELECT id, cert_type, cert_name, file_url, file_name, expiry_date, notes,
             status, ai_verified, ai_notes, uploaded_at, reviewed_at
      FROM operator_certs WHERE operator_id = $1 ORDER BY uploaded_at DESC`,
-    [parseInt(user.id, 10)],
+    [parseInt(String(user.id), 10)],
   );
   res.json(rows);
 });
@@ -133,7 +133,7 @@ router.patch("/operator-certs/:id/review", requireAuth, requireRole("admin", "su
   const { rows } = await pool.query(
     `UPDATE operator_certs SET status = $1, reviewed_at = NOW(), reviewed_by = $2, ai_notes = COALESCE($3, ai_notes)
      WHERE id = $4 AND organization_id = $5 RETURNING operator_id`,
-    [status, parseInt(user.id, 10), admin_notes ?? null, certId, orgId],
+    [status, parseInt(String(user.id), 10), admin_notes ?? null, certId, orgId],
   );
   if (!rows[0]) { res.status(404).json({ error: "Certificate not found" }); return; }
   // Notify operator
@@ -155,7 +155,7 @@ router.post("/operator-certs/:id/analyze", requireAuth, aiLimiter, async (req, r
   const user = (req as AuthReq).user;
   await ensureTables();
   const certId = parseInt(req.params.id, 10);
-  const operatorId = parseInt(user.id, 10);
+  const operatorId = parseInt(String(user.id), 10);
 
   // Fetch the cert to get file_url
   const { rows: certRows } = await pool.query(
@@ -211,7 +211,7 @@ router.delete("/operator-certs/:id", requireAuth, async (req, res) => {
   const user = (req as AuthReq).user;
   await ensureTables();
   const certId     = parseInt(req.params.id, 10);
-  const operatorId = parseInt(user.id, 10);
+  const operatorId = parseInt(String(user.id), 10);
   const { rows } = await pool.query(
     `DELETE FROM operator_certs WHERE id = $1 AND operator_id = $2 RETURNING file_url`,
     [certId, operatorId],

@@ -217,6 +217,26 @@ router.delete("/skill-presets/:id", requireAuth, requireRole("admin", "super_adm
   }
 });
 
+// ── PATCH /skill-presets/:id — Admin: rename a custom preset ──────────────────
+
+router.patch("/skill-presets/:id", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
+  const user = (req as AuthReq).user;
+  const id = parseInt(String(req.params.id));
+  const { label } = req.body as { label?: string };
+  if (!label?.trim()) { res.status(400).json({ error: "Label is required" }); return; }
+  try {
+    const { rows } = await pool.query(
+      `UPDATE skill_label_presets SET label = $1 WHERE id = $2 AND organization_id = $3 RETURNING id, label`,
+      [label.trim(), id, user.orgId]
+    );
+    if (!rows.length) { res.status(404).json({ error: "Not found" }); return; }
+    res.json(rows[0]);
+  } catch (err) {
+    req.log.error(err, "PATCH /skill-presets/:id");
+    res.status(500).json({ error: "Failed to rename preset" });
+  }
+});
+
 // ── POST /operator-skills/ai-match ────────────────────────────────────────────
 // Admin: AI finds the best-fit operator for an activity based on skills.
 

@@ -621,22 +621,6 @@ export default function AdminHome() {
 
 
         {/* ── HUB CARDS ── */}
-        {!(user?.role === "super_admin" && (!user?.orgId || user?.orgId === 0)) && (
-          <HubCard
-            icon="add-circle-outline"
-            title="New Activity"
-            description="Create a course, workshop, private lesson or event — step by step"
-            onPress={() => { router.push("/(admin)/activity-wizard" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-          />
-        )}
-        {!(user?.role === "super_admin" && (!user?.orgId || user?.orgId === 0)) && (
-          <HubCard
-            icon="ribbon-outline"
-            title="Skill Labels"
-            description="Manage the preset skills operators can pick from when setting up their profile"
-            onPress={() => { router.push("/(admin)/skill-presets" as never); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-          />
-        )}
 
         {user?.role === "super_admin" && (user?.orgId && user?.orgId > 0) && (
           <HubCard

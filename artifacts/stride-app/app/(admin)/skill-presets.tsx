@@ -15,7 +15,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
-import { addSkillPreset, deleteSkillPreset, getSkillPresets, type ApiSkillPreset } from "@/lib/api";
+import { addSkillPreset, deleteSkillPreset, getSkillPresets, renameSkillPreset, type ApiSkillPreset } from "@/lib/api";
 
 export default function SkillPresets() {
   const colors  = useColors();
@@ -23,10 +23,12 @@ export default function SkillPresets() {
   const insets  = useSafeAreaInsets();
   const styles  = makeStyles(colors.primary, colors.secondary, colors.foreground, colors.mutedForeground, colors.background, colors.card, colors.border);
 
-  const [presets, setPresets]     = useState<ApiSkillPreset[]>([]);
-  const [input, setInput]         = useState("");
-  const [loading, setLoading]     = useState(true);
-  const [saving, setSaving]       = useState(false);
+  const [presets, setPresets]         = useState<ApiSkillPreset[]>([]);
+  const [input, setInput]             = useState("");
+  const [loading, setLoading]         = useState(true);
+  const [saving, setSaving]           = useState(false);
+  const [editingId, setEditingId]     = useState<number | null>(null);
+  const [editingLabel, setEditingLabel] = useState("");
   const inputRef = useRef<TextInput>(null);
 
   const load = () => {
@@ -78,8 +80,30 @@ export default function SkillPresets() {
     ]);
   };
 
-  const disciplinePresets = presets.filter(p => p.source === "discipline");
-  const customPresets     = presets.filter(p => p.source === "custom");
+  const startEdit = (item: ApiSkillPreset) => {
+    setEditingId(item.id!);
+    setEditingLabel(item.label);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditingLabel("");
+  };
+
+  const confirmEdit = async (item: ApiSkillPreset) => {
+    const trimmed = editingLabel.trim();
+    if (!trimmed || trimmed === item.label) { cancelEdit(); return; }
+    try {
+      await renameSkillPreset(item.id!, trimmed);
+      setEditingId(null);
+      setEditingLabel("");
+      load();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert("Error", "Could not rename label.");
+    }
+  };
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
@@ -120,28 +144,62 @@ export default function SkillPresets() {
               </Text>
             ) : null
           }
-          renderItem={({ item }) => (
-            <View style={[styles.row, { backgroundColor: colors.card, borderColor: colors.border }]}>
-              <View style={[styles.sourceBadge, { backgroundColor: item.source === "discipline" ? colors.primary + "18" : colors.secondary + "30" }]}>
-                <Ionicons
-                  name={item.source === "discipline" ? "layers-outline" : "create-outline"}
-                  size={14}
-                  color={item.source === "discipline" ? colors.primary : colors.primary}
-                />
+          renderItem={({ item }) => {
+            const isEditing = item.source === "custom" && editingId === item.id;
+            return (
+              <View style={[styles.row, { backgroundColor: isEditing ? colors.primary + "0A" : colors.card, borderColor: isEditing ? colors.primary : colors.border }]}>
+                <View style={[styles.sourceBadge, { backgroundColor: item.source === "discipline" ? colors.primary + "18" : colors.secondary + "30" }]}>
+                  <Ionicons
+                    name={item.source === "discipline" ? "layers-outline" : "create-outline"}
+                    size={14}
+                    color={colors.primary}
+                  />
+                </View>
+
+                {isEditing ? (
+                  <TextInput
+                    style={[styles.editInput, { color: colors.foreground, borderColor: colors.primary, backgroundColor: colors.card }]}
+                    value={editingLabel}
+                    onChangeText={setEditingLabel}
+                    onSubmitEditing={() => confirmEdit(item)}
+                    returnKeyType="done"
+                    autoFocus
+                  />
+                ) : (
+                  <Text style={[styles.rowLabel, { color: colors.foreground }]}>{item.label}</Text>
+                )}
+
+                <Text style={[styles.rowSource, { color: colors.mutedForeground }]}>
+                  {item.source === "discipline" ? "Discipline" : "Custom"}
+                </Text>
+
+                {item.source === "custom" && !isEditing && (
+                  <Pressable onPress={() => startEdit(item)} hitSlop={10} style={styles.actionBtn}>
+                    <Ionicons name="pencil-outline" size={17} color={colors.primary} />
+                  </Pressable>
+                )}
+
+                {isEditing ? (
+                  <>
+                    <Pressable onPress={() => confirmEdit(item)} hitSlop={10} style={styles.actionBtn}>
+                      <Ionicons name="checkmark-circle" size={20} color="#10B981" />
+                    </Pressable>
+                    <Pressable onPress={cancelEdit} hitSlop={10} style={styles.actionBtn}>
+                      <Ionicons name="close-circle" size={20} color={colors.mutedForeground} />
+                    </Pressable>
+                  </>
+                ) : (
+                  <Pressable onPress={() => handleDelete(item)} hitSlop={12} style={styles.actionBtn}>
+                    <Ionicons
+                      name={item.source === "discipline" ? "lock-closed-outline" : "trash-outline"}
+                      size={18}
+                      color={item.source === "discipline" ? colors.mutedForeground : "#EF4444"}
+                    />
+                  </Pressable>
+                )}
               </View>
-              <Text style={[styles.rowLabel, { color: colors.foreground }]}>{item.label}</Text>
-              <Text style={[styles.rowSource, { color: colors.mutedForeground }]}>
-                {item.source === "discipline" ? "Discipline" : "Custom"}
-              </Text>
-              <Pressable onPress={() => handleDelete(item)} hitSlop={12}>
-                <Ionicons
-                  name={item.source === "discipline" ? "lock-closed-outline" : "trash-outline"}
-                  size={18}
-                  color={item.source === "discipline" ? colors.mutedForeground : "#EF4444"}
-                />
-              </Pressable>
-            </View>
-          )}
+            );
+          }}
           ListEmptyComponent={
             <View style={[styles.empty, { backgroundColor: colors.card, borderColor: colors.border }]}>
               <Ionicons name="ribbon-outline" size={32} color={colors.primary} />
@@ -172,10 +230,12 @@ const makeStyles = (
   addBtn:      { width: 50, height: 50, borderRadius: 12, alignItems: "center", justifyContent: "center" },
   list:        { paddingHorizontal: 20, paddingBottom: 40, gap: 8 },
   listHeader:  { fontSize: 13, color: muted, lineHeight: 20, marginBottom: 8 },
-  row:         { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12 },
+  row:         { flexDirection: "row", alignItems: "center", gap: 10, borderRadius: 14, borderWidth: 1.5, paddingHorizontal: 14, paddingVertical: 12 },
   sourceBadge: { width: 30, height: 30, borderRadius: 15, alignItems: "center", justifyContent: "center" },
   rowLabel:    { flex: 1, fontSize: 15, fontWeight: "600" },
   rowSource:   { fontSize: 12, fontWeight: "600" },
+  editInput:   { flex: 1, fontSize: 15, fontWeight: "600", borderWidth: 1.5, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 6 },
+  actionBtn:   { padding: 2 },
   empty:       { borderRadius: 18, borderWidth: 1.5, borderStyle: "dashed", padding: 32, alignItems: "center", gap: 12, marginTop: 16 },
   emptyTitle:  { fontSize: 16, fontWeight: "700" },
   emptyBody:   { fontSize: 14, lineHeight: 22, textAlign: "center" },

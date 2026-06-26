@@ -76,7 +76,7 @@ export default function MembersHub() {
         <HubCard
           icon="warning-outline"
           title="Security Alerts"
-          description="Access-denied events and SOS audit log"
+          description="Blocked entry attempts, invalid QR scans, blacklist triggers and SOS activations — full timestamped audit log"
           onPress={() => router.push("/(admin)/alerts" as never)}
         />
       </ScrollView>

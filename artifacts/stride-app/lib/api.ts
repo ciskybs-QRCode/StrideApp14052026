@@ -3976,6 +3976,10 @@ export function deleteSkillPreset(id: number): Promise<{ ok: boolean }> {
   return request("DELETE", `/skill-presets/${id}`);
 }
 
+export function renameSkillPreset(id: number, label: string): Promise<{ id: number; label: string }> {
+  return request("PATCH", `/skill-presets/${id}`, { label });
+}
+
 export function aiMatchOperator(data: {
   activityType: string;
   discipline?: string;
