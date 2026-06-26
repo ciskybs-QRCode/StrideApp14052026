@@ -313,7 +313,15 @@ export default function AdminTabLayout() {
       <Tabs.Screen name="members-hub"    options={{ title: t("tab.members",    "Members"),    tabBarIcon: ({ color, size }) => <Ionicons name="people-circle-outline"    size={size} color={color} /> }} />
       <Tabs.Screen name="finance-hub"    options={{ title: t("tab.finance",    "Finance"),    tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline"           size={size} color={color} /> }} />
       <Tabs.Screen name="messages"       options={{ title: t("tab.messages",   "Messages"),   tabBarIcon: ({ color, size }) => <Ionicons name="mail"                     size={size} color={color} /> }} />
-      <Tabs.Screen name="settings"       options={{ title: t("tab.settings",   "Settings"),   tabBarIcon: ({ color, size }) => <SettingsTabIcon color={color} size={size} /> }} />
+      <Tabs.Screen
+        name="settings"
+        options={{ title: t("tab.settings", "Settings"), tabBarIcon: ({ color, size }) => <SettingsTabIcon color={color} size={size} /> }}
+        listeners={({ navigation }) => ({
+          tabPress: () => {
+            navigation.navigate("settings", { screen: "index" });
+          },
+        })}
+      />
 
       {/* ── Hidden deep-link screens (reached from hub pages) ── */}
       <Tabs.Screen name="users"          options={{ href: null }} />

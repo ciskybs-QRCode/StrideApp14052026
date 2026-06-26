@@ -11,7 +11,6 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { HubCard } from "@/components/HubCard";
 import { useColors } from "@/hooks/useColors";
-import { useFeatures } from "@/context/FeaturesContext";
 import { useAuth } from "@/context/AuthContext";
 import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 
@@ -19,7 +18,6 @@ export default function OperationsHub() {
   const router = useRouter();
   const colors = useColors();
   const insets = useSafeAreaInsets();
-  const { marketplaceEnabled } = useFeatures();
   const { user } = useAuth();
   const { can } = usePlanFeatures();
 
@@ -118,38 +116,6 @@ export default function OperationsHub() {
           description="Trends, payments, occupancy and exports"
           onPress={() => router.push("/(admin)/analytics" as never)}
         />
-
-        {(can("marketplace") || can("events")) && (
-          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>MARKETPLACE & EVENTS</Text>
-        )}
-        {can("marketplace") && (
-          <HubCard
-            icon="storefront-outline"
-            title="Marketplace"
-            description="Products, shop links and platform commission"
-            iconBg="#DBEAFE"
-            iconColor={colors.primary}
-            onPress={() => router.push("/(admin)/marketplace" as never)}
-          />
-        )}
-        {can("events") && (
-          <HubCard
-            icon="ticket-outline"
-            title="Events & Tickets"
-            description="Create events, manage dates and ticket types"
-            onPress={() => router.push("/(admin)/events" as never)}
-          />
-        )}
-        {can("events") && (
-          <HubCard
-            icon="cash-outline"
-            title="Fee Events"
-            description="One-off payment events with line items, installments and AI email"
-            iconBg={colors.primary}
-            iconColor={colors.secondary}
-            onPress={() => router.push("/(admin)/fee-events" as never)}
-          />
-        )}
 
         {user?.role === "super_admin" && (
           <>

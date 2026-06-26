@@ -99,6 +99,37 @@ export default function FinanceHub() {
           onPress={() => router.push("/(admin)/settings/promo-codes" as never)}
         />
 
+        {(can("marketplace") || can("events")) && (
+          <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>MARKETPLACE & EVENTS</Text>
+        )}
+        {can("marketplace") && (
+          <HubCard
+            icon="storefront-outline"
+            title="Marketplace"
+            description="Products, shop links and platform commission"
+            iconBg="#DBEAFE"
+            iconColor={colors.primary}
+            onPress={() => router.push("/(admin)/marketplace" as never)}
+          />
+        )}
+        {can("events") && (
+          <HubCard
+            icon="ticket-outline"
+            title="Events & Tickets"
+            description="Create events, manage dates and ticket types"
+            onPress={() => router.push("/(admin)/events" as never)}
+          />
+        )}
+        {can("events") && (
+          <HubCard
+            icon="cash-outline"
+            title="Fee Events"
+            description="One-off payment events with line items, installments and AI email"
+            iconBg={colors.primary}
+            iconColor={colors.secondary}
+            onPress={() => router.push("/(admin)/fee-events" as never)}
+          />
+        )}
 
       </ScrollView>
     </View>
