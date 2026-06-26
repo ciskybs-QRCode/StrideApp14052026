@@ -415,7 +415,10 @@ export default function OperatorDashboard() {
   const checkedIn     = students.filter(s => s.checkedIn).length;
   const operatorQrValue = `STRIDE:OPERATOR:${user?.id ?? "0"}:${user?.orgId ?? "1"}`;
   const logoSource    = orgLogoUri ?? (user?.logoUri ?? null);
-  const firstName     = preferredName || user?.name?.split(" ")[0] || "Operator";
+  const displayName   = preferredName || user?.name?.split(" ")[0] || "";
+  const firstName     = displayName || "Operator";
+  const hour          = new Date().getHours();
+  const greeting      = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const emergency     = detectEmergencyInfo(campusAddress);
 
   const handlePickProfilePhoto = async () => {
@@ -1288,7 +1291,7 @@ export default function OperatorDashboard() {
         {/* ── Header ── */}
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.pageTitle, { color: colors.primary }]}>Hi, {firstName}</Text>
+            <Text style={[styles.pageTitle, { color: colors.primary }]}>{greeting}, {firstName} 👋</Text>
             {!!user?.schoolName && (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginTop: 1 }}>
                 {!!orgLogoUri && (
