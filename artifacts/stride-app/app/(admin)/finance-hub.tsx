@@ -77,10 +77,10 @@ export default function FinanceHub() {
           onPress={() => router.push("/(admin)/settings/stripe-connect" as never)}
         />
         <HubCard
-          icon="cash-outline"
-          title="Membership Fees"
-          description="Fee frequency, billing cycle and pro-rata policy"
-          onPress={() => router.push("/(admin)/settings/fee-settings" as never)}
+          icon="card-outline"
+          title="Membership"
+          description="Policy, fees, renewal rules and access control"
+          onPress={() => router.push("/(admin)/membership" as never)}
         />
         {can("global_pricing") && (
           <HubCard

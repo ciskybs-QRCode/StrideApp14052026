@@ -195,16 +195,6 @@ export default function SettingsIndex() {
         />
 
 
-        {/* ── MEMBERSHIP POLICY ── */}
-        <HubCard
-          icon="id-card-outline"
-          title="Membership Policy"
-          description="Mandatory membership, renewal period, expiry reminders and auto-suspend"
-          iconBg={colors.primary}
-          iconColor={colors.secondary}
-          onPress={() => navigate("membership-policy")}
-        />
-
         {/* ── SECTION LABEL ── */}
         <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>CONFIGURATION</Text>
 
