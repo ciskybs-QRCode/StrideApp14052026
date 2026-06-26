@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -17,26 +17,16 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
 import {
   api,
-  request,
   aiMatchOperator,
   getAllOperatorSkills,
+  getCourseLabels,
   type ApiAiMatchResult,
-  type ApiDiscipline,
   type ApiOperatorSkillSummary,
 } from "@/lib/api";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 type ActivityType = "course" | "workshop" | "private" | "single";
-
-interface WizardSlot {
-  id: string;
-  dayOfWeek: number;    // 0=Sun…6=Sat
-  startTime: string;    // "HH:MM"
-  endTime: string;      // "HH:MM"
-  weekInterval: number; // 1=weekly, 2=bi-weekly, 3=every-3-weeks
-  date: string;         // "YYYY-MM-DD" for workshop/single
-}
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -49,772 +39,808 @@ function fmtTime(raw: string): string {
   return `${d.slice(0, 2)}:${d.slice(2)}`;
 }
 
+function fmtDate(raw: string): string {
+  const d = raw.replace(/\D/g, "").slice(0, 8);
+  if (d.length <= 2) return d;
+  if (d.length <= 4) return `${d.slice(0, 2)}/${d.slice(2)}`;
+  return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
+}
+
+function parseDate(s: string): string | null {
+  const parts = s.split("/");
+  if (parts.length !== 3) return null;
+  const [d, m, y] = parts;
+  if (!d || !m || !y || y.length < 4) return null;
+  return `${y}-${m.padStart(2, "0")}-${d.padStart(2, "0")}`;
+}
+
 function eurosToCents(s: string): number {
   const n = parseFloat(s.replace(",", ".") || "0");
   return isNaN(n) ? 0 : Math.round(n * 100);
 }
 
-function toMins(t: string): number {
-  const [h, m] = t.split(":").map(Number);
-  return (h || 0) * 60 + (m || 0);
+function centsToEuros(c?: number | null): string {
+  if (!c) return "";
+  return (c / 100).toFixed(2);
 }
 
-function newSlot(): WizardSlot {
-  return { id: `${Date.now()}-${Math.random()}`, dayOfWeek: 1, startTime: "", endTime: "", weekInterval: 1, date: "" };
-}
+// ── SuggestInput ──────────────────────────────────────────────────────────────
 
-// ── Review row helper ─────────────────────────────────────────────────────────
-
-function ReviewRow({ label, value, fg, muted, isNote }: {
-  label: string; value: string; fg: string; muted: string; isNote?: boolean;
+function SuggestInput({
+  label,
+  value,
+  onChange,
+  suggestions,
+  placeholder,
+  required,
+  colors,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  suggestions: string[];
+  placeholder: string;
+  required?: boolean;
+  colors: ReturnType<typeof useColors>;
 }) {
+  const [open, setOpen] = useState(false);
+  const filtered = suggestions
+    .filter(s => s.toLowerCase().includes(value.toLowerCase()) && s.toLowerCase() !== value.toLowerCase())
+    .slice(0, 6);
+
   return (
-    <View style={styles.reviewRow}>
-      <Text style={[styles.reviewLabel, { color: muted }]}>{label}</Text>
-      <Text style={[styles.reviewValue, { color: isNote ? muted : fg, fontStyle: isNote ? "italic" : "normal" }]}>{value}</Text>
+    <View style={{ marginBottom: 14 }}>
+      <Text style={{ fontSize: 13, fontWeight: "600", color: colors.mutedForeground, marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 }}>
+        {label}{required ? "  *" : ""}
+      </Text>
+      <TextInput
+        value={value}
+        onChangeText={t => { onChange(t); setOpen(t.length > 0); }}
+        placeholder={placeholder}
+        placeholderTextColor={colors.mutedForeground}
+        onFocus={() => setOpen(suggestions.length > 0 || value.length > 0)}
+        onBlur={() => setTimeout(() => setOpen(false), 180)}
+        style={{
+          backgroundColor: colors.card,
+          borderWidth: 1.5,
+          borderColor: colors.border,
+          borderRadius: 12,
+          paddingHorizontal: 14,
+          paddingVertical: 13,
+          fontSize: 15,
+          color: colors.foreground,
+        }}
+      />
+      {open && filtered.length > 0 && (
+        <View style={{
+          backgroundColor: colors.card,
+          borderWidth: 1,
+          borderColor: colors.primary + "55",
+          borderRadius: 12,
+          marginTop: 4,
+          overflow: "hidden",
+        }}>
+          {filtered.map((s, i) => (
+            <Pressable
+              key={s}
+              onPress={() => { onChange(s); setOpen(false); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+              style={{
+                paddingHorizontal: 14,
+                paddingVertical: 12,
+                borderTopWidth: i === 0 ? 0 : StyleSheet.hairlineWidth,
+                borderTopColor: colors.border,
+                flexDirection: "row",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <Ionicons name="time-outline" size={14} color={colors.mutedForeground} />
+              <Text style={{ fontSize: 15, color: colors.foreground }}>{s}</Text>
+            </Pressable>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+// ── ReviewRow ─────────────────────────────────────────────────────────────────
+
+function ReviewRow({ label, value }: { label: string; value: string }) {
+  const colors = useColors();
+  if (!value) return null;
+  return (
+    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start", paddingVertical: 8, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border, gap: 12 }}>
+      <Text style={{ fontSize: 13, color: colors.mutedForeground, flex: 1 }}>{label}</Text>
+      <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, flex: 2, textAlign: "right", flexWrap: "wrap" }}>{value}</Text>
+    </View>
+  );
+}
+
+// ── Main Component ────────────────────────────────────────────────────────────
 
 export default function ActivityWizard() {
-  const colors  = useColors();
   const router  = useRouter();
   const insets  = useSafeAreaInsets();
+  const colors  = useColors();
 
+  // ── Navigation
   const [step, setStep] = useState(1);
-
-  // Step 1
   const [activityType, setActivityType] = useState<ActivityType | null>(null);
+  const [saving, setSaving] = useState(false);
 
-  // Step 2 — course / single
-  const [disciplineId, setDisciplineId]   = useState<number | null>(null);
-  const [skillLevel, setSkillLevel]       = useState("open");
-  const [ageMin, setAgeMin]               = useState(5);
-  const [ageMax, setAgeMax]               = useState(18);
-  const [capacity, setCapacity]           = useState(15);
-  const [priceStr, setPriceStr]           = useState("");
-  const [notes, setNotes]                 = useState("");
-  // Step 2 — workshop / single
-  const [evtTitle, setEvtTitle]           = useState("");
-  const [evtDesc, setEvtDesc]             = useState("");
-  const [evtLocation, setEvtLocation]     = useState("");
-  // Step 2 — private
-  const [memberPriceStr, setMemberPriceStr]     = useState("");
-  const [operatorPayoutStr, setOperatorPayoutStr] = useState("");
-  const [duration, setDuration]           = useState(60);
+  // ── Step 2: Course Identity
+  const [courseName,      setCourseName]      = useState("");
+  const [disciplineName,  setDisciplineName]  = useState("");
+  const [levelName,       setLevelName]       = useState("");
+  const [courseNotes,     setCourseNotes]     = useState("");
 
-  // Step 3
-  const [slots, setSlots] = useState<WizardSlot[]>([newSlot()]);
+  // ── Step 2: Workshop / Single
+  const [evtTitle,     setEvtTitle]     = useState("");
+  const [evtDate,      setEvtDate]      = useState("");
+  const [evtStartTime, setEvtStartTime] = useState("");
+  const [evtEndTime,   setEvtEndTime]   = useState("");
+  const [evtLocation,  setEvtLocation]  = useState("");
+  const [evtDesc,      setEvtDesc]      = useState("");
 
-  // Step 4
-  const [operatorProfileId, setOperatorProfileId] = useState<number | null>(null);
-  const [operatorSkillsAll, setOperatorSkillsAll] = useState<ApiOperatorSkillSummary[]>([]);
-  const [aiMatches, setAiMatches]                 = useState<ApiAiMatchResult[]>([]);
-  const [aiLoading, setAiLoading]                 = useState(false);
-  const [aiMatchDone, setAiMatchDone]             = useState(false);
+  // ── Step 2: Private
+  const [privDiscipline,  setPrivDiscipline]  = useState("");
+  const [privMemberPrice, setPrivMemberPrice] = useState("");
+  const [privOpPayout,    setPrivOpPayout]    = useState("");
+  const [privDuration,    setPrivDuration]    = useState("60");
 
-  // Remote data
-  const [disciplines, setDisciplines] = useState<ApiDiscipline[]>([]);
-  const [loadingData, setLoadingData] = useState(false);
-  const [saving, setSaving]           = useState(false);
+  // ── Step 3: Season & Schedule (Course)
+  const [startDate,    setStartDate]    = useState("");
+  const [endDate,      setEndDate]      = useState("");
+  const [dayOfWeek,    setDayOfWeek]    = useState<number | null>(null);
+  const [startTime,    setStartTime]    = useState("");
+  const [endTime,      setEndTime]      = useState("");
+  const [weekInterval, setWeekInterval] = useState<1 | 2>(1);
+  const [ageMin,       setAgeMin]       = useState("5");
+  const [ageMax,       setAgeMax]       = useState("18");
+  const [capacity,     setCapacity]     = useState("15");
 
+  // ── Step 4: Pricing (Course)
+  const [trialFree,      setTrialFree]      = useState(false);
+  const [priceLesson,    setPriceLesson]    = useState("");
+  const [bundleEnabled,  setBundleEnabled]  = useState(false);
+  const [bundleSize,     setBundleSize]     = useState("10");
+  const [bundlePrice,    setBundlePrice]    = useState("");
+  const [monthlyEnabled, setMonthlyEnabled] = useState(false);
+  const [monthlyPrice,   setMonthlyPrice]   = useState("");
+  const [annualEnabled,  setAnnualEnabled]  = useState(false);
+  const [annualPrice,    setAnnualPrice]    = useState("");
+
+  // ── Step 5: Instructor
+  const [operatorProfileId,  setOperatorProfileId]  = useState<number | null>(null);
+  const [payOverride,        setPayOverride]         = useState("");
+  const [operatorSkillsAll,  setOperatorSkillsAll]   = useState<ApiOperatorSkillSummary[]>([]);
+  const [aiMatches,          setAiMatches]           = useState<ApiAiMatchResult[]>([]);
+  const [aiLoading,          setAiLoading]           = useState(false);
+  const [aiMatchDone,        setAiMatchDone]         = useState(false);
+
+  // ── Suggestions (Step 2, Course)
+  const [courseNameSugg,   setCourseNameSugg]   = useState<string[]>([]);
+  const [disciplineSugg,   setDisciplineSugg]   = useState<string[]>([]);
+  const [levelSugg,        setLevelSugg]         = useState<string[]>([]);
+  const [privDiscSugg,     setPrivDiscSugg]      = useState<string[]>([]);
+
+  const opLoadedRef = useRef(false);
+
+  // ── Load suggestions on step 2 (course)
   useEffect(() => {
-    setLoadingData(true);
-    Promise.all([
-      api.getDisciplines().catch(() => [] as ApiDiscipline[]),
-      getAllOperatorSkills().catch(() => [] as ApiOperatorSkillSummary[]),
-    ]).then(([d, ops]) => {
-      setDisciplines(d.filter(x => x.active));
-      setOperatorSkillsAll(ops);
-    }).finally(() => setLoadingData(false));
-  }, []);
-
-  // ── Slot helpers ────────────────────────────────────────────────────────────
-
-  const updateSlot = (id: string, field: keyof WizardSlot, value: unknown) =>
-    setSlots(prev => prev.map(s => s.id === id ? { ...s, [field]: value } : s));
-
-  const addSlot = () => { setSlots(p => [...p, newSlot()]); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); };
-  const removeSlot = (id: string) => setSlots(p => p.filter(s => s.id !== id));
-
-  // ── AI instructor match ──────────────────────────────────────────────────────
-  const handleAiMatch = async () => {
-    setAiLoading(true);
-    try {
-      const disc = disciplines.find(d => d.id === disciplineId);
-      const result = await aiMatchOperator({
-        activityType: activityType ?? "course",
-        discipline: disc?.name,
-        notes,
-      });
-      setAiMatches(result.matches);
-      setAiMatchDone(true);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    } catch {
-      Alert.alert("AI Match", "Could not run AI match right now. Please select an instructor manually.");
-    } finally {
-      setAiLoading(false);
+    if (step === 2 && activityType === "course") {
+      getCourseLabels("course_name").then(setCourseNameSugg).catch(() => {});
+      getCourseLabels("discipline").then(setDisciplineSugg).catch(() => {});
+      getCourseLabels("level").then(setLevelSugg).catch(() => {});
     }
-  };
+    if (step === 2 && activityType === "private") {
+      getCourseLabels("discipline").then(setPrivDiscSugg).catch(() => {});
+    }
+  }, [step, activityType]);
 
-  // ── Navigation ──────────────────────────────────────────────────────────────
+  // ── Load operators on step 5
+  useEffect(() => {
+    if (step !== 5 || opLoadedRef.current) return;
+    opLoadedRef.current = true;
+    getAllOperatorSkills().then(setOperatorSkillsAll).catch(() => {});
+  }, [step]);
 
-  const handleNext = () => {
-    if (step === 1 && !activityType) {
-      Alert.alert("Choose a type", "Select what kind of activity you want to create.");
-      return;
+  // ── Nav logic
+  const isCourse = activityType === "course";
+  const maxStep  = 5;
+
+  // Display progress: course = 5 steps, others = 3 steps
+  const displayTotal   = isCourse ? 5 : 3;
+  const displayCurrent = isCourse ? step : (step <= 2 ? step : 3);
+  const stepLabels     = isCourse
+    ? ["Type", "Identity", "Schedule", "Pricing", "Finish"]
+    : ["Type", "Details", "Finish"];
+
+  const handleNext = useCallback(() => {
+    if (step === 1) {
+      if (!activityType) { Alert.alert("Select a type", "Tap one of the cards to choose what to create."); return; }
+      setStep(2); return;
     }
     if (step === 2) {
-      if (activityType === "course" && !disciplineId) {
-        Alert.alert("Select a discipline", "Please choose the discipline for this activity.");
-        return;
+      if (activityType === "course" && !disciplineName.trim()) {
+        Alert.alert("Required", "Please enter a discipline (e.g. Ballet, Swimming)."); return;
       }
       if ((activityType === "workshop" || activityType === "single") && !evtTitle.trim()) {
-        Alert.alert("Add a title", "Please give this activity a name.");
-        return;
+        Alert.alert("Required", "Please enter a title."); return;
       }
-      if (activityType === "private" && eurosToCents(memberPriceStr) <= 0) {
-        Alert.alert("Add a price", "Please enter the member price for this lesson type.");
-        return;
+      if (activityType === "course") { setStep(3); return; }
+      setStep(5); return; // non-course jumps to instructor/review
+    }
+    if (step === 3) {
+      if (activityType === "course") {
+        if (dayOfWeek === null) { Alert.alert("Required", "Select a day of the week."); return; }
+        if (!startTime || !endTime) { Alert.alert("Required", "Enter start and end times."); return; }
       }
+      setStep(4); return;
     }
-    if (step === 3 && activityType === "course") {
-      const bad = slots.find(s => !s.startTime || !s.endTime);
-      if (bad) { Alert.alert("Check schedule", "Fill in start and end time for every slot."); return; }
-    }
-    setStep(s => Math.min(s + 1, 5));
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
+    setStep(s => Math.min(s + 1, maxStep));
+  }, [step, activityType, disciplineName, evtTitle, dayOfWeek, startTime, endTime]);
 
-  const handleBack = () => {
+  const handleBack = useCallback(() => {
     if (step === 1) { router.back(); return; }
+    if (step === 5 && !isCourse) { setStep(2); return; }
     setStep(s => Math.max(s - 1, 1));
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  };
+  }, [step, isCourse, router]);
 
-  // ── Create ──────────────────────────────────────────────────────────────────
+  const handleAiMatch = async () => {
+    const skillTag = disciplineName || levelName || "";
+    setAiLoading(true);
+    try {
+      const res = await aiMatchOperator({ activityType: "course", discipline: skillTag, operatorProfiles: operatorSkillsAll });
+      setAiMatches(res.matches ?? []); setAiMatchDone(true);
+    } catch {
+      Alert.alert("AI Match", "Could not get AI recommendations.");
+    } finally { setAiLoading(false); }
+  };
 
   const handleCreate = async () => {
     setSaving(true);
     try {
-      const disc = disciplines.find(d => d.id === disciplineId);
-
-      if (activityType === "course" || activityType === "single") {
-        for (const slot of slots) {
-          await request<{ id: number }>("POST", "/scheduled-courses", {
-            disciplineId,
-            operatorProfileId: operatorProfileId ?? undefined,
-            dayOfWeek: slot.dayOfWeek,
-            startTime: slot.startTime,
-            endTime: slot.endTime,
-            skillLevel,
-            ageMin,
-            ageMax,
-            weekInterval: activityType === "single" ? 1 : slot.weekInterval,
-            notes: notes.trim() || undefined,
-            pricePerLessonCents: eurosToCents(priceStr) || undefined,
-          });
+      if (activityType === "course") {
+        if (dayOfWeek === null || !startTime || !endTime) {
+          Alert.alert("Incomplete", "Day, start time and end time are required."); setSaving(false); return;
         }
-      } else if (activityType === "workshop") {
-        await request<{ id: number }>("POST", "/calendar-events", {
-          title: evtTitle.trim(),
-          description: evtDesc.trim() || undefined,
-          event_type: "workshop",
-          event_date: slots[0]?.date || new Date().toISOString().substring(0, 10),
-          start_time: slots[0]?.startTime || undefined,
-          end_time: slots[0]?.endTime || undefined,
-          location: evtLocation.trim() || undefined,
-          target_audience: "all",
-          reminder_days_before: [1, 7],
+        await api.createScheduledCourse({
+          disciplineName:          disciplineName.trim() || undefined,
+          courseName:              courseName.trim() || undefined,
+          skillLevel:              levelName.trim() || undefined,
+          startDate:               parseDate(startDate) ?? undefined,
+          billingEndDate:          parseDate(endDate) ?? undefined,
+          dayOfWeek:               dayOfWeek,
+          startTime:               startTime,
+          endTime:                 endTime,
+          weekInterval:            weekInterval,
+          ageMin:                  parseInt(ageMin) || 5,
+          ageMax:                  parseInt(ageMax) || 18,
+          capacity:                parseInt(capacity) || undefined,
+          trialLessonFree:         trialFree,
+          pricePerLessonCents:     eurosToCents(priceLesson) || undefined,
+          packageSize:             bundleEnabled ? parseInt(bundleSize) || undefined : undefined,
+          packagePriceCents:       bundleEnabled ? eurosToCents(bundlePrice) || undefined : undefined,
+          monthlyPriceCents:       monthlyEnabled ? eurosToCents(monthlyPrice) || undefined : undefined,
+          pricePerYearCents:       annualEnabled ? eurosToCents(annualPrice) || undefined : undefined,
+          paymentType:             monthlyEnabled ? "monthly_billing" : bundleEnabled ? "package" : "single",
+          operatorProfileId:       operatorProfileId ?? undefined,
+          operatorPayOverrideCents: payOverride ? eurosToCents(payOverride) : undefined,
+          notes:                   courseNotes.trim() || undefined,
         });
-      } else if (activityType === "private") {
-        await request<{ id: number }>("POST", "/private-lessons/configs", {
-          discipline_name: disc?.name || evtTitle.trim() || "Private Lesson",
-          discipline_id: disciplineId || undefined,
-          member_price_cents: eurosToCents(memberPriceStr),
-          operator_payout_cents: eurosToCents(operatorPayoutStr),
-          duration_minutes: duration,
-          enabled: true,
-        });
-      }
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert("Course Created!", operatorProfileId
+          ? "The instructor will receive a confirmation request."
+          : "The course has been saved. You can assign an instructor later.",
+          [{ text: "Done", onPress: () => router.back() }],
+        );
 
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const msg =
-        activityType === "course"  ? `${slots.length} time slot${slots.length > 1 ? "s" : ""} created. The assigned instructor will need to confirm.`
-        : activityType === "workshop" ? `"${evtTitle}" has been added to the calendar.`
-        : activityType === "private"  ? `Private lesson config saved. Operators can now offer this lesson.`
-        :                               "Session created successfully.";
-      Alert.alert("Done! 🎉", msg, [{ text: "Great", onPress: () => router.back() }]);
-    } catch {
-      Alert.alert("Error", "Something went wrong. Please try again.");
-    } finally {
-      setSaving(false);
-    }
+      } else if (activityType === "workshop" || activityType === "single") {
+        if (!evtTitle.trim() || !evtDate || !evtStartTime) {
+          Alert.alert("Incomplete", "Title, date and start time are required."); setSaving(false); return;
+        }
+        const parsedDate = parseDate(evtDate);
+        if (!parsedDate) { Alert.alert("Invalid Date", "Use DD/MM/YYYY format."); setSaving(false); return; }
+        const dayNum = new Date(parsedDate).getDay();
+        await api.createScheduledCourse({
+          disciplineName:    evtTitle.trim(),
+          courseName:        evtTitle.trim(),
+          startDate:         parsedDate,
+          billingEndDate:    parsedDate,
+          dayOfWeek:         dayNum,
+          startTime:         evtStartTime,
+          endTime:           evtEndTime || evtStartTime,
+          weekInterval:      1,
+          location_label:    evtLocation.trim() || undefined,
+          notes:             evtDesc.trim() || undefined,
+          operatorProfileId: operatorProfileId ?? undefined,
+        });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert("Created!", "Activity saved.", [{ text: "Done", onPress: () => router.back() }]);
+
+      } else if (activityType === "private") {
+        if (!privDiscipline.trim()) { Alert.alert("Required", "Enter a discipline."); setSaving(false); return; }
+        await api.createScheduledCourse({
+          disciplineName:    privDiscipline.trim(),
+          dayOfWeek:         1,
+          startTime:         "09:00",
+          endTime:           "10:00",
+          pricePerLessonCents: eurosToCents(privMemberPrice) || undefined,
+          operatorPayOverrideCents: eurosToCents(privOpPayout) || undefined,
+          notes:             `Private lesson · Duration: ${privDuration}min`,
+          operatorProfileId: operatorProfileId ?? undefined,
+          capacity:          1,
+        });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        Alert.alert("Created!", "Private lesson option saved.", [{ text: "Done", onPress: () => router.back() }]);
+      }
+    } catch (err: unknown) {
+      Alert.alert("Error", err instanceof Error ? err.message : "Something went wrong. Please try again.");
+    } finally { setSaving(false); }
   };
 
-  // ── STEP 1 — type selection ───────────────────────────────────────────────
+  // ── Step renderers ────────────────────────────────────────────────────────
 
   const renderStep1 = () => (
-    <View style={styles.stepContent}>
-      <Text style={[styles.stepTitle, { color: colors.foreground }]}>What do you want to create?</Text>
-      <Text style={[styles.stepSub, { color: colors.mutedForeground }]}>Choose the type of activity. You can add more details in the next steps.</Text>
-
-      {([
-        { type: "course"   as ActivityType, icon: "calendar-outline"  as const, title: "Recurring Course",   desc: "Weekly or bi-weekly classes — e.g. Zumba, ballet, gymnastics" },
-        { type: "workshop" as ActivityType, icon: "ribbon-outline"     as const, title: "Workshop / Event",   desc: "One-off event on a specific date" },
-        { type: "private"  as ActivityType, icon: "person-outline"     as const, title: "Private Lesson",     desc: "1-to-1 sessions members can book and pay online" },
-        { type: "single"   as ActivityType, icon: "flash-outline"      as const, title: "Single Session",     desc: "One class on a specific date with an instructor" },
-      ] as { type: ActivityType; icon: React.ComponentProps<typeof Ionicons>["name"]; title: string; desc: string }[]).map(opt => {
-        const active = activityType === opt.type;
+    <View style={{ gap: 12 }}>
+      <Text style={[st.sectionTitle, { color: colors.foreground }]}>What would you like to create?</Text>
+      {(
+        [
+          { type: "course",    icon: "school-outline",         title: "Recurring Course",  sub: "Weekly or bi-weekly classes with season dates and a dedicated instructor." },
+          { type: "workshop",  icon: "megaphone-outline",       title: "Workshop / Event",  sub: "A one-off event with a specific date, time and location." },
+          { type: "private",   icon: "person-outline",          title: "Private Lesson",    sub: "On-demand 1:1 booking that parents can request." },
+          { type: "single",    icon: "calendar-number-outline", title: "Single Session",    sub: "A standalone class without a full recurring schedule." },
+        ] as { type: ActivityType; icon: string; title: string; sub: string }[]
+      ).map(({ type, icon, title, sub }) => {
+        const selected = activityType === type;
         return (
           <Pressable
-            key={opt.type}
-            style={[styles.typeCard, { backgroundColor: colors.card, borderColor: active ? colors.primary : colors.border, borderWidth: active ? 2.5 : 1.5 }]}
-            onPress={() => { setActivityType(opt.type); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+            key={type}
+            style={[st.typeCard, { backgroundColor: colors.card, borderColor: selected ? colors.primary : colors.border, borderWidth: selected ? 2 : 1.5 }]}
+            onPress={() => { setActivityType(type); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
           >
-            <View style={[styles.typeIcon, { backgroundColor: active ? colors.primary : colors.primary + "18" }]}>
-              <Ionicons name={opt.icon} size={24} color={active ? colors.secondary : colors.primary} />
+            <View style={[st.typeIconWrap, { backgroundColor: selected ? colors.primary : colors.border + "50" }]}>
+              <Ionicons name={icon as never} size={22} color={selected ? "#fff" : colors.foreground} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={[styles.typeTitle, { color: colors.foreground }]}>{opt.title}</Text>
-              <Text style={[styles.typeDesc, { color: colors.mutedForeground }]}>{opt.desc}</Text>
+              <Text style={[st.typeTitle, { color: colors.foreground }]}>{title}</Text>
+              <Text style={[st.typeSub, { color: colors.mutedForeground }]}>{sub}</Text>
             </View>
-            {active && <Ionicons name="checkmark-circle" size={22} color={colors.primary} />}
+            {selected && <Ionicons name="checkmark-circle" size={22} color={colors.primary} />}
           </Pressable>
         );
       })}
     </View>
   );
 
-  // ── STEP 2 — details ─────────────────────────────────────────────────────
+  const renderStep2Course = () => (
+    <View style={{ gap: 4 }}>
+      <Text style={[st.sectionTitle, { color: colors.foreground, marginBottom: 4 }]}>Course Identity</Text>
+      <Text style={[st.sectionSub, { color: colors.mutedForeground }]}>Tap a suggestion or type freely — new terms are saved for next time.</Text>
+      <View style={{ height: 16 }} />
+      <SuggestInput label="Course Name" value={courseName} onChange={setCourseName} suggestions={courseNameSugg} placeholder="e.g. Tuesday Beginners Ballet" colors={colors} />
+      <SuggestInput label="Discipline" value={disciplineName} onChange={setDisciplineName} suggestions={disciplineSugg} placeholder="e.g. Ballet, Swimming, Yoga" colors={colors} required />
+      <SuggestInput label="Level / Category" value={levelName} onChange={setLevelName} suggestions={levelSugg} placeholder="e.g. Beginner, Intermediate, All Ages" colors={colors} />
+      <View style={{ marginBottom: 14 }}>
+        <Text style={st.fieldLabel}>Notes (optional)</Text>
+        <TextInput
+          value={courseNotes}
+          onChangeText={setCourseNotes}
+          placeholder="Any internal notes about this course…"
+          placeholderTextColor={colors.mutedForeground}
+          multiline
+          numberOfLines={3}
+          style={[st.textArea, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]}
+        />
+      </View>
+    </View>
+  );
 
-  const renderStep2 = () => {
-    if (activityType === "course") {
-      return (
-        <View style={styles.stepContent}>
-          <Text style={[styles.stepTitle, { color: colors.foreground }]}>Course details</Text>
-
-          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>DISCIPLINE</Text>
-          {loadingData
-            ? <ActivityIndicator color={colors.primary} />
-            : disciplines.length === 0
-              ? <Text style={[styles.emptyNote, { color: colors.mutedForeground }]}>No disciplines found. Add them first in Settings → Disciplines.</Text>
-              : <View style={styles.pillRow}>{disciplines.map(d => {
-                  const sel = disciplineId === d.id;
-                  return (
-                    <Pressable key={d.id} style={[styles.pill, { backgroundColor: sel ? colors.primary : colors.card, borderColor: sel ? colors.primary : colors.border }]} onPress={() => setDisciplineId(d.id)}>
-                      <Text style={[styles.pillText, { color: sel ? "#FFF" : colors.foreground }]}>{d.name}</Text>
-                    </Pressable>
-                  );
-                })}</View>
-          }
-
-          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>LEVEL</Text>
-          <View style={styles.pillRow}>
-            {["open", "beginner", "intermediate", "advanced"].map(l => {
-              const sel = skillLevel === l;
-              const label = l.charAt(0).toUpperCase() + l.slice(1);
-              return (
-                <Pressable key={l} style={[styles.pill, { backgroundColor: sel ? colors.primary : colors.card, borderColor: sel ? colors.primary : colors.border }]} onPress={() => setSkillLevel(l)}>
-                  <Text style={[styles.pillText, { color: sel ? "#FFF" : colors.foreground }]}>{label}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
-
-          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>AGE RANGE</Text>
-          <View style={styles.counterRow}>
-            {([
-              { label: "Min age", val: ageMin, setVal: setAgeMin, min: 1, max: ageMax - 1 },
-              { label: "Max age", val: ageMax, setVal: setAgeMax, min: ageMin + 1, max: 99 },
-            ] as { label: string; val: number; setVal: (v: number) => void; min: number; max: number }[]).map((item, i) => (
-              <React.Fragment key={item.label}>
-                {i === 1 && <Text style={[styles.counterSep, { color: colors.mutedForeground }]}>to</Text>}
-                <View style={styles.counterBlock}>
-                  <Text style={[styles.counterLabel, { color: colors.mutedForeground }]}>{item.label}</Text>
-                  <View style={styles.counter}>
-                    <Pressable style={[styles.counterBtn, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => item.setVal(Math.max(item.min, item.val - 1))}>
-                      <Text style={{ color: colors.foreground, fontSize: 20 }}>−</Text>
-                    </Pressable>
-                    <Text style={[styles.counterVal, { color: colors.foreground }]}>{item.val}</Text>
-                    <Pressable style={[styles.counterBtn, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => item.setVal(Math.min(item.max, item.val + 1))}>
-                      <Text style={{ color: colors.foreground, fontSize: 20 }}>+</Text>
-                    </Pressable>
-                  </View>
-                </View>
-              </React.Fragment>
-            ))}
-          </View>
-
-          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>MAX CAPACITY</Text>
-          <View style={[styles.counter, { alignSelf: "flex-start" }]}>
-            <Pressable style={[styles.counterBtn, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => setCapacity(v => Math.max(1, v - 1))}>
-              <Text style={{ color: colors.foreground, fontSize: 20 }}>−</Text>
-            </Pressable>
-            <Text style={[styles.counterVal, { color: colors.foreground }]}>{capacity} people</Text>
-            <Pressable style={[styles.counterBtn, { backgroundColor: colors.card, borderColor: colors.border }]} onPress={() => setCapacity(v => v + 1)}>
-              <Text style={{ color: colors.foreground, fontSize: 20 }}>+</Text>
-            </Pressable>
-          </View>
-
-          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>PRICE PER LESSON (optional)</Text>
-          <View style={[styles.inputRow, { borderColor: colors.border, backgroundColor: colors.card }]}>
-            <Text style={[styles.inputPrefix, { color: colors.mutedForeground }]}>€</Text>
-            <TextInput style={[styles.inputFlex, { color: colors.foreground }]} value={priceStr} onChangeText={setPriceStr} placeholder="0.00" placeholderTextColor={colors.mutedForeground} keyboardType="decimal-pad" />
-          </View>
-
-          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>NOTES (optional)</Text>
-          <TextInput style={[styles.textArea, { borderColor: colors.border, backgroundColor: colors.card, color: colors.foreground }]} value={notes} onChangeText={setNotes} placeholder="Any extra info about this course..." placeholderTextColor={colors.mutedForeground} multiline numberOfLines={3} />
+  const renderStep2WorkshopSingle = () => (
+    <View style={{ gap: 4 }}>
+      <Text style={[st.sectionTitle, { color: colors.foreground }]}>{activityType === "workshop" ? "Workshop / Event" : "Single Session"}</Text>
+      <View style={{ height: 12 }} />
+      <View style={{ marginBottom: 14 }}>
+        <Text style={st.fieldLabel}>Title  *</Text>
+        <TextInput value={evtTitle} onChangeText={setEvtTitle} placeholder="e.g. Summer Dance Workshop" placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+      </View>
+      <View style={{ marginBottom: 14 }}>
+        <Text style={st.fieldLabel}>Date  *</Text>
+        <TextInput value={evtDate} onChangeText={t => setEvtDate(fmtDate(t))} placeholder="DD/MM/YYYY" keyboardType="numeric" placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} maxLength={10} />
+      </View>
+      <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
+        <View style={{ flex: 1 }}>
+          <Text style={st.fieldLabel}>Start time  *</Text>
+          <TextInput value={evtStartTime} onChangeText={t => setEvtStartTime(fmtTime(t))} placeholder="09:00" keyboardType="numeric" placeholderTextColor={colors.mutedForeground} maxLength={5} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
         </View>
-      );
-    }
+        <View style={{ flex: 1 }}>
+          <Text style={st.fieldLabel}>End time</Text>
+          <TextInput value={evtEndTime} onChangeText={t => setEvtEndTime(fmtTime(t))} placeholder="11:00" keyboardType="numeric" placeholderTextColor={colors.mutedForeground} maxLength={5} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+        </View>
+      </View>
+      <View style={{ marginBottom: 14 }}>
+        <Text style={st.fieldLabel}>Location (optional)</Text>
+        <TextInput value={evtLocation} onChangeText={setEvtLocation} placeholder="e.g. Main Studio, Room B" placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+      </View>
+      <View style={{ marginBottom: 14 }}>
+        <Text style={st.fieldLabel}>Description (optional)</Text>
+        <TextInput value={evtDesc} onChangeText={setEvtDesc} placeholder="Details for participants…" placeholderTextColor={colors.mutedForeground} multiline numberOfLines={3} style={[st.textArea, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+      </View>
+    </View>
+  );
 
-    if (activityType === "workshop" || activityType === "single") {
-      return (
-        <View style={styles.stepContent}>
-          <Text style={[styles.stepTitle, { color: colors.foreground }]}>Event details</Text>
+  const renderStep2Private = () => (
+    <View style={{ gap: 4 }}>
+      <Text style={[st.sectionTitle, { color: colors.foreground }]}>Private Lesson</Text>
+      <Text style={[st.sectionSub, { color: colors.mutedForeground }]}>Parents can request 1:1 sessions on demand.</Text>
+      <View style={{ height: 16 }} />
+      <SuggestInput label="Discipline  *" value={privDiscipline} onChange={setPrivDiscipline} suggestions={privDiscSugg} placeholder="e.g. Piano, Ballet, Tennis" colors={colors} required />
+      <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
+        <View style={{ flex: 1 }}>
+          <Text style={st.fieldLabel}>Member price (€/lesson)</Text>
+          <TextInput value={privMemberPrice} onChangeText={setPrivMemberPrice} placeholder="0.00" keyboardType="decimal-pad" placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+        </View>
+        <View style={{ flex: 1 }}>
+          <Text style={st.fieldLabel}>Instructor pay (€/lesson)</Text>
+          <TextInput value={privOpPayout} onChangeText={setPrivOpPayout} placeholder="0.00" keyboardType="decimal-pad" placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+        </View>
+      </View>
+      <View style={{ marginBottom: 14 }}>
+        <Text style={st.fieldLabel}>Session duration (minutes)</Text>
+        <TextInput value={privDuration} onChangeText={setPrivDuration} placeholder="60" keyboardType="numeric" placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+      </View>
+    </View>
+  );
 
-          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>TITLE *</Text>
-          <TextInput style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.foreground }]} value={evtTitle} onChangeText={setEvtTitle} placeholder="e.g. Summer Zumba Workshop" placeholderTextColor={colors.mutedForeground} />
+  const renderStep3Course = () => {
+    const adj = (setter: (v: string) => void, val: string, delta: number, min: number, max: number) => {
+      const n = Math.max(min, Math.min(max, (parseInt(val) || min) + delta));
+      setter(String(n));
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    };
+    return (
+      <View style={{ gap: 4 }}>
+        <Text style={[st.sectionTitle, { color: colors.foreground }]}>Season & Schedule</Text>
+        <View style={{ height: 12 }} />
 
-          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>DISCIPLINE (optional)</Text>
-          <View style={styles.pillRow}>{disciplines.map(d => {
-            const sel = disciplineId === d.id;
+        <Text style={[st.groupLabel, { color: colors.primary }]}>SEASON DATES</Text>
+        <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={st.fieldLabel}>Starts</Text>
+            <TextInput value={startDate} onChangeText={t => setStartDate(fmtDate(t))} placeholder="DD/MM/YYYY" keyboardType="numeric" maxLength={10} placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={st.fieldLabel}>Ends</Text>
+            <TextInput value={endDate} onChangeText={t => setEndDate(fmtDate(t))} placeholder="DD/MM/YYYY" keyboardType="numeric" maxLength={10} placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+          </View>
+        </View>
+
+        <Text style={[st.groupLabel, { color: colors.primary }]}>DAY OF WEEK  *</Text>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 18 }}>
+          {DAY_SHORT.map((d, i) => {
+            const sel = dayOfWeek === i;
             return (
-              <Pressable key={d.id} style={[styles.pill, { backgroundColor: sel ? colors.primary : colors.card, borderColor: sel ? colors.primary : colors.border }]} onPress={() => setDisciplineId(prev => prev === d.id ? null : d.id)}>
-                <Text style={[styles.pillText, { color: sel ? "#FFF" : colors.foreground }]}>{d.name}</Text>
+              <Pressable key={i} style={[st.dayPill, { backgroundColor: sel ? colors.primary : colors.card, borderColor: sel ? colors.primary : colors.border }]}
+                onPress={() => { setDayOfWeek(i); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
+                <Text style={{ fontSize: 13, fontWeight: "600", color: sel ? "#fff" : colors.foreground }}>{d}</Text>
               </Pressable>
             );
-          })}</View>
-
-          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>DESCRIPTION (optional)</Text>
-          <TextInput style={[styles.textArea, { borderColor: colors.border, backgroundColor: colors.card, color: colors.foreground }]} value={evtDesc} onChangeText={setEvtDesc} placeholder="What will participants experience?" placeholderTextColor={colors.mutedForeground} multiline numberOfLines={3} />
-
-          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>LOCATION (optional)</Text>
-          <TextInput style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.foreground }]} value={evtLocation} onChangeText={setEvtLocation} placeholder="e.g. Studio A, Main Hall" placeholderTextColor={colors.mutedForeground} />
+          })}
         </View>
-      );
-    }
 
-    if (activityType === "private") {
-      const margin = eurosToCents(memberPriceStr) - eurosToCents(operatorPayoutStr);
-      return (
-        <View style={styles.stepContent}>
-          <Text style={[styles.stepTitle, { color: colors.foreground }]}>Private lesson settings</Text>
-
-          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>DISCIPLINE</Text>
-          {disciplines.length > 0
-            ? <View style={styles.pillRow}>{disciplines.map(d => {
-                const sel = disciplineId === d.id;
-                return (
-                  <Pressable key={d.id} style={[styles.pill, { backgroundColor: sel ? colors.primary : colors.card, borderColor: sel ? colors.primary : colors.border }]} onPress={() => setDisciplineId(d.id)}>
-                    <Text style={[styles.pillText, { color: sel ? "#FFF" : colors.foreground }]}>{d.name}</Text>
-                  </Pressable>
-                );
-              })}</View>
-            : <TextInput style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.foreground }]} value={evtTitle} onChangeText={setEvtTitle} placeholder="e.g. Zumba, Ballet…" placeholderTextColor={colors.mutedForeground} />
-          }
-
-          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>SESSION DURATION</Text>
-          <View style={styles.pillRow}>
-            {[30, 45, 60, 90].map(d => {
-              const sel = duration === d;
-              return (
-                <Pressable key={d} style={[styles.pill, { backgroundColor: sel ? colors.primary : colors.card, borderColor: sel ? colors.primary : colors.border }]} onPress={() => setDuration(d)}>
-                  <Text style={[styles.pillText, { color: sel ? "#FFF" : colors.foreground }]}>{d} min</Text>
-                </Pressable>
-              );
-            })}
+        <Text style={[st.groupLabel, { color: colors.primary }]}>TIME  *</Text>
+        <View style={{ flexDirection: "row", gap: 10, marginBottom: 18 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={st.fieldLabel}>Start</Text>
+            <TextInput value={startTime} onChangeText={t => setStartTime(fmtTime(t))} placeholder="09:00" keyboardType="numeric" maxLength={5} placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground, textAlign: "center", fontSize: 18, fontWeight: "600" }]} />
           </View>
-
-          <View style={styles.priceRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>MEMBER PAYS *</Text>
-              <View style={[styles.inputRow, { borderColor: colors.border, backgroundColor: colors.card }]}>
-                <Text style={[styles.inputPrefix, { color: colors.mutedForeground }]}>€</Text>
-                <TextInput style={[styles.inputFlex, { color: colors.foreground }]} value={memberPriceStr} onChangeText={setMemberPriceStr} placeholder="0.00" placeholderTextColor={colors.mutedForeground} keyboardType="decimal-pad" />
-              </View>
-            </View>
-            <View style={styles.priceArrow}><Ionicons name="arrow-forward" size={20} color={colors.mutedForeground} /></View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>INSTRUCTOR EARNS</Text>
-              <View style={[styles.inputRow, { borderColor: colors.border, backgroundColor: colors.card }]}>
-                <Text style={[styles.inputPrefix, { color: colors.mutedForeground }]}>€</Text>
-                <TextInput style={[styles.inputFlex, { color: colors.foreground }]} value={operatorPayoutStr} onChangeText={setOperatorPayoutStr} placeholder="0.00" placeholderTextColor={colors.mutedForeground} keyboardType="decimal-pad" />
-              </View>
-            </View>
+          <View style={{ justifyContent: "flex-end", paddingBottom: 13 }}>
+            <Text style={{ fontSize: 18, color: colors.mutedForeground }}>→</Text>
           </View>
-
-          {margin > 0 && (
-            <View style={[styles.marginBadge, { backgroundColor: colors.primary + "15", borderColor: colors.primary + "40" }]}>
-              <Ionicons name="trending-up" size={16} color={colors.primary} />
-              <Text style={[styles.marginText, { color: colors.primary }]}>Association margin: €{(margin / 100).toFixed(2)} per session</Text>
-            </View>
-          )}
-        </View>
-      );
-    }
-
-    return null;
-  };
-
-  // ── STEP 3 — schedule ─────────────────────────────────────────────────────
-
-  const renderStep3 = () => {
-    if (activityType === "private") {
-      return (
-        <View style={styles.stepContent}>
-          <Text style={[styles.stepTitle, { color: colors.foreground }]}>How scheduling works</Text>
-          <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Ionicons name="calendar-outline" size={32} color={colors.primary} />
-            <Text style={[styles.infoTitle, { color: colors.foreground }]}>Operators self-publish their slots</Text>
-            <Text style={[styles.infoBody, { color: colors.mutedForeground }]}>Each instructor sets their own available times for private lessons. Members browse, book, and pay directly. You don&apos;t need to set a fixed schedule here.</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={st.fieldLabel}>End</Text>
+            <TextInput value={endTime} onChangeText={t => setEndTime(fmtTime(t))} placeholder="10:00" keyboardType="numeric" maxLength={5} placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground, textAlign: "center", fontSize: 18, fontWeight: "600" }]} />
           </View>
         </View>
-      );
-    }
 
-    if (activityType === "workshop" || activityType === "single") {
-      const slot = slots[0] ?? newSlot();
-      return (
-        <View style={styles.stepContent}>
-          <Text style={[styles.stepTitle, { color: colors.foreground }]}>When is it?</Text>
+        <Text style={[st.groupLabel, { color: colors.primary }]}>FREQUENCY</Text>
+        <View style={{ flexDirection: "row", gap: 10, marginBottom: 18 }}>
+          {([1, 2] as const).map(v => {
+            const sel = weekInterval === v;
+            return (
+              <Pressable key={v} style={[st.freqPill, { flex: 1, backgroundColor: sel ? colors.primary : colors.card, borderColor: sel ? colors.primary : colors.border }]}
+                onPress={() => { setWeekInterval(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
+                <Text style={{ fontSize: 14, fontWeight: "600", color: sel ? "#fff" : colors.foreground }}>{v === 1 ? "Every week" : "Bi-weekly"}</Text>
+              </Pressable>
+            );
+          })}
+        </View>
 
-          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>DATE</Text>
-          <TextInput style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.foreground }]} value={slot.date} onChangeText={v => updateSlot(slot.id, "date", v)} placeholder="YYYY-MM-DD" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" maxLength={10} />
-
-          <View style={styles.timeRow}>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>STARTS AT</Text>
-              <TextInput style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.foreground }]} value={slot.startTime} onChangeText={v => updateSlot(slot.id, "startTime", fmtTime(v))} placeholder="10:00" placeholderTextColor={colors.mutedForeground} keyboardType="numeric" maxLength={5} />
+        <Text style={[st.groupLabel, { color: colors.primary }]}>PARTICIPANTS</Text>
+        <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
+          <View style={{ flex: 1 }}>
+            <Text style={st.fieldLabel}>Age min</Text>
+            <View style={st.stepper}>
+              <Pressable style={st.stepBtn} onPress={() => adj(setAgeMin, ageMin, -1, 0, 99)}>
+                <Ionicons name="remove" size={16} color={colors.foreground} />
+              </Pressable>
+              <Text style={[st.stepVal, { color: colors.foreground }]}>{ageMin}</Text>
+              <Pressable style={st.stepBtn} onPress={() => adj(setAgeMin, ageMin, 1, 0, 99)}>
+                <Ionicons name="add" size={16} color={colors.foreground} />
+              </Pressable>
             </View>
-            <View style={styles.timeSep}><Text style={{ color: colors.mutedForeground, fontSize: 20 }}>→</Text></View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>ENDS AT</Text>
-              <TextInput style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.card, color: colors.foreground }]} value={slot.endTime} onChangeText={v => updateSlot(slot.id, "endTime", fmtTime(v))} placeholder="11:30" placeholderTextColor={colors.mutedForeground} keyboardType="numeric" maxLength={5} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={st.fieldLabel}>Age max</Text>
+            <View style={st.stepper}>
+              <Pressable style={st.stepBtn} onPress={() => adj(setAgeMax, ageMax, -1, 1, 99)}>
+                <Ionicons name="remove" size={16} color={colors.foreground} />
+              </Pressable>
+              <Text style={[st.stepVal, { color: colors.foreground }]}>{ageMax}</Text>
+              <Pressable style={st.stepBtn} onPress={() => adj(setAgeMax, ageMax, 1, 1, 99)}>
+                <Ionicons name="add" size={16} color={colors.foreground} />
+              </Pressable>
+            </View>
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={st.fieldLabel}>Max spots</Text>
+            <View style={st.stepper}>
+              <Pressable style={st.stepBtn} onPress={() => adj(setCapacity, capacity, -1, 1, 999)}>
+                <Ionicons name="remove" size={16} color={colors.foreground} />
+              </Pressable>
+              <Text style={[st.stepVal, { color: colors.foreground }]}>{capacity}</Text>
+              <Pressable style={st.stepBtn} onPress={() => adj(setCapacity, capacity, 1, 1, 999)}>
+                <Ionicons name="add" size={16} color={colors.foreground} />
+              </Pressable>
             </View>
           </View>
         </View>
-      );
-    }
-
-    // COURSE — multi-slot builder
-    return (
-      <View style={styles.stepContent}>
-        <Text style={[styles.stepTitle, { color: colors.foreground }]}>Schedule the classes</Text>
-        <Text style={[styles.stepSub, { color: colors.mutedForeground }]}>Add one row per day. Mix different days, times and frequencies freely.</Text>
-
-        {slots.map((slot, idx) => (
-          <View key={slot.id} style={[styles.slotCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <View style={styles.slotHeader}>
-              <Text style={[styles.slotNum, { color: colors.primary }]}>Slot {idx + 1}</Text>
-              {slots.length > 1 && (
-                <Pressable onPress={() => removeSlot(slot.id)} hitSlop={10}>
-                  <Ionicons name="trash-outline" size={18} color="#EF4444" />
-                </Pressable>
-              )}
-            </View>
-
-            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>DAY OF THE WEEK</Text>
-            <View style={styles.dayRow}>
-              {DAY_SHORT.map((d, i) => {
-                const sel = slot.dayOfWeek === i;
-                return (
-                  <Pressable key={i} style={[styles.dayBtn, { backgroundColor: sel ? colors.primary : colors.card, borderColor: sel ? colors.primary : colors.border }]} onPress={() => updateSlot(slot.id, "dayOfWeek", i)}>
-                    <Text style={[styles.dayBtnText, { color: sel ? "#FFF" : colors.foreground }]}>{d}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-
-            <View style={styles.timeRow}>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>STARTS AT</Text>
-                <TextInput style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.background, color: colors.foreground }]} value={slot.startTime} onChangeText={v => updateSlot(slot.id, "startTime", fmtTime(v))} placeholder="10:15" placeholderTextColor={colors.mutedForeground} keyboardType="numeric" maxLength={5} />
-              </View>
-              <View style={styles.timeSep}><Text style={{ color: colors.mutedForeground, fontSize: 20 }}>→</Text></View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>ENDS AT</Text>
-                <TextInput style={[styles.textInput, { borderColor: colors.border, backgroundColor: colors.background, color: colors.foreground }]} value={slot.endTime} onChangeText={v => updateSlot(slot.id, "endTime", fmtTime(v))} placeholder="11:25" placeholderTextColor={colors.mutedForeground} keyboardType="numeric" maxLength={5} />
-              </View>
-            </View>
-
-            <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>HOW OFTEN?</Text>
-            <View style={styles.freqRow}>
-              {([{ label: "Every week", value: 1 }, { label: "Every 2 weeks", value: 2 }, { label: "Every 3 weeks", value: 3 }]).map(opt => {
-                const sel = slot.weekInterval === opt.value;
-                return (
-                  <Pressable key={opt.value} style={[styles.freqBtn, { backgroundColor: sel ? colors.primary : colors.card, borderColor: sel ? colors.primary : colors.border }]} onPress={() => updateSlot(slot.id, "weekInterval", opt.value)}>
-                    <Text style={[styles.freqText, { color: sel ? "#FFF" : colors.foreground }]}>{opt.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        ))}
-
-        <Pressable style={[styles.addSlotBtn, { borderColor: colors.primary }]} onPress={addSlot}>
-          <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
-          <Text style={[styles.addSlotText, { color: colors.primary }]}>Add another day</Text>
-        </Pressable>
       </View>
     );
   };
 
-  // ── STEP 4 — instructor (skills-based + AI match) ────────────────────────
-
-  const renderStep4 = () => {
-    if (activityType === "private") {
-      return (
-        <View style={styles.stepContent}>
-          <Text style={[styles.stepTitle, { color: colors.foreground }]}>Who can teach it?</Text>
-          <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Ionicons name="people-outline" size={32} color={colors.primary} />
-            <Text style={[styles.infoTitle, { color: colors.foreground }]}>All eligible operators</Text>
-            <Text style={[styles.infoBody, { color: colors.mutedForeground }]}>Any instructor who has enabled "Accept Private Lessons" in their settings will automatically appear as bookable for this discipline. Manage who is active from Lessons → Staff.</Text>
-          </View>
+  const renderStep4Course = () => {
+    const ToggleRow = ({ label, value, onToggle, sub }: { label: string; value: boolean; onToggle: () => void; sub?: string }) => (
+      <Pressable style={[st.toggleRow, { backgroundColor: colors.card, borderColor: value ? colors.primary : colors.border }]} onPress={() => { onToggle(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 15, fontWeight: "600", color: colors.foreground }}>{label}</Text>
+          {sub && <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }}>{sub}</Text>}
         </View>
-      );
-    }
+        <View style={[st.toggleDot, { backgroundColor: value ? colors.primary : colors.border }]}>
+          {value && <Ionicons name="checkmark" size={13} color="#fff" />}
+        </View>
+      </Pressable>
+    );
 
     return (
-      <View style={styles.stepContent}>
-        <Text style={[styles.stepTitle, { color: colors.foreground }]}>Assign an instructor</Text>
-        <Text style={[styles.stepSub, { color: colors.mutedForeground }]}>Select based on skills, or let AI find the best match. You can also skip and assign later.</Text>
+      <View style={{ gap: 4 }}>
+        <Text style={[st.sectionTitle, { color: colors.foreground }]}>Pricing Options</Text>
+        <Text style={[st.sectionSub, { color: colors.mutedForeground }]}>Enable the payment methods you want to offer. Leave empty if not applicable.</Text>
+        <View style={{ height: 12 }} />
 
-        {/* ── AI match button ── */}
-        <Pressable
-          style={[styles.aiMatchBtn, { backgroundColor: colors.primary, opacity: aiLoading ? 0.75 : 1 }]}
-          onPress={handleAiMatch}
-          disabled={aiLoading}
-        >
-          {aiLoading ? (
-            <ActivityIndicator color="#FFF" size="small" />
-          ) : (
-            <>
-              <Ionicons name="flash" size={18} color="#FFF" />
-              <Text style={styles.aiMatchBtnText}>Find Best Match (AI)</Text>
-            </>
-          )}
-        </Pressable>
+        <ToggleRow
+          label="Free trial first lesson"
+          value={trialFree}
+          onToggle={() => setTrialFree(v => !v)}
+          sub="The first lesson is complimentary for new students"
+        />
 
-        {/* ── AI results ── */}
-        {aiMatchDone && aiMatches.length > 0 && (
-          <View style={[styles.aiResultsCard, { backgroundColor: colors.primary + "0D", borderColor: colors.primary + "40" }]}>
-            <View style={styles.aiResultsHeader}>
-              <Ionicons name="sparkles" size={16} color={colors.primary} />
-              <Text style={[styles.aiResultsTitle, { color: colors.primary }]}>AI Suggestions</Text>
+        <View style={{ height: 6 }} />
+        <Text style={[st.groupLabel, { color: colors.primary }]}>PER LESSON</Text>
+        <View style={{ marginBottom: 14, flexDirection: "row", alignItems: "center", gap: 10 }}>
+          <Text style={{ fontSize: 15, color: colors.mutedForeground }}>€</Text>
+          <TextInput value={priceLesson} onChangeText={setPriceLesson} placeholder="0.00" keyboardType="decimal-pad" placeholderTextColor={colors.mutedForeground} style={[st.textInput, { flex: 1, backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+          <Text style={{ fontSize: 13, color: colors.mutedForeground }}>/lesson</Text>
+        </View>
+
+        <Text style={[st.groupLabel, { color: colors.primary }]}>BUNDLE</Text>
+        <ToggleRow label="Offer a lesson bundle" value={bundleEnabled} onToggle={() => setBundleEnabled(v => !v)} />
+        {bundleEnabled && (
+          <View style={{ flexDirection: "row", gap: 10, marginTop: 8, marginBottom: 14 }}>
+            <View style={{ flex: 1 }}>
+              <Text style={st.fieldLabel}>Lessons in bundle</Text>
+              <TextInput value={bundleSize} onChangeText={setBundleSize} placeholder="10" keyboardType="numeric" placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
             </View>
-            {aiMatches.map((m, i) => {
-              const isSelected = operatorProfileId === m.operator_profile_id;
-              const confColor = m.confidence === "high" ? "#22C55E" : m.confidence === "medium" ? "#F59E0B" : "#9CA3AF";
-              return (
-                <Pressable
-                  key={m.operator_profile_id}
-                  style={[styles.aiMatchRow, { backgroundColor: colors.card, borderColor: isSelected ? colors.primary : colors.border, borderWidth: isSelected ? 2 : 1 }]}
-                  onPress={() => { setOperatorProfileId(isSelected ? null : m.operator_profile_id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                >
-                  <View style={[styles.opAvatar, { backgroundColor: colors.secondary + "40" }]}>
-                    <Text style={[styles.opAvatarText, { color: colors.primary }]}>{i + 1}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.opName, { color: colors.foreground }]}>{m.name}</Text>
-                    <Text style={[styles.aiReason, { color: colors.mutedForeground }]} numberOfLines={2}>{m.reason}</Text>
-                  </View>
-                  <View style={[styles.confBadge, { backgroundColor: confColor + "20" }]}>
-                    <Text style={[styles.confBadgeText, { color: confColor }]}>{m.confidence}</Text>
-                  </View>
-                  {isSelected && <Ionicons name="checkmark-circle" size={22} color={colors.primary} />}
-                </Pressable>
-              );
-            })}
+            <View style={{ flex: 1 }}>
+              <Text style={st.fieldLabel}>Bundle price (€)</Text>
+              <TextInput value={bundlePrice} onChangeText={setBundlePrice} placeholder="0.00" keyboardType="decimal-pad" placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+            </View>
           </View>
         )}
 
-        {/* ── All instructors ── */}
-        {loadingData ? (
-          <ActivityIndicator color={colors.primary} style={{ marginTop: 20 }} />
-        ) : operatorSkillsAll.length === 0 ? (
-          <View style={[styles.infoCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Ionicons name="person-add-outline" size={32} color={colors.primary} />
-            <Text style={[styles.infoTitle, { color: colors.foreground }]}>No instructors yet</Text>
-            <Text style={[styles.infoBody, { color: colors.mutedForeground }]}>Add staff first from Lessons → Staff, then you can assign them to activities.</Text>
+        <Text style={[st.groupLabel, { color: colors.primary }]}>SUBSCRIPTION</Text>
+        <ToggleRow label="Monthly subscription" value={monthlyEnabled} onToggle={() => setMonthlyEnabled(v => !v)} />
+        {monthlyEnabled && (
+          <View style={{ marginTop: 8, marginBottom: 8, flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <Text style={{ fontSize: 15, color: colors.mutedForeground }}>€</Text>
+            <TextInput value={monthlyPrice} onChangeText={setMonthlyPrice} placeholder="0.00" keyboardType="decimal-pad" placeholderTextColor={colors.mutedForeground} style={[st.textInput, { flex: 1, backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+            <Text style={{ fontSize: 13, color: colors.mutedForeground }}>/month</Text>
           </View>
-        ) : (
-          <>
-            <Text style={[styles.allOpsLabel, { color: colors.mutedForeground }]}>ALL INSTRUCTORS</Text>
-            {operatorSkillsAll.map(op => {
-              const isSelected = operatorProfileId === op.operator_profile_id;
-              return (
-                <Pressable
-                  key={op.operator_profile_id}
-                  style={[styles.opCard, { backgroundColor: colors.card, borderColor: isSelected ? colors.primary : colors.border, borderWidth: isSelected ? 2.5 : 1.5 }]}
-                  onPress={() => { setOperatorProfileId(isSelected ? null : op.operator_profile_id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-                >
-                  <View style={[styles.opAvatar, { backgroundColor: colors.primary + "18" }]}>
-                    <Text style={[styles.opAvatarText, { color: colors.primary }]}>{(op.name || "?")[0].toUpperCase()}</Text>
-                  </View>
-                  <View style={{ flex: 1, gap: 4 }}>
-                    <Text style={[styles.opName, { color: colors.foreground }]}>{op.name}</Text>
-                    {op.skills.length > 0 ? (
-                      <View style={styles.skillChipRow}>
-                        {op.skills.slice(0, 4).map(sk => (
-                          <View key={sk} style={[styles.skillChip, { backgroundColor: colors.primary + "12" }]}>
-                            <Text style={[styles.skillChipText, { color: colors.primary }]}>{sk}</Text>
-                          </View>
-                        ))}
-                        {op.skills.length > 4 && (
-                          <Text style={[styles.skillChipMore, { color: colors.mutedForeground }]}>+{op.skills.length - 4}</Text>
-                        )}
-                      </View>
-                    ) : (
-                      <Text style={[styles.noSkillsText, { color: colors.mutedForeground }]}>No skills listed yet</Text>
-                    )}
-                  </View>
-                  {isSelected && <Ionicons name="checkmark-circle" size={22} color={colors.primary} />}
-                </Pressable>
-              );
-            })}
-            <Pressable style={[styles.skipBtn, { borderColor: colors.border }]} onPress={() => { setOperatorProfileId(null); setStep(5); }}>
-              <Text style={[styles.skipBtnText, { color: colors.mutedForeground }]}>Skip — assign instructor later</Text>
-            </Pressable>
-          </>
+        )}
+        <ToggleRow label="Annual subscription" value={annualEnabled} onToggle={() => setAnnualEnabled(v => !v)} />
+        {annualEnabled && (
+          <View style={{ marginTop: 8, flexDirection: "row", alignItems: "center", gap: 10 }}>
+            <Text style={{ fontSize: 15, color: colors.mutedForeground }}>€</Text>
+            <TextInput value={annualPrice} onChangeText={setAnnualPrice} placeholder="0.00" keyboardType="decimal-pad" placeholderTextColor={colors.mutedForeground} style={[st.textInput, { flex: 1, backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+            <Text style={{ fontSize: 13, color: colors.mutedForeground }}>/year</Text>
+          </View>
         )}
       </View>
     );
   };
-
-  // ── STEP 5 — review & create ──────────────────────────────────────────────
 
   const renderStep5 = () => {
-    const disc = disciplines.find(d => d.id === disciplineId);
-    const op = operatorSkillsAll.find(o => o.operator_profile_id === operatorProfileId);
-    const typeLabel: Record<ActivityType, string> = { course: "Recurring Course", workshop: "Workshop", private: "Private Lesson", single: "Single Session" };
-    const fg = colors.foreground;
-    const muted = colors.mutedForeground;
+    const selectedOp = operatorSkillsAll.find(o => o.operator_profile_id === operatorProfileId);
+    const displayList = aiMatchDone && aiMatches.length > 0 ? aiMatches.map(m => ({ ...m, ...operatorSkillsAll.find(o => o.operator_profile_id === m.operator_profile_id) })) : null;
+
+    const priceSummary = () => {
+      const parts: string[] = [];
+      if (activityType !== "course") return "";
+      if (trialFree) parts.push("Free trial lesson");
+      if (priceLesson) parts.push(`€${priceLesson}/lesson`);
+      if (bundleEnabled && bundlePrice) parts.push(`${bundleSize} lessons bundle €${bundlePrice}`);
+      if (monthlyEnabled && monthlyPrice) parts.push(`€${monthlyPrice}/month`);
+      if (annualEnabled && annualPrice) parts.push(`€${annualPrice}/year`);
+      return parts.length > 0 ? parts.join(" · ") : "No pricing set";
+    };
 
     return (
-      <View style={styles.stepContent}>
-        <Text style={[styles.stepTitle, { color: fg }]}>Ready to create</Text>
-        <Text style={[styles.stepSub, { color: muted }]}>Check everything below, then tap Create.</Text>
+      <View style={{ gap: 4 }}>
+        <Text style={[st.sectionTitle, { color: colors.foreground }]}>Instructor & Review</Text>
+        <Text style={[st.sectionSub, { color: colors.mutedForeground }]}>Assign an instructor (optional) then review before creating.</Text>
+        <View style={{ height: 12 }} />
 
-        <View style={[styles.reviewCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          {activityType && <ReviewRow label="Type" value={typeLabel[activityType]} fg={fg} muted={muted} />}
-          {disc && <ReviewRow label="Discipline" value={disc.name} fg={fg} muted={muted} />}
-          {(activityType === "workshop" || activityType === "single") && evtTitle
-            ? <ReviewRow label="Title" value={evtTitle} fg={fg} muted={muted} /> : null}
-          {(activityType === "course" || activityType === "single") && <ReviewRow label="Level" value={skillLevel.charAt(0).toUpperCase() + skillLevel.slice(1)} fg={fg} muted={muted} />}
-          {(activityType === "course" || activityType === "single") && <ReviewRow label="Age range" value={`${ageMin}–${ageMax} years`} fg={fg} muted={muted} />}
-          {(activityType === "course" || activityType === "single") && <ReviewRow label="Capacity" value={`${capacity} people`} fg={fg} muted={muted} />}
-          {priceStr ? <ReviewRow label="Price / lesson" value={`€${priceStr}`} fg={fg} muted={muted} /> : null}
-          {activityType === "private" && memberPriceStr && <ReviewRow label="Member price" value={`€${memberPriceStr}`} fg={fg} muted={muted} />}
-          {activityType === "private" && operatorPayoutStr && <ReviewRow label="Instructor payout" value={`€${operatorPayoutStr}`} fg={fg} muted={muted} />}
-          {activityType === "private" && <ReviewRow label="Duration" value={`${duration} min`} fg={fg} muted={muted} />}
-          {op
-            ? <ReviewRow label="Instructor" value={op.name || "Operator"} fg={fg} muted={muted} />
-            : activityType !== "private" && <ReviewRow label="Instructor" value="Assign later" fg={fg} muted={muted} isNote />
-          }
-        </View>
-
-        {activityType === "course" && slots.length > 0 && (
-          <View style={[styles.reviewCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <Text style={[styles.reviewSection, { color: colors.primary }]}>Schedule</Text>
-            {slots.map(s => {
-              const freq = s.weekInterval === 1 ? "every week" : s.weekInterval === 2 ? "every 2 weeks" : "every 3 weeks";
-              return (
-                <View key={s.id} style={{ gap: 2, paddingVertical: 4 }}>
-                  <Text style={[styles.reviewSlotDay, { color: fg }]}>{DAY_LONG[s.dayOfWeek]}</Text>
-                  <Text style={[styles.reviewSlotTime, { color: muted }]}>{s.startTime} – {s.endTime} · {freq}</Text>
-                </View>
-              );
-            })}
-          </View>
-        )}
-
-        {(activityType === "workshop" || activityType === "single") && slots[0]?.date && (
-          <View style={[styles.reviewCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-            <ReviewRow label="Date" value={slots[0].date} fg={fg} muted={muted} />
-            {slots[0].startTime && <ReviewRow label="Time" value={`${slots[0].startTime} – ${slots[0].endTime}`} fg={fg} muted={muted} />}
-            {evtLocation ? <ReviewRow label="Location" value={evtLocation} fg={fg} muted={muted} /> : null}
-          </View>
-        )}
-
-        <Pressable style={[styles.createBtn, { backgroundColor: colors.primary, opacity: saving ? 0.7 : 1 }]} onPress={handleCreate} disabled={saving}>
-          {saving
-            ? <ActivityIndicator color={colors.secondary} />
-            : <>
-                <Ionicons name="checkmark-circle" size={22} color={colors.secondary} />
-                <Text style={[styles.createBtnText, { color: colors.secondary }]}>Create Activity</Text>
-              </>
+        <Pressable style={[st.aiBtn, { backgroundColor: colors.primary, opacity: aiLoading ? 0.75 : 1 }]} onPress={handleAiMatch} disabled={aiLoading}>
+          {aiLoading
+            ? <ActivityIndicator color="#fff" />
+            : <><Ionicons name="sparkles" size={16} color="#fff" /><Text style={st.aiBtnText}>Find Best Match (AI)</Text></>
           }
         </Pressable>
+
+        <View style={{ height: 8 }} />
+        <Text style={[st.groupLabel, { color: colors.primary }]}>
+          {displayList ? "AI RECOMMENDATIONS" : "ALL INSTRUCTORS"}
+        </Text>
+
+        {operatorSkillsAll.length === 0
+          ? <Text style={{ color: colors.mutedForeground, fontSize: 13, paddingVertical: 8 }}>No instructors registered yet.</Text>
+          : (displayList ?? operatorSkillsAll.map(op => ({ operator_profile_id: op.operator_profile_id, name: op.name, skills: op.skills, reason: undefined }))).map((item) => {
+            const op = operatorSkillsAll.find(o => o.operator_profile_id === item.operator_profile_id);
+            const isSelected = operatorProfileId === item.operator_profile_id;
+            return (
+              <Pressable key={item.operator_profile_id}
+                style={[st.opCard, { backgroundColor: colors.card, borderColor: isSelected ? colors.primary : colors.border, borderWidth: isSelected ? 2 : 1 }]}
+                onPress={() => { setOperatorProfileId(isSelected ? null : item.operator_profile_id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
+                <View style={[st.opAvatar, { backgroundColor: colors.primary + "25" }]}>
+                  <Text style={{ fontSize: 16, fontWeight: "700", color: colors.primary }}>
+                    {(op?.name ?? "?").charAt(0).toUpperCase()}
+                  </Text>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: "600", color: colors.foreground }}>{op?.name ?? "—"}</Text>
+                  {op?.skills && op.skills.length > 0 && (
+                    <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }} numberOfLines={1}>{op.skills.slice(0, 4).join(" · ")}</Text>
+                  )}
+                  {item.reason ? (
+                    <Text style={{ fontSize: 11, color: colors.primary, marginTop: 2 }} numberOfLines={1}>✦ {String(item.reason)}</Text>
+                  ) : null}
+                </View>
+                {isSelected && <Ionicons name="checkmark-circle" size={22} color={colors.primary} />}
+              </Pressable>
+            );
+          })
+        }
+
+        {selectedOp && (
+          <View style={{ marginTop: 8, marginBottom: 4 }}>
+            <Text style={st.fieldLabel}>Pay override (€/lesson, optional)</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+              <Text style={{ color: colors.mutedForeground }}>€</Text>
+              <TextInput value={payOverride} onChangeText={setPayOverride} placeholder="0.00" keyboardType="decimal-pad" placeholderTextColor={colors.mutedForeground} style={[st.textInput, { flex: 1, backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+              <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>/lesson</Text>
+            </View>
+          </View>
+        )}
+
+        <View style={{ height: 20 }} />
+        <View style={[st.reviewBox, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={[st.reviewTitle, { color: colors.primary }]}>Summary</Text>
+          {activityType === "course" && (
+            <>
+              {(courseName || disciplineName) && <ReviewRow label="Course" value={courseName || disciplineName} />}
+              {disciplineName && <ReviewRow label="Discipline" value={levelName ? `${disciplineName} · ${levelName}` : disciplineName} />}
+              {(startDate || endDate) && <ReviewRow label="Season" value={[startDate, endDate].filter(Boolean).join(" → ")} />}
+              {dayOfWeek !== null && startTime && <ReviewRow label="Schedule" value={`${DAY_LONG[dayOfWeek]} ${startTime}–${endTime || "?"} · ${weekInterval === 1 ? "Weekly" : "Bi-weekly"}`} />}
+              <ReviewRow label="Pricing" value={priceSummary()} />
+              <ReviewRow label="Participants" value={`${capacity} max · Age ${ageMin}–${ageMax}`} />
+            </>
+          )}
+          {(activityType === "workshop" || activityType === "single") && (
+            <>
+              {evtTitle && <ReviewRow label="Title" value={evtTitle} />}
+              {evtDate && <ReviewRow label="Date" value={`${evtDate}${evtStartTime ? ` at ${evtStartTime}` : ""}${evtEndTime ? `–${evtEndTime}` : ""}`} />}
+              {evtLocation && <ReviewRow label="Location" value={evtLocation} />}
+            </>
+          )}
+          {activityType === "private" && (
+            <>
+              {privDiscipline && <ReviewRow label="Discipline" value={privDiscipline} />}
+              {privMemberPrice && <ReviewRow label="Member price" value={`€${privMemberPrice}/lesson`} />}
+              {privOpPayout && <ReviewRow label="Instructor pay" value={`€${privOpPayout}/lesson`} />}
+              <ReviewRow label="Duration" value={`${privDuration} minutes`} />
+            </>
+          )}
+          {selectedOp && <ReviewRow label="Instructor" value={selectedOp.name ?? "—"} />}
+        </View>
       </View>
     );
   };
 
-  // ── Progress bar ──────────────────────────────────────────────────────────
-
-  const STEP_LABELS = ["Type", "Details", "Schedule", "Instructor", "Review"];
-
-  // ── Main render ───────────────────────────────────────────────────────────
-
-  const stepContent: Record<number, React.ReactNode> = {
-    1: renderStep1(),
-    2: renderStep2(),
-    3: renderStep3(),
-    4: renderStep4(),
-    5: renderStep5(),
+  // ── Step content router
+  const renderContent = () => {
+    if (step === 1) return renderStep1();
+    if (step === 2) {
+      if (activityType === "course") return renderStep2Course();
+      if (activityType === "private") return renderStep2Private();
+      return renderStep2WorkshopSingle();
+    }
+    if (step === 3) return renderStep3Course();
+    if (step === 4) return renderStep4Course();
+    return renderStep5();
   };
 
-  return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="New Activity" onBack={handleBack} />
+  const isLastStep = step === maxStep;
 
-      {/* Progress */}
-      <View style={[styles.progressBar, { borderBottomColor: colors.border }]}>
-        {STEP_LABELS.map((label, i) => {
-          const n = i + 1;
-          const done   = n < step;
-          const active = n === step;
-          return (
-            <View key={n} style={styles.progressItem}>
-              <View style={[styles.progressDot, { backgroundColor: (done || active) ? colors.primary : colors.border }]}>
-                {done
-                  ? <Ionicons name="checkmark" size={11} color="#FFF" />
-                  : <Text style={{ fontSize: 10, color: active ? "#FFF" : colors.mutedForeground, fontWeight: "700" }}>{n}</Text>
-                }
-              </View>
-              <Text style={[styles.progressLabel, { color: (done || active) ? colors.primary : colors.mutedForeground }]}>{label}</Text>
-              {i < STEP_LABELS.length - 1 && (
-                <View style={[styles.progressLine, { backgroundColor: done ? colors.primary : colors.border }]} />
-              )}
-            </View>
-          );
-        })}
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <ScreenHeader
+        title="New Activity"
+        onBack={() => router.back()}
+      />
+
+      {/* ── Progress bar */}
+      <View style={[st.progressWrap, { borderBottomColor: colors.border }]}>
+        <View style={{ flexDirection: "row", gap: 6, alignItems: "center", marginBottom: 8 }}>
+          {Array.from({ length: displayTotal }).map((_, i) => (
+            <View key={i} style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: i < displayCurrent ? colors.primary : colors.border + "60" }} />
+          ))}
+        </View>
+        <Text style={{ fontSize: 12, color: colors.mutedForeground }}>
+          Step {displayCurrent} of {displayTotal} · {stepLabels[displayCurrent - 1]}
+        </Text>
       </View>
 
+      {/* ── Scrollable content */}
       <ScrollView
-        contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 200 }]}
-        showsVerticalScrollIndicator={false}
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 20, paddingBottom: 120 + insets.bottom }}
         keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
       >
-        {stepContent[step]}
+        {renderContent()}
       </ScrollView>
 
-      {/* Bottom nav */}
-      <View style={[styles.navBar, { backgroundColor: colors.background, borderTopColor: colors.border, paddingBottom: insets.bottom + 90 }]}>
+      {/* ── Nav buttons */}
+      <View style={[st.navBar, { borderTopColor: colors.border, paddingBottom: 16 + insets.bottom, backgroundColor: colors.background }]}>
         {step > 1 && (
-          <Pressable style={[styles.navBack, { borderColor: colors.border }]} onPress={handleBack}>
-            <Ionicons name="arrow-back" size={18} color={colors.foreground} />
-            <Text style={[styles.navBackText, { color: colors.foreground }]}>Back</Text>
+          <Pressable style={[st.navBack, { flex: 1, borderColor: colors.border }]} onPress={handleBack}>
+            <Ionicons name="chevron-back" size={18} color={colors.primary} />
+            <Text style={[st.navBackText, { color: colors.primary }]}>Back</Text>
           </Pressable>
         )}
-        {step < 5 && (
-          <Pressable style={[styles.navNext, { backgroundColor: colors.primary, flex: step === 1 ? 1 : 0 }]} onPress={handleNext}>
-            <Text style={[styles.navNextText, { color: colors.secondary }]}>{step === 4 ? "Review" : "Next"}</Text>
-            <Ionicons name="arrow-forward" size={18} color={colors.secondary} />
+        {!isLastStep ? (
+          <Pressable style={[st.navNext, { flex: 1, backgroundColor: colors.primary }]} onPress={handleNext}>
+            <Text style={st.navNextText}>Next</Text>
+            <Ionicons name="chevron-forward" size={18} color="#fff" />
+          </Pressable>
+        ) : (
+          <Pressable style={[st.navNext, { flex: 1, backgroundColor: colors.primary, opacity: saving ? 0.7 : 1 }]} onPress={handleCreate} disabled={saving}>
+            {saving
+              ? <ActivityIndicator color="#fff" />
+              : <><Ionicons name="checkmark-circle" size={18} color="#fff" /><Text style={st.navNextText}>Create</Text></>
+            }
           </Pressable>
         )}
       </View>
@@ -822,125 +848,44 @@ export default function ActivityWizard() {
   );
 }
 
-// ── Styles ─────────────────────────────────────────────────────────────────────
+// ── Styles ────────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  scroll: { paddingHorizontal: 20, paddingTop: 20 },
+const st = StyleSheet.create({
+  progressWrap:  { paddingHorizontal: 20, paddingTop: 14, paddingBottom: 10, borderBottomWidth: StyleSheet.hairlineWidth },
+  sectionTitle:  { fontSize: 20, fontWeight: "700", marginBottom: 4 },
+  sectionSub:    { fontSize: 13, lineHeight: 18, marginBottom: 4 },
+  groupLabel:    { fontSize: 11, fontWeight: "700", letterSpacing: 1, marginBottom: 8, marginTop: 4 },
+  fieldLabel:    { fontSize: 12, fontWeight: "600", color: "#888", marginBottom: 6, textTransform: "uppercase", letterSpacing: 0.5 },
+  textInput:     { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15 },
+  textArea:      { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, fontSize: 15, minHeight: 90, textAlignVertical: "top" },
 
-  // Progress bar
-  progressBar: { flexDirection: "row", alignItems: "center", paddingHorizontal: 14, paddingVertical: 10, borderBottomWidth: 1 },
-  progressItem: { flexDirection: "row", alignItems: "center", flex: 1 },
-  progressDot: { width: 22, height: 22, borderRadius: 11, alignItems: "center", justifyContent: "center" },
-  progressLabel: { fontSize: 10, fontWeight: "600", marginLeft: 4 },
-  progressLine: { flex: 1, height: 2, marginHorizontal: 4, borderRadius: 1 },
+  typeCard:   { flexDirection: "row", alignItems: "center", gap: 14, padding: 16, borderRadius: 16 },
+  typeIconWrap: { width: 44, height: 44, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  typeTitle:  { fontSize: 15, fontWeight: "700", marginBottom: 2 },
+  typeSub:    { fontSize: 12, lineHeight: 16 },
 
-  // Step layout
-  stepContent: { gap: 18 },
-  stepTitle: { fontSize: 22, fontWeight: "700", letterSpacing: -0.3 },
-  stepSub: { fontSize: 14, lineHeight: 20, marginTop: -10 },
+  dayPill:   { paddingHorizontal: 10, paddingVertical: 9, borderRadius: 10, borderWidth: 1.5, alignItems: "center", justifyContent: "center", minWidth: 40 },
+  freqPill:  { paddingVertical: 13, borderRadius: 12, borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
 
-  // Type cards (step 1)
-  typeCard: { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 16, padding: 16 },
-  typeIcon: { width: 48, height: 48, borderRadius: 14, alignItems: "center", justifyContent: "center" },
-  typeTitle: { fontSize: 16, fontWeight: "700", marginBottom: 3 },
-  typeDesc: { fontSize: 13, lineHeight: 18 },
+  stepper:   { flexDirection: "row", alignItems: "center", borderWidth: 1.5, borderRadius: 12, overflow: "hidden" },
+  stepBtn:   { paddingHorizontal: 12, paddingVertical: 13, alignItems: "center", justifyContent: "center" },
+  stepVal:   { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700" },
 
-  // Field labels
-  fieldLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.6, marginBottom: -10 },
-  emptyNote: { fontSize: 14, fontStyle: "italic" },
+  toggleRow: { flexDirection: "row", alignItems: "center", padding: 14, borderRadius: 14, borderWidth: 1.5, gap: 12, marginBottom: 8 },
+  toggleDot: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" },
 
-  // Text inputs
-  textInput: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, fontSize: 16 },
-  textArea: { borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14, fontSize: 15, minHeight: 90, textAlignVertical: "top" },
-  inputRow: { flexDirection: "row", alignItems: "center", borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 14 },
-  inputPrefix: { fontSize: 16, marginRight: 4 },
-  inputFlex: { flex: 1, fontSize: 16 },
+  aiBtn:     { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingVertical: 14, borderRadius: 14 },
+  aiBtnText: { fontSize: 15, fontWeight: "700", color: "#fff" },
 
-  // Pills
-  pillRow: { flexDirection: "row", flexWrap: "wrap", gap: 8 },
-  pill: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 22, borderWidth: 1.5 },
-  pillText: { fontSize: 14, fontWeight: "600" },
+  opCard:   { flexDirection: "row", alignItems: "center", gap: 12, padding: 14, borderRadius: 14, marginBottom: 8 },
+  opAvatar: { width: 42, height: 42, borderRadius: 21, alignItems: "center", justifyContent: "center" },
 
-  // Counters
-  counterRow: { flexDirection: "row", alignItems: "center", gap: 14 },
-  counterBlock: { alignItems: "center", gap: 8 },
-  counterLabel: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5 },
-  counter: { flexDirection: "row", alignItems: "center", gap: 12 },
-  counterBtn: { width: 40, height: 40, borderRadius: 12, borderWidth: 1.5, alignItems: "center", justifyContent: "center" },
-  counterVal: { fontSize: 16, fontWeight: "700", minWidth: 60, textAlign: "center" },
-  counterSep: { fontSize: 14, paddingTop: 22 },
+  reviewBox:   { padding: 16, borderRadius: 16, borderWidth: 1 },
+  reviewTitle: { fontSize: 13, fontWeight: "700", letterSpacing: 0.5, textTransform: "uppercase", marginBottom: 10 },
 
-  // Private lesson pricing
-  priceRow: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
-  priceArrow: { paddingBottom: 15 },
-  marginBadge: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 10 },
-  marginText: { fontSize: 14, fontWeight: "600" },
-
-  // Slot cards (step 3)
-  slotCard: { borderRadius: 16, borderWidth: 1.5, padding: 16, gap: 14 },
-  slotHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  slotNum: { fontSize: 13, fontWeight: "700", letterSpacing: 0.3 },
-  dayRow: { flexDirection: "row", gap: 5 },
-  dayBtn: { flex: 1, alignItems: "center", paddingVertical: 11, borderRadius: 10, borderWidth: 1.5 },
-  dayBtnText: { fontSize: 12, fontWeight: "700" },
-  timeRow: { flexDirection: "row", alignItems: "flex-end", gap: 8 },
-  timeSep: { paddingBottom: 14, alignItems: "center" },
-  freqRow: { flexDirection: "row", gap: 6 },
-  freqBtn: { flex: 1, alignItems: "center", paddingVertical: 11, borderRadius: 12, borderWidth: 1.5 },
-  freqText: { fontSize: 12, fontWeight: "600", textAlign: "center" },
-  addSlotBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderWidth: 1.5, borderStyle: "dashed", borderRadius: 14, paddingVertical: 15 },
-  addSlotText: { fontSize: 15, fontWeight: "700" },
-
-  // Info cards
-  infoCard: { borderRadius: 16, borderWidth: 1.5, padding: 24, alignItems: "center", gap: 10 },
-  infoTitle: { fontSize: 16, fontWeight: "700", textAlign: "center" },
-  infoBody: { fontSize: 14, lineHeight: 22, textAlign: "center" },
-
-  // Operator cards (step 4)
-  opCard:        { flexDirection: "row", alignItems: "center", gap: 14, borderRadius: 16, padding: 14 },
-  opAvatar:      { width: 46, height: 46, borderRadius: 23, alignItems: "center", justifyContent: "center" },
-  opAvatarText:  { fontSize: 18, fontWeight: "700" },
-  opName:        { fontSize: 15, fontWeight: "700" },
-  opBadgeRow:    { flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 },
-  opBadgeText:   { fontSize: 12, fontWeight: "600" },
-  skipBtn:       { borderRadius: 14, borderWidth: 1.5, borderStyle: "dashed", paddingVertical: 14, alignItems: "center" },
-  skipBtnText:   { fontSize: 14, fontWeight: "600" },
-
-  // AI match (step 4)
-  aiMatchBtn:       { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 14, paddingVertical: 14, paddingHorizontal: 20, marginBottom: 4 },
-  aiMatchBtnText:   { fontSize: 15, fontWeight: "700", color: "#FFF" },
-  aiResultsCard:    { borderRadius: 16, borderWidth: 1.5, padding: 14, gap: 10, marginBottom: 4 },
-  aiResultsHeader:  { flexDirection: "row", alignItems: "center", gap: 6, marginBottom: 2 },
-  aiResultsTitle:   { fontSize: 13, fontWeight: "700", letterSpacing: 0.5 },
-  aiMatchRow:       { flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, padding: 12 },
-  aiReason:         { fontSize: 12, marginTop: 2, lineHeight: 18 },
-  confBadge:        { borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 },
-  confBadgeText:    { fontSize: 11, fontWeight: "700" },
-  allOpsLabel:      { fontSize: 11, fontWeight: "700", letterSpacing: 0.8, marginTop: 8, marginBottom: 4 },
-  skillChipRow:     { flexDirection: "row", flexWrap: "wrap", gap: 4 },
-  skillChip:        { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 10 },
-  skillChipText:    { fontSize: 11, fontWeight: "600" },
-  skillChipMore:    { fontSize: 11, alignSelf: "center" },
-  noSkillsText:     { fontSize: 12, fontStyle: "italic" },
-
-  // Review (step 5)
-  reviewCard: { borderRadius: 16, borderWidth: 1.5, padding: 16, gap: 10 },
-  reviewSection: { fontSize: 12, fontWeight: "700", letterSpacing: 0.5 },
-  reviewRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center" },
-  reviewLabel: { fontSize: 14 },
-  reviewValue: { fontSize: 14, fontWeight: "600", textAlign: "right", flex: 1, marginLeft: 8 },
-  reviewSlotDay: { fontSize: 14, fontWeight: "700" },
-  reviewSlotTime: { fontSize: 13 },
-
-  // Create button
-  createBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 10, borderRadius: 16, paddingVertical: 18, marginTop: 4 },
-  createBtnText: { fontSize: 17, fontWeight: "800" },
-
-  // Bottom nav bar
-  navBar: { position: "absolute", bottom: 0, left: 0, right: 0, flexDirection: "row", gap: 10, paddingHorizontal: 20, paddingTop: 14, borderTopWidth: 1 },
-  navBack: { flexDirection: "row", alignItems: "center", gap: 6, paddingHorizontal: 18, paddingVertical: 14, borderRadius: 14, borderWidth: 1.5 },
-  navBackText: { fontSize: 15, fontWeight: "600" },
-  navNext: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, paddingHorizontal: 28, paddingVertical: 14, borderRadius: 14 },
-  navNextText: { fontSize: 15, fontWeight: "700" },
+  navBar:     { position: "absolute", bottom: 0, left: 0, right: 0, flexDirection: "row", gap: 10, paddingHorizontal: 20, paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth },
+  navBack:    { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 15, borderRadius: 14, borderWidth: 1.5 },
+  navBackText:{ fontSize: 15, fontWeight: "600" },
+  navNext:    { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 15, borderRadius: 14 },
+  navNextText:{ fontSize: 15, fontWeight: "700", color: "#fff" },
 });

@@ -1068,7 +1068,8 @@ export const api = {
   getScheduledCourses: () =>
     request<ApiScheduledCourse[]>("GET", "/scheduled-courses"),
   createScheduledCourse: (data: {
-    disciplineId: number;
+    disciplineId?: number;
+    disciplineName?: string;
     operatorProfileId?: number;
     dayOfWeek: number;
     startTime: string;
@@ -1087,6 +1088,12 @@ export const api = {
     monthlyPriceCents?: number;
     billingDayOfMonth?: number;
     billingEndDate?: string;
+    courseName?: string;
+    startDate?: string;
+    trialLessonFree?: boolean;
+    pricePerYearCents?: number;
+    operatorPayOverrideCents?: number;
+    capacity?: number;
   }) => request<ApiScheduledCourse>("POST", "/scheduled-courses", data),
   confirmScheduledCourse: (id: number) =>
     request<ApiScheduledCourse>("POST", `/scheduled-courses/${id}/confirm`, {}),
@@ -2347,7 +2354,7 @@ export interface ApiScheduledCourse {
   end_time: string;
   age_min: number;
   age_max: number;
-  skill_level: "beginner" | "intermediate" | "advanced" | "open";
+  skill_level: string;
   status: "pending_confirmation" | "active" | "declined" | "cancelled";
   notes?: string;
   created_by_admin_id?: number;
@@ -2368,6 +2375,14 @@ export interface ApiScheduledCourse {
   monthly_price_cents?: number;
   billing_day_of_month?: number;
   billing_end_date?: string;
+  /** course_extras (from pg pool) */
+  course_name?: string;
+  discipline_name?: string;
+  start_date?: string;
+  trial_lesson_free?: boolean;
+  price_per_year_cents?: number;
+  operator_pay_override_cents?: number;
+  capacity?: number;
 }
 
 // ── Kiosk Provisioning ────────────────────────────────────────────────────────
@@ -3898,6 +3913,15 @@ export function getMyOperatorSkills(profileId?: number): Promise<{ skills: ApiOp
 
 export function setMyOperatorSkills(labels: string[]): Promise<{ ok: boolean }> {
   return request("PUT", "/operator-skills", { labels });
+}
+
+export function getCourseLabels(
+  type: "course_name" | "discipline" | "level",
+  q?: string,
+): Promise<string[]> {
+  const params = new URLSearchParams({ type });
+  if (q) params.set("q", q);
+  return request<string[]>("GET", `/course-labels?${params.toString()}`);
 }
 
 export function getAllOperatorSkills(): Promise<ApiOperatorSkillSummary[]> {

@@ -121,7 +121,24 @@ router.get("/scheduled-courses", requireAuth, async (req, res) => {
       if ((error as { code?: string }).code === "PGRST205") { res.json([]); return; }
       res.status(500).json({ error: error.message }); return;
     }
-    res.json(data ?? []);
+
+    // Merge course_extras from pg pool
+    const ids = (data ?? []).map((c: { id: number }) => c.id);
+    let extrasMap: Record<number, Record<string, unknown>> = {};
+    if (ids.length > 0) {
+      const { rows } = await pool.query(
+        `SELECT * FROM course_extras WHERE scheduled_course_id = ANY($1)`, [ids]
+      ).catch(() => ({ rows: [] as Record<string, unknown>[] }));
+      for (const r of rows) {
+        extrasMap[r["scheduled_course_id"] as number] = r;
+      }
+    }
+
+    const merged = (data ?? []).map((c: Record<string, unknown>) => ({
+      ...c,
+      ...(extrasMap[c["id"] as number] ?? {}),
+    }));
+    res.json(merged);
   } catch (e: unknown) {
     res.status(500).json({ error: e instanceof Error ? e.message : "Unexpected error" });
   }
@@ -133,13 +150,16 @@ router.get("/scheduled-courses", requireAuth, async (req, res) => {
 router.post("/scheduled-courses", requireAuth, requireRole("admin"), async (req, res) => {
   const user = (req as AuthReq).user;
   const {
-    disciplineId, operatorProfileId, dayOfWeek,
+    disciplineId: rawDisciplineId, disciplineName,
+    operatorProfileId, dayOfWeek,
     startTime, endTime, ageMin, ageMax, skillLevel, notes, weekInterval, evenWeekStart,
     location_label,
     paymentType, pricePerLessonCents, packageSize, packagePriceCents,
     monthlyPriceCents, billingDayOfMonth, billingEndDate,
+    courseName, startDate, trialLessonFree, pricePerYearCents, operatorPayOverrideCents, capacity,
   } = req.body as {
-    disciplineId: number; operatorProfileId?: number; dayOfWeek: number;
+    disciplineId?: number; disciplineName?: string;
+    operatorProfileId?: number; dayOfWeek: number;
     startTime: string; endTime: string; ageMin?: number; ageMax?: number;
     skillLevel?: string; notes?: string;
     weekInterval?: number; evenWeekStart?: boolean; location_label?: string;
@@ -150,10 +170,42 @@ router.post("/scheduled-courses", requireAuth, requireRole("admin"), async (req,
     monthlyPriceCents?: number;
     billingDayOfMonth?: number;
     billingEndDate?: string;
+    courseName?: string;
+    startDate?: string;
+    trialLessonFree?: boolean;
+    pricePerYearCents?: number;
+    operatorPayOverrideCents?: number;
+    capacity?: number;
   };
 
-  if (!disciplineId || dayOfWeek == null || !startTime || !endTime) {
-    res.status(400).json({ error: "disciplineId, dayOfWeek, startTime, endTime are required" });
+  if (dayOfWeek == null || !startTime || !endTime) {
+    res.status(400).json({ error: "dayOfWeek, startTime, endTime are required" });
+    return;
+  }
+
+  // ── Resolve discipline ─────────────────────────────────────────────────────
+  let disciplineId = rawDisciplineId ?? null;
+  if (!disciplineId && disciplineName?.trim()) {
+    const { data: existing } = await supabase
+      .from("disciplines")
+      .select("id")
+      .eq("organization_id", user.orgId)
+      .ilike("name", disciplineName.trim())
+      .maybeSingle();
+    if (existing) {
+      disciplineId = existing.id;
+    } else {
+      const { data: created } = await supabase
+        .from("disciplines")
+        .insert({ organization_id: user.orgId, name: disciplineName.trim(), active: true })
+        .select("id")
+        .single();
+      disciplineId = created?.id ?? null;
+    }
+  }
+
+  if (!disciplineId) {
+    res.status(400).json({ error: "discipline is required (provide disciplineId or disciplineName)" });
     return;
   }
 
@@ -238,6 +290,51 @@ router.post("/scheduled-courses", requireAuth, requireRole("admin"), async (req,
         "workshop_created",
         "New Course Request — Action Required",
         `You have been assigned a ${discipline?.name ?? "new"} class on ${DAY_NAMES[dayOfWeek]} at ${startTime.slice(0, 5)}. Please confirm or decline in your dashboard.`,
+      ).catch(() => {});
+    }
+  }
+
+  // ── Save course_extras to pg pool ──────────────────────────────────────────
+  if (data?.id) {
+    await pool.query(
+      `INSERT INTO course_extras
+         (scheduled_course_id, organization_id, course_name, discipline_name, start_date,
+          trial_lesson_free, price_per_year_cents, operator_pay_override_cents, capacity)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+       ON CONFLICT (scheduled_course_id) DO UPDATE SET
+         course_name = EXCLUDED.course_name,
+         discipline_name = EXCLUDED.discipline_name,
+         start_date = EXCLUDED.start_date,
+         trial_lesson_free = EXCLUDED.trial_lesson_free,
+         price_per_year_cents = EXCLUDED.price_per_year_cents,
+         operator_pay_override_cents = EXCLUDED.operator_pay_override_cents,
+         capacity = EXCLUDED.capacity`,
+      [
+        data.id, user.orgId,
+        courseName?.trim() || null,
+        disciplineName?.trim() || null,
+        startDate || null,
+        trialLessonFree ?? false,
+        pricePerYearCents ?? null,
+        operatorPayOverrideCents ?? null,
+        capacity ?? null,
+      ]
+    ).catch(() => {});
+
+    // Auto-save labels for future autocomplete suggestions
+    const labelsToSave = [
+      { type: "discipline", label: disciplineName?.trim() },
+      { type: "course_name", label: courseName?.trim() },
+      { type: "level", label: skillLevel?.trim() },
+    ].filter(l => l.label && l.label.length > 0);
+
+    for (const l of labelsToSave) {
+      await pool.query(
+        `INSERT INTO org_course_labels (organization_id, type, label, used_count)
+         VALUES ($1, $2, $3, 1)
+         ON CONFLICT (organization_id, type, label)
+         DO UPDATE SET used_count = org_course_labels.used_count + 1`,
+        [user.orgId, l.type, l.label]
       ).catch(() => {});
     }
   }

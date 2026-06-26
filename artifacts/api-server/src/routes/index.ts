@@ -76,6 +76,7 @@ import directMessagesRouter from "./direct-messages.js";
 import supportRouter from "./support.js";
 import saFeatureAnalyticsRouter from "./sa-feature-analytics.js";
 import translationsRouter from "./translations.js";
+import courseLabelsRouter  from "./course-labels.js";
 
 const router: IRouter = Router();
 
@@ -156,5 +157,6 @@ router.use(supportRouter);
 router.use(saFeatureAnalyticsRouter);
 router.use(translationsRouter);
 router.use(operatorSkillsRouter);
+router.use(courseLabelsRouter);
 
 export default router;

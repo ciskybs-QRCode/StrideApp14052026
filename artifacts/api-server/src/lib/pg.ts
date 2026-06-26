@@ -1860,5 +1860,32 @@ export async function ensureTables(): Promise<void> {
     ADD COLUMN IF NOT EXISTS skills_completed BOOLEAN NOT NULL DEFAULT FALSE;
   `).catch(() => {});
 
+  // ── Course labels (free-text suggestions per org) ────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS org_course_labels (
+      id              SERIAL      PRIMARY KEY,
+      organization_id INTEGER     NOT NULL,
+      type            VARCHAR(20) NOT NULL,
+      label           TEXT        NOT NULL,
+      used_count      INTEGER     NOT NULL DEFAULT 1,
+      UNIQUE(organization_id, type, label)
+    );
+    CREATE INDEX IF NOT EXISTS idx_ocl_org_type ON org_course_labels(organization_id, type);
+
+    CREATE TABLE IF NOT EXISTS course_extras (
+      scheduled_course_id         INTEGER     PRIMARY KEY,
+      organization_id             INTEGER     NOT NULL,
+      course_name                 TEXT,
+      discipline_name             TEXT,
+      start_date                  DATE,
+      trial_lesson_free           BOOLEAN     NOT NULL DEFAULT FALSE,
+      price_per_year_cents        INTEGER,
+      operator_pay_override_cents INTEGER,
+      capacity                    INTEGER,
+      created_at                  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_ce_org ON course_extras(organization_id);
+  `).catch(() => {});
+
   initialized = true;
 }
