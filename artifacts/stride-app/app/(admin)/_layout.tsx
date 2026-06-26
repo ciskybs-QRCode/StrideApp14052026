@@ -249,12 +249,12 @@ const make_ss = (primary: string, secondary: string) => StyleSheet.create({
 
 // ── Settings tab icon ─────────────────────────────────────────────────────────
 
-function SettingsTabIcon({ color, size }: { color: string; size: number }) {
+function SettingsTabIcon({ color, size, focused }: { color: string; size: number; focused?: boolean }) {
   const colors = useColors();
   const { hasUnreadInvoices } = useUnread();
   return (
     <View style={{ position: "relative" }}>
-      <Ionicons name="settings" size={size} color={color} />
+      <Ionicons name={focused ? "settings" : "settings-outline"} size={size} color={color} />
       {hasUnreadInvoices && (
         <View style={{
           position: "absolute",
@@ -304,18 +304,19 @@ export default function AdminTabLayout() {
           ) : isWeb ? (
             <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
           ) : null,
-        tabBarLabelStyle: { fontSize: 9, fontWeight: "600" },
+        tabBarLabelStyle: { fontSize: 9, fontWeight: "500" },
+        tabBarActiveLabelStyle: { fontSize: 9, fontWeight: "800" },
       }}
     >
       {/* ── 6 visible tabs ── */}
-      <Tabs.Screen name="stats"           options={{ title: t("tab.home",       "Home"),       tabBarIcon: ({ color, size }) => <Ionicons name="home"                   size={size} color={color} /> }} />
-      <Tabs.Screen name="operations-hub" options={{ title: t("tab.operations", "Operations"), tabBarIcon: ({ color, size }) => <Ionicons name="grid-outline"             size={size} color={color} /> }} />
-      <Tabs.Screen name="members-hub"    options={{ title: t("tab.members",    "Members"),    tabBarIcon: ({ color, size }) => <Ionicons name="people-circle-outline"    size={size} color={color} /> }} />
-      <Tabs.Screen name="finance-hub"    options={{ title: t("tab.finance",    "Finance"),    tabBarIcon: ({ color, size }) => <Ionicons name="wallet-outline"           size={size} color={color} /> }} />
-      <Tabs.Screen name="messages"       options={{ title: t("tab.messages",   "Messages"),   tabBarIcon: ({ color, size }) => <Ionicons name="mail"                     size={size} color={color} /> }} />
+      <Tabs.Screen name="stats"           options={{ title: t("tab.home",       "Home"),       tabBarIcon: ({ color, size, focused }) => <Ionicons name={focused ? "home"           : "home-outline"}           size={size} color={color} /> }} />
+      <Tabs.Screen name="operations-hub" options={{ title: t("tab.operations", "Operations"), tabBarIcon: ({ color, size, focused }) => <Ionicons name={focused ? "grid"           : "grid-outline"}           size={size} color={color} /> }} />
+      <Tabs.Screen name="members-hub"    options={{ title: t("tab.members",    "Members"),    tabBarIcon: ({ color, size, focused }) => <Ionicons name={focused ? "people-circle"  : "people-circle-outline"}  size={size} color={color} /> }} />
+      <Tabs.Screen name="finance-hub"    options={{ title: t("tab.finance",    "Finance"),    tabBarIcon: ({ color, size, focused }) => <Ionicons name={focused ? "wallet"         : "wallet-outline"}         size={size} color={color} /> }} />
+      <Tabs.Screen name="messages"       options={{ title: t("tab.messages",   "Messages"),   tabBarIcon: ({ color, size, focused }) => <Ionicons name={focused ? "mail"           : "mail-outline"}           size={size} color={color} /> }} />
       <Tabs.Screen
         name="settings"
-        options={{ title: t("tab.settings", "Settings"), tabBarIcon: ({ color, size }) => <SettingsTabIcon color={color} size={size} /> }}
+        options={{ title: t("tab.settings", "Settings"), tabBarIcon: ({ color, size, focused }) => <SettingsTabIcon color={color} size={size} focused={focused} /> }}
         listeners={({ navigation }) => ({
           tabPress: () => {
             navigation.navigate("settings", { screen: "index" });

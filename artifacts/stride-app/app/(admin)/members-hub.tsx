@@ -66,13 +66,7 @@ export default function MembersHub() {
           onPress={() => router.push("/(admin)/pdf-badges" as never)}
         />
 
-        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>COMMUNICATIONS</Text>
-        <HubCard
-          icon="megaphone-outline"
-          title="Communications"
-          description="Announcements, push notifications and messages"
-          onPress={() => router.push("/(admin)/communications" as never)}
-        />
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>SECURITY</Text>
         <HubCard
           icon="warning-outline"
           title="Security Alerts"
