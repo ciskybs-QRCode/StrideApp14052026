@@ -8,10 +8,10 @@ type Billing = "monthly" | "annual";
 
 // ── Pricing data ──────────────────────────────────────────────────────────────
 
-const PRICES: Record<Plan, { monthly: number; annual: number; qr: string; operators: string }> = {
-  core:    { monthly: 49,  annual: 490,  qr: "Up to 35",  operators: "3" },
-  plus:    { monthly: 99,  annual: 990,  qr: "Up to 100", operators: "10" },
-  premium: { monthly: 199, annual: 1990, qr: "Unlimited",  operators: "Unlimited" },
+const PRICES: Record<Plan, { monthly: number; annual: number; accounts: string; operators: string }> = {
+  core:    { monthly: 49,  annual: 490,  accounts: "Up to 100",   operators: "Up to 3" },
+  plus:    { monthly: 99,  annual: 990,  accounts: "Up to 500",   operators: "Up to 10" },
+  premium: { monthly: 199, annual: 1990, accounts: "Up to 2,000", operators: "Unlimited" },
 };
 
 // ── Feature comparison table ──────────────────────────────────────────────────
@@ -24,10 +24,12 @@ const FEATURES: FeatureGroup[] = [
   {
     group: "Members & Access",
     rows: [
-      { label: "Active QR codes (members + dependants)", core: "Up to 35", plus: "Up to 100", premium: "Unlimited" },
-      { label: "Operator accounts",                       core: "3",        plus: "10",        premium: "Unlimited" },
-      { label: "Member portal (member + dependent view)", core: true,       plus: true,        premium: true },
-      { label: "2-month free trial · no card required",   core: true,       plus: true,        premium: true },
+      { label: "Member accounts (billing unit)",          core: "Up to 100",   plus: "Up to 500",   premium: "Up to 2,000" },
+      { label: "Children / dependants",                   core: "Unlimited",   plus: "Unlimited",   premium: "Unlimited" },
+      { label: "Pick-up contacts",                        core: "Unlimited",   plus: "Unlimited",   premium: "Unlimited" },
+      { label: "Operator accounts",                       core: "Up to 3",     plus: "Up to 10",    premium: "Unlimited" },
+      { label: "Member portal (member + dependent view)", core: true,          plus: true,          premium: true },
+      { label: "60-day free trial · no card required",    core: true,          plus: true,          premium: true },
     ],
   },
   {
@@ -144,12 +146,12 @@ const FAQS = [
     a: "All major credit and debit cards via Stripe. Annual plans can also be paid by bank transfer on request." },
   { q: "What happens to my data if I cancel?",
     a: "You can export all your data in CSV or JSON at any time. We retain it for 90 days after cancellation, then permanently delete it." },
-  { q: "Does the QR code limit include operators?",
-    a: "The member limit covers active member and dependant profiles (each with a QR code). Operators are separate and counted against the operator limit for your plan." },
+  { q: "What counts as a member account?",
+    a: "A member account is any adult member (parent or member role) who joins your association. Children / dependants and pick-up contacts are completely free and never count toward your limit — regardless of how many children each parent has. Operators are capped separately by plan (3 / 10 / unlimited)." },
   { q: "Is AI usage included in the Premium plan?",
     a: "Yes. All AI features in Premium are included in the subscription — no extra AI usage fees. Calls are pooled and the fair-use allowance is sufficient for any normal-sized association." },
   { q: "Can I try before I buy?",
-    a: "Every plan starts with a 30-day free trial. No credit card required. You get full access to the features of your chosen tier during the trial." },
+    a: "Every plan starts with a 60-day free trial. No credit card required. You get full access to every feature on your chosen tier during the entire 60-day trial period. Billing starts automatically on Day 61." },
 ];
 
 // ── Component ─────────────────────────────────────────────────────────────────
@@ -221,7 +223,7 @@ export default function PricingPage() {
           </div>
           <h1 className="text-4xl sm:text-5xl font-black text-slate-900 mb-4">Simple, honest pricing</h1>
           <p className="text-slate-500 text-base max-w-xl mx-auto leading-relaxed">
-            No platform cuts on member payments. No hidden charges. Start free for 30 days — no card required.
+            No platform cuts on member payments. No hidden charges. Start free for 60 days — no card required.
           </p>
         </div>
 
@@ -305,18 +307,21 @@ export default function PricingPage() {
 
                 {/* Body */}
                 <div className="px-6 py-5 flex flex-col flex-1">
-                  <div className="flex items-center gap-2.5 mb-3 text-sm text-slate-600">
-                    <span>👥</span><span className="font-medium">{p.qr} active member QR codes</span>
+                  <div className="flex items-center gap-2.5 mb-2 text-sm text-slate-600">
+                    <span>👤</span><span className="font-medium">{p.accounts} member accounts</span>
+                  </div>
+                  <div className="flex items-center gap-2.5 mb-2 text-sm text-slate-600">
+                    <span>👶</span><span className="font-medium text-emerald-600">Unlimited children — always free</span>
                   </div>
                   <div className="flex items-center gap-2.5 mb-6 text-sm text-slate-600">
-                    <span>🎓</span><span className="font-medium">{p.operators} operator{p.operators === "1" ? "" : "s"}</span>
+                    <span>🎓</span><span className="font-medium">{p.operators} operator{p.operators === "Unlimited" ? "s" : p.operators === "1" ? "" : "s"}</span>
                   </div>
                   <div className="flex-1" />
                   <a href={plan.href}
                     className={`block text-center font-bold text-sm py-3.5 rounded-xl transition-colors no-underline ${plan.ctaStyle}`}>
                     {plan.cta}
                   </a>
-                  <p className="text-center text-xs text-slate-400 mt-2">30-day free trial · No card required</p>
+                  <p className="text-center text-xs text-slate-400 mt-2">60-day free trial · No card required</p>
                 </div>
               </div>
             );

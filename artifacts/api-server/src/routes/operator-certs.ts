@@ -124,7 +124,7 @@ router.get("/operator-certs/admin-list", requireAuth, requireRole("admin", "supe
 router.patch("/operator-certs/:id/review", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
   const user = (req as AuthReq).user;
   await ensureTables();
-  const certId = parseInt(req.params.id, 10);
+  const certId = parseInt(String(req.params.id), 10);
   const orgId  = parseInt(String(user.orgId ?? 1), 10);
   const { status, admin_notes } = req.body as { status?: string; admin_notes?: string };
   if (!status || !["approved", "flagged", "pending"].includes(status)) {
@@ -154,7 +154,7 @@ router.patch("/operator-certs/:id/review", requireAuth, requireRole("admin", "su
 router.post("/operator-certs/:id/analyze", requireAuth, aiLimiter, async (req, res) => {
   const user = (req as AuthReq).user;
   await ensureTables();
-  const certId = parseInt(req.params.id, 10);
+  const certId = parseInt(String(req.params.id), 10);
   const operatorId = parseInt(String(user.id), 10);
 
   // Fetch the cert to get file_url
@@ -210,7 +210,7 @@ router.post("/operator-certs/:id/analyze", requireAuth, aiLimiter, async (req, r
 router.delete("/operator-certs/:id", requireAuth, async (req, res) => {
   const user = (req as AuthReq).user;
   await ensureTables();
-  const certId     = parseInt(req.params.id, 10);
+  const certId     = parseInt(String(req.params.id), 10);
   const operatorId = parseInt(String(user.id), 10);
   const { rows } = await pool.query(
     `DELETE FROM operator_certs WHERE id = $1 AND operator_id = $2 RETURNING file_url`,

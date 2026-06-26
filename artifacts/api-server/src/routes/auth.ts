@@ -254,7 +254,7 @@ router.post("/auth/register", authLimiter, async (req, res) => {
   // 30-day trial provisioning for pioneer (first-ever admin registration)
   if (isPioneer) {
     const now      = new Date().toISOString();
-    const trialEnd = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const trialEnd = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
     try {
       await supabase.from("organizations").update({
         trial_started_at: now,
@@ -518,7 +518,7 @@ router.post("/org/configure", requireAuth, requireRole("admin"), async (req, res
 
   // ── Create org on-the-fly for super_admin (or any user with no org yet) ──
   if (!oid) {
-    const trialEnds = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+    const trialEnds = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString();
     const { data: newOrg, error: orgErr } = await supabase
       .from("organizations")
       .insert({

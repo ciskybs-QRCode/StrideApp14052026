@@ -28,7 +28,7 @@ const TIERS: Array<{
   name: string;
   price: string;
   priceNum: number;
-  qrLimit: string;
+  accountLimit: string;
   opLimit: string;
   badge?: string;
   features: string[];
@@ -42,7 +42,7 @@ const TIERS: Array<{
     name: "Core",
     price: "€49/mo",
     priceNum: 49,
-    qrLimit: "Up to 35 active QR codes",
+    accountLimit: "Up to 100 member accounts",
     opLimit: "Up to 3 operators",
     color: "#E2E8F0",
     headerBg: "#F8FAFC",
@@ -64,7 +64,7 @@ const TIERS: Array<{
     name: "Plus",
     price: "€99/mo",
     priceNum: 99,
-    qrLimit: "Up to 100 active QR codes",
+    accountLimit: "Up to 500 member accounts",
     opLimit: "Up to 10 operators",
     badge: "★ Most Popular",
     color: NAVY,
@@ -86,7 +86,7 @@ const TIERS: Array<{
     name: "Premium",
     price: "€199/mo",
     priceNum: 199,
-    qrLimit: "Unlimited QR codes",
+    accountLimit: "Up to 2,000 member accounts",
     opLimit: "Unlimited operators",
     color: "#0F172A",
     headerBg: "#0F172A",
@@ -207,8 +207,8 @@ export default function ChangePlanScreen() {
               <View style={s.usageCard}>
                 <Text style={s.usageTitle}>CURRENT USAGE</Text>
                 <View style={s.usageRow}>
-                  <Text style={s.usageLabel}>Active QR codes</Text>
-                  <Text style={s.usageValue}>{plan.current_qr}</Text>
+                  <Text style={s.usageLabel}>Member accounts</Text>
+                  <Text style={s.usageValue}>{(plan as { current_accounts?: number; current_qr?: number }).current_accounts ?? plan.current_qr}</Text>
                 </View>
                 <View style={s.usageRow}>
                   <Text style={s.usageLabel}>Operators</Text>
@@ -240,7 +240,9 @@ export default function ChangePlanScreen() {
               const lim       = plan?.limits[tier.key] ?? plan?.limits[
                 tier.key === "core" ? "studio" : tier.key === "plus" ? "company" : "academy"
               ];
-              const qrBlocked = lim?.qr !== null && (plan?.current_qr ?? 0) > (lim?.qr ?? Infinity);
+              const currentAccounts = (plan as { current_accounts?: number; current_qr?: number } | null)?.current_accounts ?? plan?.current_qr ?? 0;
+              const accountLimit   = (lim as { accounts?: number | null } | null | undefined)?.accounts ?? null;
+              const qrBlocked      = accountLimit !== null && currentAccounts > accountLimit;
               const opBlocked = lim?.ops !== null && (plan?.current_operators ?? 0) > (lim?.ops ?? Infinity);
               const blocked   = qrBlocked || opBlocked;
 
@@ -269,7 +271,7 @@ export default function ChangePlanScreen() {
                       {tier.price}
                     </Text>
                     <Text style={[s.tierLimit, { color: tier.key === "core" ? "#6B7280" : "rgba(255,255,255,0.6)" }]}>
-                      {tier.qrLimit} · {tier.opLimit}
+                      {tier.accountLimit} · {tier.opLimit}
                     </Text>
                   </View>
 
@@ -287,8 +289,8 @@ export default function ChangePlanScreen() {
                         <Ionicons name="warning-outline" size={13} color="#92400E" />
                         <Text style={s.blockedText}>
                           {qrBlocked
-                            ? `You have ${plan?.current_qr} QR codes but ${tier.name} allows max ${lim?.qr}. Remove members first.`
-                            : `You have ${plan?.current_operators} operators but ${tier.name} allows max ${lim?.ops}. Remove operators first.`}
+                            ? `You have ${currentAccounts} member accounts but ${tier.name} allows max ${accountLimit}. Remove members first.`
+                            : `You have ${plan?.current_operators} operators but ${tier.name} allows max ${(lim as { ops?: number | null } | null | undefined)?.ops}. Remove operators first.`}
                         </Text>
                       </View>
                     )}

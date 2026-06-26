@@ -187,11 +187,11 @@ const PRIVACY_PILLARS = [
 const FAQS = [
   {
     q: "Do I need a credit card to start the trial?",
-    a: "No. Full, unrestricted access for 30 days with zero payment details required. Your account activates the moment you confirm your email.",
+    a: "No. Full, unrestricted access for 60 days with zero payment details required. Your account activates the moment you confirm your email.",
   },
   {
-    q: "How does the QR pricing work?",
-    a: "You pay per active QR code per month. Members, operators, admins, and kiosk tablets each count as one billable QR. Volume discounts apply automatically: $1.20 for the first 100, $1.05 up to 300, and $0.90 above that. Authorised pick-up contacts are always free.",
+    q: "How does pricing work?",
+    a: "You pay a flat monthly fee based on your plan: Core €49, Plus €99, Premium €199. The billing unit is member accounts (adult members). Children, dependants, and pick-up contacts are always free regardless of how many each member has. Operators are capped per plan (3 / 10 / unlimited) at no extra charge.",
   },
   {
     q: "What if a kiosk tablet is lost or stolen?",
@@ -233,7 +233,7 @@ const Logo = () => (
 // ── Stat counters ─────────────────────────────────────────────────────────────
 
 const STATS = [
-  { n: "30 days", label: "Free trial — no card" },
+  { n: "60 days", label: "Free trial — no card" },
   { n: "<60 s",   label: "Full setup time" },
   { n: "<3 s",    label: "Emergency Pulse delivery" },
   { n: "0%",      label: "Platform commission" },
@@ -399,7 +399,7 @@ export default function Landing() {
             <a href="/register"
               className="bg-[#FBBF24] text-[#0A192F] text-sm font-bold px-5 py-3 rounded-lg text-center no-underline"
               onClick={() => setMenuOpen(false)}>
-              Get Started Free — 30-Day Trial
+              Get Started Free — 60-Day Trial
             </a>
           </div>
         )}
@@ -414,7 +414,7 @@ export default function Landing() {
             <div className="flex flex-wrap items-center gap-3 justify-center lg:justify-start mb-7">
               <span className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-1.5">
                 <span className="w-2 h-2 rounded-full bg-[#1E3A8A] animate-pulse flex-shrink-0" />
-                <span className="text-[#1E3A8A] text-xs font-semibold tracking-wider uppercase">Free 30-Day Trial — No Card Required</span>
+                <span className="text-[#1E3A8A] text-xs font-semibold tracking-wider uppercase">Free 60-Day Trial — No Card Required</span>
               </span>
               <span className="inline-flex items-center gap-2 bg-emerald-50 border border-emerald-200 rounded-full px-4 py-1.5">
                 <svg className="w-3.5 h-3.5 text-emerald-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -503,7 +503,7 @@ export default function Landing() {
             {/* Product guarantees below card */}
             <div className="mt-4 grid grid-cols-3 gap-3">
               {[
-                { n: "30 days", label: "Free trial" },
+                { n: "60 days", label: "Free trial" },
                 { n: "<60 s",   label: "Full setup" },
                 { n: "0%",      label: "Commission" },
               ].map(({ n, label }) => (
@@ -1435,7 +1435,7 @@ export default function Landing() {
             Your Free Trial Starts the Moment You Sign Up
           </h2>
           <p className="text-blue-200 text-lg mb-8 leading-relaxed">
-            No credit card. No commitment. Full access for 30 days.<br />
+            No credit card. No commitment. Full access for 60 days.<br />
             Set up your association, invite your operators, and run your first safe session today.
           </p>
           <a href="/register"

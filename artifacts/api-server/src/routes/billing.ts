@@ -99,40 +99,38 @@ router.post("/billing/checkout-session", requireAuth, requireRole("admin"), asyn
   if (!stripeKey) { res.status(503).json({ error: "stripe_not_configured" }); return; }
 
   try {
-    const [orgResult, memberResult, childResult] = await Promise.all([
+    const [orgResult, planTier] = await Promise.all([
       supabase
         .from("organizations")
-        .select("name, stripe_customer_id, stripe_price_id_per_seat, currency")
+        .select("name, stripe_customer_id, currency, trial_ends_at, first_invoice_discount_applied")
         .eq("id", orgId)
         .maybeSingle(),
-      supabase
-        .from("members")
-        .select("*", { count: "exact", head: true })
-        .eq("organization_id", orgId),
-      // Dependants (children) each have their own QR code → billed as a seat
-      supabase
-        .from("children")
-        .select("*", { count: "exact", head: true })
-        .eq("organization_id", orgId),
+      getOrgPlanTier(orgId),
     ]);
 
     const org = orgResult.data as {
       name?: string;
       stripe_customer_id?: string;
-      stripe_price_id_per_seat?: string;
       currency?: string;
+      trial_ends_at?: string | null;
+      first_invoice_discount_applied?: boolean;
     } | null;
 
-    // Total QR codes = member accounts + their dependants
-    const qrCount = Math.max(1, (memberResult.count ?? 0) + (childResult.count ?? 0));
-    const orgCurrency = (org?.currency ?? "EUR").toUpperCase();
-    // Monthly amount = tiered pricing, matching the landing-page calculator exactly
-    const monthlyTotalCents = calcQrBillCents(qrCount, orgCurrency);
+    // Flat plan pricing: Core €49 · Plus €99 · Premium €199 (in EUR cents)
+    const PLAN_NAMES: Record<string, string> = { core: "Core", plus: "Plus", premium: "Premium" };
+    const monthlyTotalCents = PLAN_PRICES[planTier] ?? PLAN_PRICES["core"];
+    const planName          = PLAN_NAMES[planTier] ?? "Core";
+    const orgCurrency       = (org?.currency ?? "EUR").toUpperCase();
+
+    // Trial end: honour existing trial_ends_at for Stripe trial_end anchor
+    const trialEndsAt    = org?.trial_ends_at ? new Date(org.trial_ends_at) : null;
+    const trialEndUnix   = trialEndsAt && trialEndsAt > new Date()
+      ? Math.floor(trialEndsAt.getTime() / 1000)
+      : undefined;
 
     const Stripe = (await import("stripe")).default;
     const stripe = new Stripe(stripeKey);
 
-    // Ensure a Stripe Customer exists for this org
     let customerId = org?.stripe_customer_id ?? null;
     if (!customerId) {
       const adminData = await supabase
@@ -143,14 +141,11 @@ router.post("/billing/checkout-session", requireAuth, requireRole("admin"), asyn
       const adminUser = adminData.data as { email?: string; name?: string } | null;
       const customer = await stripe.customers.create({
         email: adminUser?.email ?? user.email,
-        name: org?.name ?? adminUser?.name ?? undefined,
+        name:  org?.name ?? adminUser?.name ?? undefined,
         metadata: { orgId: String(orgId) },
       });
       customerId = customer.id;
-      await supabase
-        .from("organizations")
-        .update({ stripe_customer_id: customerId })
-        .eq("id", orgId);
+      await supabase.from("organizations").update({ stripe_customer_id: customerId }).eq("id", orgId);
     }
 
     const rawDomain =
@@ -159,35 +154,26 @@ router.post("/billing/checkout-session", requireAuth, requireRole("admin"), asyn
       "localhost";
     const baseUrl = `https://${rawDomain}`;
 
-    // Check if this org qualifies for the first-invoice 25% welcome discount
-    const { data: discountCheck } = await supabase
-      .from("organizations")
-      .select("first_invoice_discount_applied")
-      .eq("id", orgId)
-      .maybeSingle();
-    const isFirstSubscription =
-      !(discountCheck as { first_invoice_discount_applied?: boolean } | null)
-        ?.first_invoice_discount_applied;
-
-    // Create a one-time Stripe coupon for the 25% welcome reward
+    // First subscription: 25% welcome coupon (waived if org came through a referral credit)
+    const isFirstSubscription = !org?.first_invoice_discount_applied;
     let welcomeCouponId: string | undefined;
     if (isFirstSubscription) {
       const coupon = await stripe.coupons.create({
         percent_off: 25,
-        duration: "once",
-        name: "Welcome — 25% First Month",
-        metadata: { orgId: String(orgId) },
+        duration:    "once",
+        name:        "Welcome — 25% First Month",
+        metadata:    { orgId: String(orgId) },
       });
       welcomeCouponId = coupon.id;
     }
 
     const session = await stripe.checkout.sessions.create({
-      mode: "subscription",
+      mode:     "subscription",
       customer: customerId,
       line_items: [{
         price_data: {
           currency:     orgCurrency.toLowerCase(),
-          product_data: { name: `Stride Platform — ${qrCount} QR codes` },
+          product_data: { name: `Stride Platform — ${planName} Plan` },
           unit_amount:  monthlyTotalCents,
           recurring:    { interval: "month" },
         },
@@ -195,11 +181,12 @@ router.post("/billing/checkout-session", requireAuth, requireRole("admin"), asyn
       }],
       ...(welcomeCouponId ? { discounts: [{ coupon: welcomeCouponId }] } : {}),
       subscription_data: {
-        metadata: { orgId: String(orgId), qrCount: String(qrCount) },
+        metadata: { orgId: String(orgId), plan_tier: planTier },
+        ...(trialEndUnix ? { trial_end: trialEndUnix } : {}),
       },
       success_url: `${baseUrl}/billing-success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${baseUrl}/billing-cancel`,
-      metadata: { orgId: String(orgId) },
+      metadata:    { orgId: String(orgId) },
     });
 
     res.json({ url: session.url, sessionId: session.id });
@@ -708,10 +695,18 @@ router.patch("/billing/branding", requireAuth, requireRole("admin"), async (req,
 
 // ── Shared plan helpers ───────────────────────────────────────────────────────
 
-export const PLAN_LIMITS: Record<string, { qr: number | null; ops: number | null }> = {
-  core:    { qr: 35,   ops: 3    },
-  plus:    { qr: 100,  ops: 10   },
-  premium: { qr: null, ops: null },
+/**
+ * Billing unit = member accounts (adult members only).
+ * Children/dependants: FREE.  Operators: capped, not billed.  Admin: FREE.
+ */
+export const PLAN_LIMITS: Record<string, { accounts: number | null; ops: number | null }> = {
+  core:    { accounts: 100,  ops: 3    },
+  plus:    { accounts: 500,  ops: 10   },
+  premium: { accounts: 2000, ops: null },
+  // legacy aliases
+  studio:  { accounts: 100,  ops: 3    },
+  company: { accounts: 500,  ops: 10   },
+  academy: { accounts: 2000, ops: null },
 };
 
 /** Flat monthly price in EUR cents per tier. */
@@ -744,11 +739,11 @@ export async function setOrgPlanTier(orgId: number, tier: string): Promise<void>
 router.get("/billing/plan", requireAuth, requireRole("admin", "super_admin"), async (req, res) => {
   const orgId = (req as AuthReq).user.orgId ?? 1;
   try {
-    const [planTier, subResult, membersResult, childrenResult, opsResult, grantResult] = await Promise.all([
+    const [planTier, subResult, membersResult, opsResult, grantResult] = await Promise.all([
       getOrgPlanTier(orgId),
       supabase.from("organizations").select("subscription_status").eq("id", orgId).single(),
+      // Billing unit: member accounts only (roles parent/member). Children are FREE.
       supabase.from("users").select("id", { count: "exact", head: true }).eq("organization_id", orgId).in("role", ["parent", "member"]),
-      supabase.from("user_children").select("id", { count: "exact", head: true }).eq("organization_id", orgId),
       supabase.from("users").select("id", { count: "exact", head: true }).eq("organization_id", orgId).in("role", ["operator"]),
       pool.query(
         `SELECT plan_tier, end_date FROM org_access_grants
@@ -760,13 +755,14 @@ router.get("/billing/plan", requireAuth, requireRole("admin", "super_admin"), as
     ]);
     const activeGrant = (grantResult.rows[0] as { plan_tier?: string; end_date?: string } | undefined);
     const effectiveTier = activeGrant?.plan_tier ?? planTier;
-    const qrTotal = (membersResult.data?.length ?? 0) + (childrenResult.data?.length ?? 0);
-    const opCount = opsResult.data?.length ?? 0;
+    const accountCount = membersResult.count ?? 0; // member accounts only — billing unit
+    const opCount      = opsResult.count      ?? 0;
     res.json({
       plan_tier: effectiveTier,
       stored_tier: planTier,
       subscription_status: (subResult.data as { subscription_status?: string } | null)?.subscription_status ?? "trialing",
-      current_qr: qrTotal,
+      current_accounts: accountCount,
+      current_qr: accountCount,          // backward-compat alias
       current_operators: opCount,
       limits: PLAN_LIMITS,
       active_grant: activeGrant ? { plan_tier: activeGrant.plan_tier, end_date: activeGrant.end_date ?? null } : null,
@@ -786,16 +782,15 @@ router.patch("/billing/plan", requireAuth, requireRole("admin", "super_admin"), 
   }
   try {
     const lim = PLAN_LIMITS[tier];
-    if (lim.qr !== null || lim.ops !== null) {
-      const [membersResult, childrenResult, opsResult] = await Promise.all([
+    if (lim.accounts !== null || lim.ops !== null) {
+      const [membersResult, opsResult] = await Promise.all([
         supabase.from("users").select("id", { count: "exact", head: true }).eq("organization_id", orgId).in("role", ["parent", "member"]),
-        supabase.from("user_children").select("id", { count: "exact", head: true }).eq("organization_id", orgId),
         supabase.from("users").select("id", { count: "exact", head: true }).eq("organization_id", orgId).in("role", ["operator"]),
       ]);
-      const qrTotal = (membersResult.data?.length ?? 0) + (childrenResult.data?.length ?? 0);
-      const opCount = opsResult.data?.length ?? 0;
-      if (lim.qr !== null && qrTotal > lim.qr) {
-        res.status(422).json({ error: `Cannot downgrade: you have ${qrTotal} active QR codes but ${tier} allows max ${lim.qr}. Remove members first.`, current_qr: qrTotal, limit_qr: lim.qr }); return;
+      const accountCount = membersResult.count ?? 0;
+      const opCount      = opsResult.count      ?? 0;
+      if (lim.accounts !== null && accountCount > lim.accounts) {
+        res.status(422).json({ error: `Cannot downgrade: you have ${accountCount} member accounts but ${tier} allows max ${lim.accounts}. Remove members first.`, current_accounts: accountCount, limit_accounts: lim.accounts }); return;
       }
       if (lim.ops !== null && opCount > lim.ops) {
         res.status(422).json({ error: `Cannot downgrade: you have ${opCount} operators but ${tier} allows max ${lim.ops}. Remove operators first.`, current_operators: opCount, limit_operators: lim.ops }); return;

@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { pool } from "../lib/pg.js";
 import { logAction } from "../lib/audit.js";
+import { PLAN_LIMITS, getOrgPlanTier } from "./billing.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -66,6 +67,36 @@ router.post("/members", requireAuth, async (req, res) => {
       blocked: true,
     });
     return;
+  }
+
+  // ── Plan account limit enforcement ───────────────────────────────────────
+  // Only enforces for member-type registrations (role "parent" / "member").
+  // super_admin bypasses so the owner org is never locked out.
+  if (user.role !== "super_admin") {
+    try {
+      const tier = await getOrgPlanTier(orgId);
+      const normalKey = ({ studio: "core", company: "plus", academy: "premium" } as Record<string,string>)[tier] ?? tier;
+      const planEntry = PLAN_LIMITS[normalKey] ?? PLAN_LIMITS[tier];
+      const accountLimit = planEntry?.accounts ?? null;
+      if (accountLimit !== null) {
+        const { rows: countRows } = await pool.query<{ count: string }>(
+          `SELECT COUNT(*) AS count FROM members WHERE organization_id = $1`,
+          [orgId],
+        );
+        const currentCount = parseInt((countRows[0] as { count: string }).count ?? "0", 10);
+        if (currentCount >= accountLimit) {
+          res.status(422).json({
+            error: `Member account limit reached (${accountLimit} on your current plan). Upgrade your plan to add more members.`,
+            code:  "ACCOUNT_LIMIT_REACHED",
+            limit: accountLimit,
+            current: currentCount,
+          });
+          return;
+        }
+      }
+    } catch (limitErr) {
+      req.log.warn({ limitErr }, "Plan limit check failed — allowing registration");
+    }
   }
 
   // Resolve org: use JWT orgId always (prevents cross-org injection).

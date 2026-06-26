@@ -25,12 +25,14 @@ const INITIAL_DELAY_MS   = 30_000;          // 30 s after boot (let server warm 
 
 // Reminder thresholds in days (highest first — order matters for correct labelling)
 const THRESHOLDS = [
-  { days: 7, column: "trial_reminder_7d_sent_at" as const },
-  { days: 3, column: "trial_reminder_3d_sent_at" as const },
-  { days: 1, column: "trial_reminder_1d_sent_at" as const },
+  { days: 15, column: "trial_reminder_15d_sent_at" as const },
+  { days: 7,  column: "trial_reminder_7d_sent_at"  as const },
+  { days: 3,  column: "trial_reminder_3d_sent_at"  as const },
+  { days: 1,  column: "trial_reminder_1d_sent_at"  as const },
 ] as const;
 
 type ReminderColumn =
+  | "trial_reminder_15d_sent_at"
   | "trial_reminder_7d_sent_at"
   | "trial_reminder_3d_sent_at"
   | "trial_reminder_1d_sent_at";
@@ -45,6 +47,7 @@ interface TrialingOrg {
   qr_discount_type: string | null;
   qr_discount_value: number | null;
   currency: string | null;
+  trial_reminder_15d_sent_at: string | null;
   trial_reminder_7d_sent_at: string | null;
   trial_reminder_3d_sent_at: string | null;
   trial_reminder_1d_sent_at: string | null;
@@ -172,7 +175,7 @@ async function checkTrialReminders(): Promise<void> {
     .select(`
       id, name, trial_ends_at,
       qr_base_price_cents, qr_discount_type, qr_discount_value, currency,
-      trial_reminder_7d_sent_at, trial_reminder_3d_sent_at, trial_reminder_1d_sent_at
+      trial_reminder_15d_sent_at, trial_reminder_7d_sent_at, trial_reminder_3d_sent_at, trial_reminder_1d_sent_at
     `)
     .eq("subscription_status", "trialing")
     .not("trial_ends_at", "is", null);

@@ -273,9 +273,41 @@ export async function ensureTables(): Promise<void> {
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS promo_code TEXT;`).catch(() => {});
 
   // Trial reminder tracking — prevents duplicate emails at T-7, T-3, T-1
+  await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS trial_reminder_15d_sent_at TIMESTAMPTZ;`).catch(() => {});
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS trial_reminder_7d_sent_at TIMESTAMPTZ;`).catch(() => {});
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS trial_reminder_3d_sent_at TIMESTAMPTZ;`).catch(() => {});
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS trial_reminder_1d_sent_at TIMESTAMPTZ;`).catch(() => {});
+
+  // Referral system
+  await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS referral_code TEXT;`).catch(() => {});
+  await pool.query(`CREATE UNIQUE INDEX IF NOT EXISTS uq_org_referral_code ON organizations(referral_code) WHERE referral_code IS NOT NULL;`).catch(() => {});
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS org_referrals (
+      id              SERIAL PRIMARY KEY,
+      referrer_org_id INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      referee_org_id  INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      referee_email   TEXT,
+      status          TEXT NOT NULL DEFAULT 'pending',  -- pending | qualified | rewarded
+      qualified_at    TIMESTAMPTZ,
+      rewarded_at     TIMESTAMPTZ,
+      credit_cents    INTEGER DEFAULT 0,
+      created_at      TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(referee_org_id)
+    );
+  `).catch(() => {});
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS org_credits (
+      id          SERIAL PRIMARY KEY,
+      org_id      INTEGER NOT NULL REFERENCES organizations(id) ON DELETE CASCADE,
+      amount_cents INTEGER NOT NULL,
+      reason      TEXT,
+      expires_at  TIMESTAMPTZ,
+      applied_at  TIMESTAMPTZ,
+      created_at  TIMESTAMPTZ DEFAULT NOW()
+    );
+  `).catch(() => {});
 
   // First-invoice welcome discount (25% one-time reward, applied via Stripe coupon)
   await pool.query(`ALTER TABLE IF EXISTS organizations ADD COLUMN IF NOT EXISTS first_invoice_discount_applied BOOLEAN DEFAULT FALSE;`).catch(() => {});
