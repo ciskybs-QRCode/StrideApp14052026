@@ -850,7 +850,7 @@ export default function OperatorCalendar() {
       <Pressable
         style={({ pressed }) => [{
           marginHorizontal: 20,
-          marginBottom: insets.bottom + 12,
+          marginBottom: insets.bottom + 72,
           backgroundColor: colors.primary,
           borderRadius: 16,
           paddingVertical: 16,
