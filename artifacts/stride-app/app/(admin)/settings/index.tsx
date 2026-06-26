@@ -49,12 +49,6 @@ const NAV_ROWS = [
     icon: "shield-checkmark-outline" as const,
     badge: true,
   },
-  {
-    key: "communication-settings",
-    title: "Communication Settings",
-    description: "Email (Resend) and SMS (Twilio) credentials",
-    icon: "mail-open-outline" as const,
-  },
 ] as const;
 
 // ── Component ─────────────────────────────────────────────────────────────────

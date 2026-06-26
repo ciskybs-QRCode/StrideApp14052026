@@ -477,7 +477,7 @@ export default function AdminCommunications() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Communications" onBack={() => router.push("/(admin)/members-hub")} />
+      <ScreenHeader title="Broadcast & Compose" onBack={() => router.push("/(admin)/messages" as never)} />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
