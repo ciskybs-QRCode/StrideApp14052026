@@ -359,7 +359,7 @@ function TimeSlotGrid({
 // ─── Main Screen ─────────────────────────────────────────────────────────────
 
 export default function CoursesScreen() {
-  const { courses, children, bookings, mediaConsent } = useAppData();
+  const { courses, children, bookings } = useAppData();
   const { user } = useAuth();
   const colors = useColors();
   const styles = make_styles(colors.primary, colors.secondary);
@@ -488,11 +488,6 @@ export default function CoursesScreen() {
   };
 
   const handleOpenEnroll = (c: (typeof courses)[0]) => {
-    // Task 3: JIT consent gate — require media consent before enrollment
-    if (mediaConsent === "none") {
-      router.push("/(parent)/doc-consent");
-      return;
-    }
     setEnrollCourse(c);
     setEnrollParticipants(participantOptions[0] ? [participantOptions[0]] : []);
     setEnrollPackage(

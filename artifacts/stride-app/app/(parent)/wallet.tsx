@@ -271,7 +271,7 @@ export default function WalletScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Wallet" />
+      <ScreenHeader title="Wallet" onBack={() => router.back()} />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: 16, paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}

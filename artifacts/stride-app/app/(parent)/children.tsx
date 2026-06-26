@@ -103,7 +103,7 @@ export default function ChildrenScreen() {
   const [newChildAllergies, setNewChildAllergies] = useState("");
   const [newChildMedications, setNewChildMedications] = useState("");
   const [newChildWaiver, setNewChildWaiver] = useState<"ambulance" | "call_parent" | "no_intervention">("ambulance");
-  const [newChildMediaConsent, setNewChildMediaConsent] = useState<"full" | "internal" | "none">("none");
+  const [newChildMediaConsent, setNewChildMediaConsent] = useState<"full" | "internal" | "none">("full");
   const [newChildPhotoUri, setNewChildPhotoUri] = useState<string | null>(null);
   const [newChildMedCertUri, setNewChildMedCertUri] = useState<string | null>(null);
   const [newChildMedCertExpiry, setNewChildMedCertExpiry] = useState<string | null>(null);
@@ -305,7 +305,7 @@ export default function ChildrenScreen() {
     setNewChildAllergies("");
     setNewChildMedications("");
     setNewChildWaiver("ambulance");
-    setNewChildMediaConsent("none");
+    setNewChildMediaConsent("full");
     setNewChildPhotoUri(null);
     setNewChildMedCertUri(null);
     setNewChildMedCertExpiry(null);
@@ -1431,7 +1431,7 @@ export default function ChildrenScreen() {
               <View style={[styles.sectionDivider, { borderTopColor: colors.border }]} />
               <View style={styles.sectionLabelRow}>
                 <Ionicons name="medical" size={15} color={colors.primary} />
-                <Text style={[styles.sectionLabelText, { color: colors.primary }]}>Medical Information</Text>
+                <Text style={[styles.sectionLabelText, { color: colors.primary }]}>Medical Information <Text style={{ color: "#EF4444" }}>*</Text></Text>
               </View>
 
               {/* Allergies Yes/No */}
@@ -1528,10 +1528,10 @@ export default function ChildrenScreen() {
               <View style={[styles.sectionDivider, { borderTopColor: colors.border }]} />
               <View style={styles.sectionLabelRow}>
                 <Ionicons name="camera" size={15} color={colors.primary} />
-                <Text style={[styles.sectionLabelText, { color: colors.primary }]}>Media Release</Text>
+                <Text style={[styles.sectionLabelText, { color: colors.primary }]}>Media Release <Text style={{ color: "#EF4444" }}>*</Text></Text>
               </View>
               <Text style={[styles.fieldHint, { color: colors.mutedForeground, marginBottom: 10 }]}>
-                Authorisation for photos or videos during lessons and events.
+                Required: authorisation for photos or videos during lessons and events.
               </Text>
               {(["full", "internal", "none"] as const).map(opt => {
                 const labels = {
