@@ -156,23 +156,6 @@ export default function OperatorSettingsScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
         </Pressable>
 
-        {/* ── End of Contract ── */}
-        <Pressable
-          style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
-          onPress={() => { tap(); router.navigate("/(operator)/resign" as never); }}
-        >
-          <View style={[styles.featureIconBox, { backgroundColor: (colors.primary + "12") }]}>
-            <Ionicons name="exit-outline" size={26} color={colors.primary} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.featureTitle, { color: colors.foreground }]}>End of Contract</Text>
-            <Text style={[styles.featureDesc, { color: colors.mutedForeground }]}>
-              Submit a contract termination request with notice period
-            </Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
-        </Pressable>
-
         {/* ── Certificates ── */}
         <Pressable
           style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
