@@ -406,7 +406,7 @@ export default function UnifiedProfileView({ currentRole }: Props) {
               <View style={[s.provisionIcon, { backgroundColor: "#0369A120" }]}>
                 {provisioningOp
                   ? <ActivityIndicator size="small" color="#0369A1" />
-                  : <Ionicons name="school" size={22} color="#0369A1" />}
+                  : <Ionicons name="briefcase-outline" size={22} color="#0369A1" />}
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[s.provisionTitle, { color: hasRole("operator") ? "#0369A1" : colors.foreground }]}>

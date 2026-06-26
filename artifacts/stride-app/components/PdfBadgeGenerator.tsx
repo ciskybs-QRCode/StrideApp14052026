@@ -118,7 +118,7 @@ async function buildFullPageHtml(students: EnrichedStudent[], opts: BadgeOpts): 
   const pages = await Promise.all(students.map(async (s) => {
     const { first, last } = splitName(s.name);
     const qr     = await qrSvgFor(`STRIDE:CHILD:${s.id}:${encodeURIComponent(s.name)}`);
-    const course = s.courses[0] ?? opts.courseName ?? "Dance";
+    const course = s.courses[0] ?? opts.courseName ?? "Activity";
     const safety = safetyPillsHtml(s, opts, false);
     return `
       <div style="width:210mm;min-height:297mm;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20mm;page-break-after:always;position:relative;background:white;">

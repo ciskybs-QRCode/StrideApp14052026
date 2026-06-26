@@ -243,14 +243,7 @@ export default function SettingsIndex() {
             title={item.key === "app-customization" ? "Branding & Theme" : item.title}
             description={item.key === "app-customization" ? "Colours, logo, fonts and button style" : item.description}
             badge={item.key === "legal-privacy" && unsignedCount > 0 ? unsignedCount : undefined}
-            onPress={() => {
-              if (item.key === "app-customization") {
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                router.push("/(admin)/setup" as never);
-              } else {
-                navigate(item.key);
-              }
-            }}
+            onPress={() => navigate(item.key)}
           />
         ))}
 

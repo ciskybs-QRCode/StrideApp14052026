@@ -23,7 +23,7 @@ import { useColors } from "@/hooks/useColors";
 
 const ROLE_META: Record<string, { label: string; icon: string }> = {
   admin:    { label: "Admin",    icon: "shield-checkmark" },
-  operator: { label: "Operator", icon: "school" },
+  operator: { label: "Operator", icon: "briefcase-outline" },
   parent:   { label: "Member",   icon: "person" },
 };
 

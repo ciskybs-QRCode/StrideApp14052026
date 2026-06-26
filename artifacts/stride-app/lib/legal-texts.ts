@@ -24,7 +24,7 @@ of your Organisation.
 1. DEFINITIONS
 
 "Administrator" — you, representing your Organisation.
-"Organisation" — the association, club or school you are registering.
+"Organisation" — the association, club or organisation you are registering.
 "Platform" — the Stride mobile and web application and all its services.
 "Member Data" — personal data of your members, students and guardians.
 "Stride" — Stride Technologies and its affiliates.
@@ -474,8 +474,7 @@ Version 1.0 · Last updated: June 2025
 ───────────────────────────────────────────
 
 PERMITTED USE
-The Platform is provided solely for lawful management of sports
-associations, dance schools, and similar membership organisations.
+The Platform is provided solely for lawful management of sports associations, activity clubs, and similar membership organisations.
 
 PROHIBITED ACTIVITIES
 

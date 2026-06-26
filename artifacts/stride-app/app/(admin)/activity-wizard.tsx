@@ -444,7 +444,7 @@ export default function ActivityWizard() {
       <View style={{ height: 12 }} />
       <View style={{ marginBottom: 14 }}>
         <Text style={st.fieldLabel}>Title  *</Text>
-        <TextInput value={evtTitle} onChangeText={setEvtTitle} placeholder="e.g. Summer Dance Workshop" placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+        <TextInput value={evtTitle} onChangeText={setEvtTitle} placeholder="e.g. Summer Workshop" placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
       </View>
       <View style={{ marginBottom: 14 }}>
         <Text style={st.fieldLabel}>Date  *</Text>

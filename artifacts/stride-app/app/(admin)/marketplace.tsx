@@ -491,7 +491,7 @@ export default function AdminMarketplaceScreen() {
               <TextInput
                 style={[S.input, { borderColor: colors.border, color: colors.foreground }]}
                 value={lUrl} onChangeText={setLUrl}
-                placeholder="https://myschool.myshopify.com/collections/starter-pack"
+                placeholder="https://myassociation.myshopify.com/collections/starter-pack"
                 placeholderTextColor={colors.mutedForeground}
                 autoCapitalize="none"
                 keyboardType="url"
