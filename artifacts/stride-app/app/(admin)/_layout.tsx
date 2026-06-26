@@ -317,14 +317,16 @@ export default function AdminTabLayout() {
       <Tabs.Screen
         name="settings"
         options={{ title: t("tab.settings", "Settings"), tabBarIcon: ({ color, size, focused }) => <SettingsTabIcon color={color} size={size} focused={focused} /> }}
-        listeners={({ navigation }) => ({
-          tabPress: () => {
-            navigation.navigate("settings", { screen: "index" });
+        listeners={() => ({
+          tabPress: (e) => {
+            e.preventDefault();
+            router.navigate("/(admin)/settings" as never);
           },
         })}
       />
 
       {/* ── Hidden deep-link screens (reached from hub pages) ── */}
+      <Tabs.Screen name="membership"     options={{ href: null }} />
       <Tabs.Screen name="users"          options={{ href: null }} />
       <Tabs.Screen name="disciplines"    options={{ href: null }} />
       <Tabs.Screen name="lessons"        options={{ href: null }} />
