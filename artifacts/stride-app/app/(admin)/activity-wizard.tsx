@@ -5,6 +5,8 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -812,18 +814,22 @@ export default function ActivityWizard() {
         </Text>
       </View>
 
-      {/* ── Scrollable content */}
-      <ScrollView
+      <KeyboardAvoidingView
         style={{ flex: 1 }}
-        contentContainerStyle={{ padding: 20, paddingBottom: 120 + insets.bottom }}
-        keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
       >
-        {renderContent()}
-      </ScrollView>
+        {/* ── Scrollable content */}
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 24 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {renderContent()}
+        </ScrollView>
 
-      {/* ── Nav buttons */}
-      <View style={[st.navBar, { borderTopColor: colors.border, paddingBottom: 16 + insets.bottom, backgroundColor: colors.background }]}>
+        {/* ── Nav buttons */}
+        <View style={[st.navBar, { borderTopColor: colors.border, paddingBottom: 16 + insets.bottom, backgroundColor: colors.background }]}>
         {step > 1 && (
           <Pressable style={[st.navBack, { flex: 1, borderColor: colors.border }]} onPress={handleBack}>
             <Ionicons name="chevron-back" size={18} color={colors.primary} />
@@ -844,6 +850,7 @@ export default function ActivityWizard() {
           </Pressable>
         )}
       </View>
+      </KeyboardAvoidingView>
     </View>
   );
 }
