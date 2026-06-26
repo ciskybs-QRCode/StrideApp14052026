@@ -520,4 +520,38 @@ router.post(
   },
 );
 
+// ── POST /admin/transcribe — Whisper speech-to-text ──────────────────────────
+
+import multer from "multer";
+
+const audioUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 25 * 1024 * 1024 }, // 25 MB (Whisper limit)
+  fileFilter(_req, file, cb) {
+    const ok = file.mimetype.startsWith("audio/") || file.mimetype.startsWith("video/");
+    if (ok) cb(null, true); else cb(new Error("Only audio files accepted"));
+  },
+});
+
+router.post(
+  "/admin/transcribe",
+  requireAuth,
+  requireRole("admin", "super_admin"),
+  aiLimiter,
+  audioUpload.single("audio"),
+  async (req, res) => {
+    if (!req.file) { res.status(400).json({ error: "No audio file provided" }); return; }
+    try {
+      const blob = new Blob([new Uint8Array(req.file.buffer)], { type: req.file.mimetype });
+      const ext  = req.file.originalname?.split(".").pop() ?? "m4a";
+      const file = new File([blob], `audio.${ext}`, { type: req.file.mimetype });
+      const result = await openai.audio.transcriptions.create({ model: "whisper-1", file });
+      res.json({ text: result.text });
+    } catch (err) {
+      req.log.error(err, "transcribe: whisper failed");
+      res.status(500).json({ error: "Transcription failed. Please try again." });
+    }
+  },
+);
+
 export default router;

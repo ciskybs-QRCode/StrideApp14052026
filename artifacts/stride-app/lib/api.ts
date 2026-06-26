@@ -2646,6 +2646,21 @@ export async function adminCopilotQuery(query: string): Promise<CopilotResponse>
   return request<CopilotResponse>("POST", "/admin/copilot-query", { query });
 }
 
+export async function transcribeAudio(audioUri: string, mimeType = "audio/m4a"): Promise<string> {
+  const domain = process.env.EXPO_PUBLIC_DOMAIN ?? "";
+  const token  = await getToken();
+  const form   = new FormData();
+  form.append("audio", { uri: audioUri, name: "audio.m4a", type: mimeType } as unknown as Blob);
+  const res = await fetch(`${domain}/api/admin/transcribe`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: form,
+  });
+  if (!res.ok) throw new Error("Transcription failed");
+  const json = await res.json() as { text: string };
+  return json.text;
+}
+
 // ── Predictive Substitutes ────────────────────────────────────────────────────
 
 export interface PredictiveSubstitute {

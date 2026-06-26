@@ -17,7 +17,8 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { adminCopilotQuery, type CopilotResponse } from "@/lib/api";
+import { Audio } from "expo-av";
+import { adminCopilotQuery, transcribeAudio, type CopilotResponse } from "@/lib/api";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
 
@@ -463,10 +464,14 @@ export default function CopilotScreen() {
   const insets    = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
 
-  const [input,       setInput]       = useState("");
-  const [loading,     setLoading]     = useState(false);
-  const [messages,    setMessages]    = useState<Message[]>([]);
-  const [showPrompts, setShowPrompts] = useState(false);
+  const [input,        setInput]        = useState("");
+  const [loading,      setLoading]      = useState(false);
+  const [messages,     setMessages]     = useState<Message[]>([]);
+  const [showPrompts,  setShowPrompts]  = useState(false);
+  const [isRecording,  setIsRecording]  = useState(false);
+  const [transcribing, setTranscribing] = useState(false);
+  const recordingRef   = useRef<Audio.Recording | null>(null);
+  const recognitionRef = useRef<{ stop: () => void } | null>(null);
 
   const showWelcome = messages.length === 0;
 
@@ -502,6 +507,71 @@ export default function CopilotScreen() {
       setLoading(false);
     }
   };
+
+  // ── Voice input ─────────────────────────────────────────────────────────────
+  const handleMic = useCallback(async () => {
+    if (Platform.OS === "web") {
+      // Web Speech API
+      const SpeechRecognition =
+        (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      if (!SpeechRecognition) {
+        Alert.alert("Not supported", "Speech recognition is not available in this browser.");
+        return;
+      }
+      if (isRecording && recognitionRef.current) {
+        recognitionRef.current.stop();
+        return;
+      }
+      const recognition = new SpeechRecognition();
+      recognition.continuous      = false;
+      recognition.interimResults  = false;
+      recognition.lang            = "en-US";
+      recognitionRef.current      = recognition;
+      setIsRecording(true);
+      recognition.onresult = (e: any) => {
+        const transcript = Array.from(e.results as SpeechRecognitionResultList)
+          .map((r: SpeechRecognitionResult) => r[0].transcript)
+          .join(" ");
+        setInput(prev => (prev ? `${prev} ${transcript}` : transcript));
+      };
+      recognition.onerror = () => { setIsRecording(false); recognitionRef.current = null; };
+      recognition.onend   = () => { setIsRecording(false); recognitionRef.current = null; };
+      recognition.start();
+    } else {
+      // Mobile: expo-av recording → Whisper
+      if (isRecording && recordingRef.current) {
+        setIsRecording(false);
+        setTranscribing(true);
+        try {
+          await recordingRef.current.stopAndUnloadAsync();
+          const uri = recordingRef.current.getURI();
+          recordingRef.current = null;
+          if (uri) {
+            const text = await transcribeAudio(uri);
+            setInput(prev => (prev ? `${prev} ${text}` : text));
+          }
+        } catch {
+          Alert.alert("Error", "Could not transcribe audio. Please try again.");
+        } finally {
+          setTranscribing(false);
+        }
+        return;
+      }
+      try {
+        const { granted } = await Audio.requestPermissionsAsync();
+        if (!granted) { Alert.alert("Permission required", "Microphone access is needed for voice input."); return; }
+        await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true });
+        const { recording } = await Audio.Recording.createAsync(
+          Audio.RecordingOptionsPresets.HIGH_QUALITY,
+        );
+        recordingRef.current = recording;
+        setIsRecording(true);
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } catch {
+        Alert.alert("Error", "Could not start recording. Please try again.");
+      }
+    }
+  }, [isRecording]);
 
   const TAB_H = Platform.OS === "web" ? 84 : 49;
 
@@ -557,10 +627,18 @@ export default function CopilotScreen() {
       {/* ── Input bar ─────────────────────────────────────────── */}
       <View style={[s.inputBar, { paddingBottom: Math.max(insets.bottom, 16), marginBottom: TAB_H }]}>
         <Pressable
-          style={s.micBtn}
-          onPress={() => Alert.alert("Coming Soon", "Voice input will be available in a future update.")}
+          style={[s.micBtn, isRecording && { backgroundColor: "#FEE2E2" }]}
+          onPress={handleMic}
+          disabled={transcribing || loading}
         >
-          <Ionicons name="mic-outline" size={22} color={CLR.textMuted} />
+          {transcribing
+            ? <ActivityIndicator size="small" color={CLR.userBubble} />
+            : <Ionicons
+                name={isRecording ? "stop-circle" : "mic-outline"}
+                size={22}
+                color={isRecording ? "#DC2626" : CLR.textMuted}
+              />
+          }
         </Pressable>
         <TextInput
           style={s.input}
