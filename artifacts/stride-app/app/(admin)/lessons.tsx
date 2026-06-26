@@ -1,4 +1,5 @@
 import { Ionicons } from "@expo/vector-icons";
+import * as Haptics from "expo-haptics";
 import { useFocusEffect } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
@@ -25,7 +26,268 @@ function fmtDate(d: string) {
   catch { return d; }
 }
 
-type Tab = "operators" | "disciplines" | "availability" | "scheduler";
+type Tab = "operators" | "disciplines" | "availability" | "scheduler" | "private";
+
+// ── Private Lessons Tab component ────────────────────────────────────────────
+
+interface PLConfig {
+  id: number;
+  discipline_name: string;
+  member_price_cents: number;
+  operator_payout_cents: number;
+  duration_minutes: number;
+  enabled: boolean;
+}
+function plCents(c: number, sym = "\u20AC") { return `${sym}${(c / 100).toFixed(2)}`; }
+function plParseCents(s: string) { return Math.round(parseFloat(s.replace(",", ".") || "0") * 100); }
+
+function PrivateLessonsTab() {
+  const colors = useColors();
+  const cur    = useOrgCurrency();
+
+  const [plLoading,  setPlLoading]  = useState(true);
+  const [plSaving,   setPlSaving]   = useState(false);
+  const [plEnabled,  setPlEnabled]  = useState(false);
+  const [plToggling, setPlToggling] = useState(false);
+  const [plConfigs,  setPlConfigs]  = useState<PLConfig[]>([]);
+  const [plEditRow,  setPlEditRow]  = useState<Partial<PLConfig> | null>(null);
+  const [plAddMode,  setPlAddMode]  = useState(false);
+  const [plFName,    setPlFName]    = useState("");
+  const [plFMember,  setPlFMember]  = useState("");
+  const [plFOp,      setPlFOp]      = useState("");
+  const [plFDur,     setPlFDur]     = useState("60");
+
+  const plLoad = useCallback(async () => {
+    setPlLoading(true);
+    try {
+      const data = await api.getPrivateLessonSettings();
+      setPlEnabled(data.enabled);
+      setPlConfigs(data.configs);
+    } catch { /* ignore */ }
+    finally { setPlLoading(false); }
+  }, []);
+
+  useFocusEffect(useCallback(() => { void plLoad(); }, [plLoad]));
+
+  const plToggleEnabled = async (v: boolean) => {
+    setPlEnabled(v); setPlToggling(true);
+    try { await api.updatePrivateLessonEnabled(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }
+    catch { setPlEnabled(!v); Alert.alert("Error", "Could not update private lessons."); }
+    finally { setPlToggling(false); }
+  };
+
+  const plOpenAdd = () => { setPlFName(""); setPlFMember("50.00"); setPlFOp("30.00"); setPlFDur("60"); setPlEditRow(null); setPlAddMode(true); };
+  const plOpenEdit = (cfg: PLConfig) => {
+    setPlFName(cfg.discipline_name);
+    setPlFMember((cfg.member_price_cents / 100).toFixed(2));
+    setPlFOp((cfg.operator_payout_cents / 100).toFixed(2));
+    setPlFDur(String(cfg.duration_minutes));
+    setPlEditRow(cfg); setPlAddMode(false);
+  };
+
+  const plSaveConfig = async () => {
+    if (!plFName.trim()) { Alert.alert("Name required", "Please enter a discipline name."); return; }
+    const mp = plParseCents(plFMember); const op = plParseCents(plFOp); const dur = parseInt(plFDur) || 60;
+    if (mp <= 0) { Alert.alert("Invalid price", "Member price must be greater than zero."); return; }
+    if (op < 0)  { Alert.alert("Invalid payout", "Operator payout cannot be negative."); return; }
+    if (op > mp) { Alert.alert("Invalid payout", "Operator payout cannot exceed member price."); return; }
+    setPlSaving(true);
+    try {
+      const saved = await api.savePrivateLessonConfig({ id: plEditRow?.id, discipline_name: plFName.trim(), member_price_cents: mp, operator_payout_cents: op, duration_minutes: dur, enabled: true });
+      setPlConfigs(prev => plEditRow?.id ? prev.map(c => c.id === plEditRow.id ? saved : c) : [...prev, saved]);
+      setPlAddMode(false); setPlEditRow(null);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch { Alert.alert("Error", "Failed to save."); }
+    finally { setPlSaving(false); }
+  };
+
+  const plToggleConfig = async (cfg: PLConfig, v: boolean) => {
+    setPlConfigs(prev => prev.map(c => c.id === cfg.id ? { ...c, enabled: v } : c));
+    try { await api.savePrivateLessonConfig({ ...cfg, enabled: v }); }
+    catch { setPlConfigs(prev => prev.map(c => c.id === cfg.id ? { ...c, enabled: !v } : c)); }
+  };
+
+  const plDeleteConfig = (cfg: PLConfig) => {
+    Alert.alert("Delete lesson type", `Remove "${cfg.discipline_name}"?`, [
+      { text: "Cancel", style: "cancel" },
+      { text: "Delete", style: "destructive", onPress: async () => {
+        try { await api.deletePrivateLessonConfig(cfg.id); setPlConfigs(prev => prev.filter(c => c.id !== cfg.id)); }
+        catch { Alert.alert("Error", "Failed to delete."); }
+      }},
+    ]);
+  };
+
+  if (plLoading) return <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />;
+
+  const plIsForm = plAddMode || !!plEditRow;
+
+  return (
+    <>
+      <Text style={[plSt.sectionLabel, { color: colors.mutedForeground }]}>FEATURE</Text>
+      <View style={[plSt.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <View style={{ flexDirection: "row", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
+          <View style={[plSt.iconBox, { backgroundColor: plEnabled ? "#DBEAFE" : "#F1F5F9" }]}>
+            <Ionicons name="school-outline" size={22} color={plEnabled ? colors.primary : colors.mutedForeground} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[plSt.cardTitle, { color: colors.foreground }]}>Private Lessons</Text>
+            <Text style={[plSt.cardDesc, { color: colors.mutedForeground }]}>
+              When enabled, members see a &quot;Book a Private Lesson&quot; button in their courses screen. Disable to hide the feature entirely.
+            </Text>
+          </View>
+        </View>
+        <View style={[plSt.toggleRow, { borderColor: colors.border }]}>
+          <Text style={[plSt.toggleLabel, { color: colors.foreground }]}>
+            {plEnabled ? "Enabled — members can book" : "Disabled — button hidden"}
+          </Text>
+          <Switch value={plEnabled} onValueChange={plToggleEnabled} disabled={plToggling}
+            trackColor={{ true: colors.primary, false: colors.border }} thumbColor="#FFF" />
+        </View>
+      </View>
+
+      <Text style={[plSt.sectionLabel, { color: colors.mutedForeground }]}>LESSON TYPES &amp; PRICING</Text>
+      <View style={[plSt.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        <Text style={[plSt.cardDesc, { color: colors.mutedForeground, marginBottom: 14 }]}>
+          Set the price members pay and what the operator earns. The difference is your association&apos;s margin.
+        </Text>
+        {plConfigs.length > 0 && (
+          <View style={[plSt.tableHeader, { borderColor: colors.border }]}>
+            <Text style={[plSt.tableHeaderCell, { color: colors.mutedForeground, flex: 2 }]}>DISCIPLINE</Text>
+            <Text style={[plSt.tableHeaderCell, { color: colors.mutedForeground }]}>MEMBER</Text>
+            <Text style={[plSt.tableHeaderCell, { color: colors.mutedForeground }]}>OPERATOR</Text>
+            <Text style={[plSt.tableHeaderCell, { color: colors.mutedForeground }]}>MIN</Text>
+            <View style={{ width: 60 }} />
+          </View>
+        )}
+        {plConfigs.map(cfg => (
+          <View key={cfg.id} style={[plSt.configRow, { borderColor: colors.border, opacity: cfg.enabled ? 1 : 0.5 }]}>
+            <View style={{ flex: 2 }}>
+              <Text style={[plSt.configName, { color: colors.foreground }]}>{cfg.discipline_name}</Text>
+              <Switch value={cfg.enabled} onValueChange={v => plToggleConfig(cfg, v)}
+                trackColor={{ true: colors.primary, false: colors.border }} thumbColor="#FFF"
+                style={{ transform: [{ scaleX: 0.7 }, { scaleY: 0.7 }], marginLeft: -6 }} />
+            </View>
+            <Text style={[plSt.configPrice, { color: colors.primary, flex: 1 }]}>{plCents(cfg.member_price_cents, cur)}</Text>
+            <Text style={[plSt.configPrice, { color: "#059669", flex: 1 }]}>{plCents(cfg.operator_payout_cents, cur)}</Text>
+            <Text style={[plSt.configPrice, { color: colors.mutedForeground, flex: 1 }]}>{cfg.duration_minutes}m</Text>
+            <View style={{ flexDirection: "row", gap: 2, width: 60, justifyContent: "flex-end" }}>
+              <Pressable onPress={() => plOpenEdit(cfg)} style={plSt.iconBtn}><Ionicons name="pencil-outline" size={16} color={colors.primary} /></Pressable>
+              <Pressable onPress={() => plDeleteConfig(cfg)} style={plSt.iconBtn}><Ionicons name="trash-outline" size={16} color="#EF4444" /></Pressable>
+            </View>
+          </View>
+        ))}
+        {plConfigs.length === 0 && !plIsForm && (
+          <View style={[plSt.emptyBox, { borderColor: colors.border }]}>
+            <Ionicons name="book-outline" size={32} color={colors.mutedForeground} />
+            <Text style={[plSt.emptyText, { color: colors.mutedForeground }]}>No lesson types yet</Text>
+            <Text style={{ fontSize: 11, color: colors.mutedForeground, textAlign: "center" }}>Add your first private lesson type with pricing below.</Text>
+          </View>
+        )}
+        {plIsForm && (
+          <View style={[plSt.form, { backgroundColor: "#F0F4FF", borderColor: colors.primary }]}>
+            <Text style={[plSt.formTitle, { color: colors.primary }]}>{plEditRow ? "Edit Lesson Type" : "New Lesson Type"}</Text>
+            <Text style={[plSt.fieldLabel, { color: colors.primary }]}>Discipline Name *</Text>
+            <TextInput style={[plSt.input, { borderColor: colors.border, color: colors.foreground }]}
+              value={plFName} onChangeText={setPlFName} placeholder="e.g. Kickboxing, Yoga, Piano…"
+              placeholderTextColor={colors.mutedForeground} autoFocus />
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 12 }}>
+              <View style={{ flex: 1 }}>
+                <Text style={[plSt.fieldLabel, { color: colors.primary }]}>Member price ({cur || "\u20AC"})</Text>
+                <TextInput style={[plSt.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+                  value={plFMember} onChangeText={setPlFMember} placeholder="50.00" keyboardType="decimal-pad"
+                  placeholderTextColor={colors.mutedForeground} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[plSt.fieldLabel, { color: "#059669" }]}>Operator payout ({cur || "\u20AC"})</Text>
+                <TextInput style={[plSt.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+                  value={plFOp} onChangeText={setPlFOp} placeholder="30.00" keyboardType="decimal-pad"
+                  placeholderTextColor={colors.mutedForeground} />
+              </View>
+            </View>
+            <View style={{ marginTop: 10 }}>
+              <Text style={[plSt.fieldLabel, { color: colors.mutedForeground }]}>Duration (minutes)</Text>
+              <TextInput style={[plSt.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+                value={plFDur} onChangeText={setPlFDur} placeholder="60" keyboardType="number-pad"
+                placeholderTextColor={colors.mutedForeground} />
+            </View>
+            {plParseCents(plFMember) > 0 && plParseCents(plFOp) >= 0 && (
+              <View style={[plSt.marginPreview, { backgroundColor: "#EFF6FF", borderColor: "#BFDBFE" }]}>
+                <Ionicons name="pie-chart-outline" size={14} color={colors.primary} />
+                <Text style={{ fontSize: 12, color: colors.primary }}>
+                  Margin: <Text style={{ fontWeight: "800" }}>{plCents(Math.max(0, plParseCents(plFMember) - plParseCents(plFOp)), cur)}</Text> per lesson
+                  {plParseCents(plFMember) > 0 ? ` (${Math.round(Math.max(0, plParseCents(plFMember) - plParseCents(plFOp)) / plParseCents(plFMember) * 100)}%)` : ""}
+                </Text>
+              </View>
+            )}
+            <View style={{ flexDirection: "row", gap: 10, marginTop: 14 }}>
+              <Pressable style={[plSt.btn, { flex: 1, backgroundColor: "#F1F5F9", borderWidth: 1, borderColor: colors.border }]}
+                onPress={() => { setPlAddMode(false); setPlEditRow(null); }}>
+                <Text style={[plSt.btnText, { color: colors.mutedForeground }]}>Cancel</Text>
+              </Pressable>
+              <Pressable style={[plSt.btn, { flex: 1, backgroundColor: colors.primary }]} onPress={plSaveConfig} disabled={plSaving}>
+                {plSaving ? <ActivityIndicator size="small" color="#FFF" /> : <Text style={[plSt.btnText, { color: "#FFF" }]}>{plEditRow ? "Save Changes" : "Add Lesson Type"}</Text>}
+              </Pressable>
+            </View>
+          </View>
+        )}
+        {!plIsForm && (
+          <Pressable style={[plSt.btn, { backgroundColor: colors.background, borderWidth: 1.5, borderColor: colors.primary, borderStyle: "dashed", marginTop: 10 }]} onPress={plOpenAdd}>
+            <Ionicons name="add-circle-outline" size={18} color={colors.primary} />
+            <Text style={[plSt.btnText, { color: colors.primary }]}>Add Lesson Type</Text>
+          </Pressable>
+        )}
+      </View>
+
+      <Text style={[plSt.sectionLabel, { color: colors.mutedForeground }]}>HOW IT WORKS</Text>
+      <View style={[plSt.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+        {[
+          { icon: "person-circle-outline" as const, color: "#3B82F6", title: "Member books & pays", desc: "Member picks discipline + operator, selects a preferred date/time, and pays via Stripe." },
+          { icon: "card-outline" as const, color: "#059669", title: "Payment processed", desc: "Stripe processes the payment to your account. A booking confirmation is created immediately." },
+          { icon: "cash-outline" as const, color: "#FBBF24", title: "Operator payroll auto-credited", desc: "The operator payout is automatically added to their pending payroll — no manual entry." },
+          { icon: "checkmark-circle-outline" as const, color: "#1E3A8A", title: "Operator confirms the slot", desc: "The operator sees the booking in their Invoicing screen and confirms or reschedules." },
+        ].map(({ icon, color, title, desc }) => (
+          <View key={title} style={[plSt.howRow, { borderColor: colors.border }]}>
+            <View style={[plSt.howIcon, { backgroundColor: color + "20" }]}>
+              <Ionicons name={icon} size={20} color={color} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={[plSt.howTitle, { color: colors.foreground }]}>{title}</Text>
+              <Text style={[plSt.cardDesc, { color: colors.mutedForeground }]}>{desc}</Text>
+            </View>
+          </View>
+        ))}
+      </View>
+    </>
+  );
+}
+
+const plSt = StyleSheet.create({
+  sectionLabel:    { fontSize: 11, fontWeight: "700", letterSpacing: 1, marginBottom: 8, marginTop: 20, marginLeft: 4 },
+  card:            { borderRadius: 16, borderWidth: 1, padding: 16, marginBottom: 4 },
+  iconBox:         { width: 42, height: 42, borderRadius: 12, alignItems: "center", justifyContent: "center" },
+  cardTitle:       { fontSize: 14, fontWeight: "800", marginBottom: 4 },
+  cardDesc:        { fontSize: 12, lineHeight: 18 },
+  toggleRow:       { flexDirection: "row", alignItems: "center", justifyContent: "space-between", paddingTop: 12, borderTopWidth: 1, gap: 12 },
+  toggleLabel:     { fontSize: 13, fontWeight: "600", flex: 1 },
+  tableHeader:     { flexDirection: "row", alignItems: "center", paddingBottom: 8, borderBottomWidth: 1, marginBottom: 4 },
+  tableHeaderCell: { fontSize: 9, fontWeight: "800", letterSpacing: 0.8, flex: 1 },
+  configRow:       { flexDirection: "row", alignItems: "center", paddingVertical: 10, borderBottomWidth: 1 },
+  configName:      { fontSize: 13, fontWeight: "700", marginBottom: -4 },
+  configPrice:     { fontSize: 12, fontWeight: "700" },
+  iconBtn:         { width: 28, height: 28, alignItems: "center", justifyContent: "center", borderRadius: 8 },
+  emptyBox:        { borderWidth: 1, borderStyle: "dashed", borderRadius: 12, padding: 20, alignItems: "center", gap: 8 },
+  emptyText:       { fontSize: 14, fontWeight: "700" },
+  form:            { borderWidth: 1.5, borderRadius: 14, padding: 16, marginTop: 10 },
+  formTitle:       { fontSize: 13, fontWeight: "800", marginBottom: 12, letterSpacing: 0.3 },
+  fieldLabel:      { fontSize: 11, fontWeight: "700", marginBottom: 5 },
+  input:           { borderWidth: 1, borderRadius: 10, padding: 10, fontSize: 13 },
+  marginPreview:   { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, padding: 10, borderWidth: 1, marginTop: 10 },
+  btn:             { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, borderRadius: 12, paddingVertical: 11 },
+  btnText:         { fontSize: 13, fontWeight: "700" },
+  howRow:          { flexDirection: "row", alignItems: "flex-start", gap: 12, paddingVertical: 12, borderBottomWidth: 1 },
+  howIcon:         { width: 40, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  howTitle:        { fontSize: 13, fontWeight: "700", marginBottom: 3 },
+});
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 
@@ -346,6 +608,7 @@ export default function AdminLessonsScreen() {
           { key: "disciplines",  label: "Activities", icon: "barbell-outline"         as const },
           { key: "availability", label: "Requests",   icon: "calendar-outline"        as const },
           { key: "scheduler",    label: "Schedule",   icon: "calendar-number-outline" as const },
+          { key: "private",      label: "Private",    icon: "school-outline"          as const },
         ]).map(t => {
           const active = tab === t.key;
           return (
@@ -1338,6 +1601,9 @@ export default function AdminLessonsScreen() {
             )}
           </>
         )}
+
+        {/* ══ PRIVATE LESSONS TAB ══ */}
+        {tab === "private" && <PrivateLessonsTab />}
       </ScrollView>
 
       {/* ══════════════════════════════════════════════════

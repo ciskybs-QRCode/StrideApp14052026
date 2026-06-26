@@ -206,13 +206,6 @@ export default function SettingsIndex() {
           onPress={() => navigate("payout-settings")}
         />
 
-        {/* ── PRIVATE LESSONS ── */}
-        <HubCard
-          icon="book-outline"
-          title="Private Lessons"
-          description="Enable booking, set prices per discipline and operator payouts"
-          onPress={() => navigate("private-lessons")}
-        />
 
         {/* ── MEMBERSHIP POLICY ── */}
         <HubCard
