@@ -60,6 +60,12 @@ export default function MembersHub() {
           onPress={() => router.push("/(admin)/settings/legal-privacy?from=members" as never)}
         />
         <HubCard
+          icon="ribbon-outline"
+          title="Operator Certificates"
+          description="Review medical, first-aid and professional certificates uploaded by instructors"
+          onPress={() => router.push("/(admin)/cert-overview" as never)}
+        />
+        <HubCard
           icon="id-card-outline"
           title="PDF Badges"
           description="Generate and print member ID badges"

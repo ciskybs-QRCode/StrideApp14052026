@@ -404,9 +404,9 @@ export default function CertificatesScreen() {
         </ScrollView>
       )}
 
-      {/* Upload FAB */}
+      {/* Upload FAB — bottom must clear the absolute tab bar (~49px) */}
       <Pressable
-        style={[styles.fab, { backgroundColor: colors.primary, bottom: insets.bottom + 20 }]}
+        style={[styles.fab, { backgroundColor: colors.primary, bottom: insets.bottom + 72 }]}
         onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); setShowUpload(true); }}
       >
         <Ionicons name="add" size={26} color={colors.secondary} />
