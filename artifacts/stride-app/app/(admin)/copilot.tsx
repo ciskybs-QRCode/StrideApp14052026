@@ -7,6 +7,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -505,7 +506,11 @@ export default function CopilotScreen() {
   const TAB_H = Platform.OS === "web" ? 84 : 49;
 
   return (
-    <View style={[s.root, { backgroundColor: CLR.bg }]}>
+    <KeyboardAvoidingView
+      style={[s.root, { backgroundColor: CLR.bg }]}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={0}
+    >
       <ScreenHeader title="Copilot" onBack={() => router.push("/(admin)/operations-hub" as never)} />
 
       {/* ── Quick prompts dropdown ────────────────────────────── */}
@@ -550,7 +555,7 @@ export default function CopilotScreen() {
       </ScrollView>
 
       {/* ── Input bar ─────────────────────────────────────────── */}
-      <View style={[s.inputBar, { paddingBottom: Math.max(insets.bottom, 16) }]}>
+      <View style={[s.inputBar, { paddingBottom: Math.max(insets.bottom, 16), marginBottom: TAB_H }]}>
         <Pressable
           style={s.micBtn}
           onPress={() => Alert.alert("Coming Soon", "Voice input will be available in a future update.")}
@@ -585,7 +590,7 @@ export default function CopilotScreen() {
           }
         </Pressable>
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
