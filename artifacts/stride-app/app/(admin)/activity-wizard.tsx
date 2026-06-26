@@ -399,7 +399,7 @@ export default function ActivityWizard() {
           <Pressable
             key={type}
             style={[st.typeCard, { backgroundColor: colors.card, borderColor: selected ? colors.primary : colors.border, borderWidth: selected ? 2 : 1.5 }]}
-            onPress={() => { setActivityType(type); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+            onPress={() => { setActivityType(type); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setStep(2); }}
           >
             <View style={[st.typeIconWrap, { backgroundColor: selected ? colors.primary : colors.border + "50" }]}>
               <Ionicons name={icon as never} size={22} color={selected ? "#fff" : colors.foreground} />
