@@ -821,7 +821,7 @@ export default function ActivityWizard() {
         {/* ── Scrollable content */}
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ padding: 20, paddingBottom: 24 }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 120 + insets.bottom }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
