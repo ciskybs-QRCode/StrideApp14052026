@@ -98,6 +98,12 @@ export default function FinanceHub() {
           description="Create and manage discount codes"
           onPress={() => router.push("/(admin)/settings/promo-codes" as never)}
         />
+        <HubCard
+          icon="gift-outline"
+          title="Invite & Earn"
+          description="Share your referral code and earn credits for every new association"
+          onPress={() => router.push("/(admin)/invite-earn" as never)}
+        />
 
         {(can("marketplace") || can("events")) && (
           <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>MARKETPLACE & EVENTS</Text>

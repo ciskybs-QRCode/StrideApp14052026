@@ -242,7 +242,7 @@ export default function AdminMarketplaceScreen() {
       <ScreenHeader
         title="Marketplace"
         subtitle="Products & shop links"
-        onBack={() => router.replace("/(admin)/operations-hub" as never)}
+        onBack={() => router.replace("/(admin)/finance-hub" as never)}
         right={
           <Pressable onPress={() => tab === "products" ? void loadProducts() : void loadLinks()} hitSlop={12} style={{ padding: 6 }}>
             <Ionicons name="refresh" size={20} color="#FFF" />

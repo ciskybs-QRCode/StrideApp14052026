@@ -556,7 +556,7 @@ export default function FeeEventsScreen() {
       <ScreenHeader
         title="Fee Events"
         subtitle="One-off payment events for your members"
-        onBack={() => router.replace("/(admin)/operations-hub")}
+        onBack={() => router.replace("/(admin)/finance-hub")}
       />
 
       {/* ── Toolbar ── */}

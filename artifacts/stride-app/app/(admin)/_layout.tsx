@@ -346,6 +346,7 @@ export default function AdminTabLayout() {
       <Tabs.Screen name="governance"     options={{ href: null }} />
       <Tabs.Screen name="dev-tools"      options={{ href: null }} />
       <Tabs.Screen name="invites"        options={{ href: null }} />
+      <Tabs.Screen name="invite-earn"   options={{ href: null }} />
       <Tabs.Screen name="account"         options={{ href: null }} />
       <Tabs.Screen name="profile-edit"    options={{ href: null }} />
       <Tabs.Screen name="events"              options={{ href: null }} />
