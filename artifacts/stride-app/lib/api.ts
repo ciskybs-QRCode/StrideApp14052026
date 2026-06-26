@@ -1376,6 +1376,23 @@ export const api = {
       { image_base64: imageBase64, mime_type: mimeType ?? "image/jpeg" },
     ),
 
+  // ── Operator Certificates ─────────────────────────────────────────────────
+  getMyOperatorCerts: () =>
+    request<ApiOperatorCert[]>("GET", "/operator-certs/my"),
+
+  uploadOperatorCert: (data: {
+    cert_type: string; cert_name: string; expiry_date?: string;
+    notes?: string; image_base64: string; mime_type?: string; file_name?: string;
+  }) => request<ApiOperatorCert>("POST", "/operator-certs", data),
+
+  deleteOperatorCert: (id: number) =>
+    request<{ ok: boolean }>("DELETE", `/operator-certs/${id}`),
+
+  analyzeOperatorCert: (id: number, image_base64: string, mime_type?: string) =>
+    request<{ status: string; ai_notes: string | null; expiration_date: string | null; anomaly_detected: boolean }>(
+      "POST", `/operator-certs/${id}/analyze`, { image_base64, mime_type }
+    ),
+
   // ── Waitlist (member) ─────────────────────────────────────────────────────
   getMyWaitlistStatus: (courseId: number) =>
     request<WaitlistMyStatus | null>("GET", `/waitlist/my-status/${courseId}`),
@@ -1429,6 +1446,21 @@ export interface OperatorFirstAidCert {
   anomaly_reasons: string | null;
   uploaded_at: string;
   classification_confidence?: number;
+}
+
+export interface ApiOperatorCert {
+  id: number;
+  cert_type: "medical" | "first_aid" | "license" | "course" | "other";
+  cert_name: string;
+  file_url: string | null;
+  file_name: string | null;
+  expiry_date: string | null;
+  notes: string | null;
+  status: "pending" | "approved" | "flagged";
+  ai_verified: boolean;
+  ai_notes: string | null;
+  uploaded_at: string;
+  reviewed_at: string | null;
 }
 
 export interface WaitlistMyStatus {

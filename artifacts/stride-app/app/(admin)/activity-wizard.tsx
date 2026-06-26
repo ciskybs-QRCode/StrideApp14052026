@@ -292,7 +292,7 @@ export default function ActivityWizard() {
     const skillTag = disciplineName || levelName || "";
     setAiLoading(true);
     try {
-      const res = await aiMatchOperator({ activityType: "course", discipline: skillTag, operatorProfiles: operatorSkillsAll });
+      const res = await aiMatchOperator({ activityType: "course", discipline: skillTag });
       setAiMatches(res.matches ?? []); setAiMatchDone(true);
     } catch {
       Alert.alert("AI Match", "Could not get AI recommendations.");

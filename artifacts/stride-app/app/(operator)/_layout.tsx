@@ -91,12 +91,9 @@ export default function OperatorTabLayout() {
   const t      = useT();
   const router = useRouter();
   const { user } = useAuth();
-  const { bookingNotifications, dismissBookingNotification } = useRealtime();
   const { unreadCount } = usePrivateLessons();
   const isIOS = Platform.OS === "ios";
   const isWeb = Platform.OS === "web";
-
-  const activeNotif = bookingNotifications[0] ?? null;
 
   // ── Skills onboarding gate (operators only) ─────────────────────────────────
   const gateChecked = useRef(false);
@@ -113,12 +110,6 @@ export default function OperatorTabLayout() {
       .catch(() => {});
   }, [user?.role]);
 
-  // Auto-dismiss after 10 s
-  useEffect(() => {
-    if (!activeNotif) return;
-    const t = setTimeout(() => dismissBookingNotification(activeNotif.id), 10000);
-    return () => clearTimeout(t);
-  }, [activeNotif?.id]);
 
   return (
     <NotificationsProvider>
@@ -181,22 +172,12 @@ export default function OperatorTabLayout() {
         <Tabs.Screen name="skills-setup"      options={{ href: null }} />
         <Tabs.Screen name="contract"           options={{ href: null }} />
         <Tabs.Screen name="resign"             options={{ href: null }} />
+        <Tabs.Screen name="certificates"       options={{ href: null }} />
       </Tabs>
 
       <SecurityAlarmOverlay alertsRoute="/(operator)/alerts" />
       <BrandingLogoOverlay />
 
-      {/* ── Notification banner ── */}
-      {activeNotif && (
-        <BookingBanner
-          notif={activeNotif}
-          onView={() => {
-            dismissBookingNotification(activeNotif.id);
-            router.push("/(operator)/private-lessons");
-          }}
-          onDismiss={() => dismissBookingNotification(activeNotif.id)}
-        />
-      )}
     </View>
     </NotificationsProvider>
   );

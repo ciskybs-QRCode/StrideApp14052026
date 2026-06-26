@@ -1,11 +1,9 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import * as ImagePicker from "expo-image-picker";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { useRouter } from "expo-router";
 import {
-  ActivityIndicator,
   Alert,
   Linking,
   Modal,
@@ -19,7 +17,7 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
-import type { ApiOrg, OperatorFirstAidCert } from "@/lib/api";
+import type { ApiOrg } from "@/lib/api";
 
 import { ScreenHeader } from "@/components/ScreenHeader";
 
@@ -139,12 +137,9 @@ export default function OperatorSupport() {
   const [loggingStep, setLoggingStep] = useState(false);
   const [wizardDone, setWizardDone] = useState(false);
   const [completedProtocols, setCompletedProtocols] = useState<Set<string>>(new Set());
-  const [firstAidCert, setFirstAidCert] = useState<OperatorFirstAidCert | null | undefined>(undefined);
-  const [certAnalyzing, setCertAnalyzing] = useState(false);
 
   useEffect(() => {
     api.getOrg().then(setOrg).catch(() => {});
-    api.getMyFirstAidCert().then(setFirstAidCert).catch(() => setFirstAidCert(null));
   }, []);
 
   const emergency = detectEmergencyInfo(org);
@@ -165,41 +160,6 @@ export default function OperatorSupport() {
     setWizardDone(false);
   };
 
-  const handleUploadFirstAidCert = async () => {
-    if (Platform.OS !== "web") {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permission required", "Please allow access to your photo library to upload a certificate.");
-        return;
-      }
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"] as const,
-      quality: 0.9,
-      base64: true,
-      allowsEditing: false,
-    });
-    if (result.canceled) return;
-    const asset = result.assets[0];
-    if (!asset?.base64) { Alert.alert("Error", "Could not read image data. Please try again."); return; }
-    setCertAnalyzing(true);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    try {
-      const newCert = await api.analyzeFirstAidCert(asset.base64, asset.mimeType ?? "image/jpeg");
-      setFirstAidCert(newCert);
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      Alert.alert(
-        newCert.status === "approved" ? "Certificate Verified" : "Certificate Flagged",
-        newCert.status === "approved"
-          ? `Your First Aid certificate has been verified.${newCert.expiration_date ? ` Expires: ${new Date(newCert.expiration_date).toLocaleDateString("en-GB")}` : ""}`
-          : `Saved but flagged for admin review. ${newCert.anomaly_reasons ?? "Please contact admin."}`,
-      );
-    } catch {
-      Alert.alert("Upload Failed", "Could not analyse the certificate. Please try again.");
-    } finally {
-      setCertAnalyzing(false);
-    }
-  };
 
   const handleStepDone = async () => {
     if (!wizardProtocol || loggingStep) return;
@@ -275,78 +235,18 @@ export default function OperatorSupport() {
           )}
         </View>
 
-        {/* ── My First Aid Certificate ──────────────────────────────────── */}
-        <View style={[{ borderRadius: 16, padding: 16, marginBottom: 20, borderWidth: 1.5 }, {
-          backgroundColor: colors.card,
-          borderColor: !firstAidCert ? "#BFDBFE" : firstAidCert.status === "approved" ? "#6EE7B7" : "#FDE68A",
-        }]}>
-          <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 14 }}>
-            <View style={{ width: 46, height: 46, borderRadius: 14, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" }}>
-              <Ionicons name="shield-checkmark-outline" size={26} color={colors.primary} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 15, fontWeight: "700", color: colors.primary }}>My First Aid Certificate</Text>
-              <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }}>
-                {firstAidCert === undefined ? "Loading..." :
-                 firstAidCert === null ? "Not yet uploaded — required" :
-                 firstAidCert.status === "approved" ? "Verified and on record" : "Pending admin review"}
-              </Text>
-            </View>
-            {firstAidCert?.status === "approved" && (
-              <View style={{ backgroundColor: "#D1FAE5", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
-                <Text style={{ fontSize: 11, fontWeight: "800", color: "#065F46" }}>VALID</Text>
-              </View>
-            )}
-            {firstAidCert?.status === "flagged" && (
-              <View style={{ backgroundColor: "#FEF3C7", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 5 }}>
-                <Text style={{ fontSize: 11, fontWeight: "800", color: "#92400E" }}>REVIEW</Text>
-              </View>
-            )}
+        {/* ── Certificates shortcut ─────────────────────────────────────── */}
+        <Pressable
+          style={{ flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: "#DBEAFE", borderRadius: 14, padding: 14, marginBottom: 20 }}
+          onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(operator)/certificates" as never); }}
+        >
+          <Ionicons name="ribbon-outline" size={28} color="#1E3A8A" />
+          <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 14, fontWeight: "700", color: "#1E3A8A" }}>My Certificates</Text>
+            <Text style={{ fontSize: 12, color: "#3B82F6", marginTop: 2 }}>Upload and manage all your professional certifications</Text>
           </View>
-
-          {firstAidCert && (
-            <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
-              {firstAidCert.expiration_date ? (
-                <View style={{ flex: 1, backgroundColor: `colors.primary08`, borderRadius: 10, padding: 10 }}>
-                  <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground, textTransform: "uppercase" }}>Expires</Text>
-                  <Text style={{ fontSize: 13, fontWeight: "700", color: colors.foreground, marginTop: 2 }}>
-                    {new Date(firstAidCert.expiration_date).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                  </Text>
-                </View>
-              ) : null}
-              <View style={{ flex: 1, backgroundColor: `colors.primary08`, borderRadius: 10, padding: 10 }}>
-                <Text style={{ fontSize: 10, fontWeight: "700", color: colors.mutedForeground, textTransform: "uppercase" }}>Uploaded</Text>
-                <Text style={{ fontSize: 13, fontWeight: "700", color: colors.foreground, marginTop: 2 }}>
-                  {new Date(firstAidCert.uploaded_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}
-                </Text>
-              </View>
-            </View>
-          )}
-
-          {firstAidCert?.anomaly_reasons ? (
-            <View style={{ backgroundColor: "#FEF3C7", borderRadius: 10, padding: 10, marginBottom: 12, flexDirection: "row", gap: 8 }}>
-              <Ionicons name="warning-outline" size={16} color="#D97706" />
-              <Text style={{ fontSize: 12, color: "#92400E", flex: 1 }}>{firstAidCert.anomaly_reasons}</Text>
-            </View>
-          ) : null}
-
-          <Pressable
-            style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 13, opacity: certAnalyzing ? 0.7 : 1 }}
-            onPress={handleUploadFirstAidCert}
-            disabled={certAnalyzing}
-          >
-            {certAnalyzing ? (
-              <ActivityIndicator size="small" color={colors.secondary} />
-            ) : (
-              <>
-                <Ionicons name="cloud-upload-outline" size={18} color={colors.secondary} />
-                <Text style={{ fontSize: 13, fontWeight: "700", color: colors.secondary }}>
-                  {firstAidCert ? "Update Certificate" : "Upload Certificate"}
-                </Text>
-              </>
-            )}
-          </Pressable>
-        </View>
+          <Ionicons name="chevron-forward" size={18} color="#1E3A8A" />
+        </Pressable>
 
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>SOS Protocols</Text>
         <View style={styles.protocolGrid}>

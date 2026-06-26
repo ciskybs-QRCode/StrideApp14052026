@@ -173,6 +173,23 @@ export default function OperatorSettingsScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
         </Pressable>
 
+        {/* ── Certificates ── */}
+        <Pressable
+          style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
+          onPress={() => { tap(); router.navigate("/(operator)/certificates" as never); }}
+        >
+          <View style={[styles.featureIconBox, { backgroundColor: "#DBEAFE" }]}>
+            <Ionicons name="ribbon-outline" size={26} color={colors.primary} />
+          </View>
+          <View style={{ flex: 1 }}>
+            <Text style={[styles.featureTitle, { color: colors.foreground }]}>Certificates</Text>
+            <Text style={[styles.featureDesc, { color: colors.mutedForeground }]}>
+              Upload and manage your professional certifications
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+        </Pressable>
+
         {/* ── My Workspace hub ── */}
         <Pressable
           style={({ pressed }) => [styles.featureCard, { backgroundColor: colors.card, opacity: pressed ? 0.88 : 1 }]}
@@ -184,7 +201,7 @@ export default function OperatorSettingsScreen() {
           <View style={{ flex: 1 }}>
             <Text style={[styles.featureTitle, { color: colors.foreground }]}>My Workspace</Text>
             <Text style={[styles.featureDesc, { color: colors.mutedForeground }]}>
-              Payroll, discounts and emergency protocols
+              Payroll, reimbursements, discounts and protocols
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />

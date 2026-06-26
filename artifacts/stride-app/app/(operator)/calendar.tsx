@@ -20,6 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 import { useOrgCurrency } from "@/hooks/useOrgCurrency";
+import { api, type ApiDiscipline } from "@/lib/api";
 
 const DAYS      = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const DAY_HEADS = ["M", "T", "W", "T", "F", "S", "S"];
@@ -55,17 +56,7 @@ function lessonColor(courseName: string, primary: string, secondary: string): st
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
-const DISCIPLINES = [
-  { id: "yoga",         label: "Yoga",         icon: "fitness-outline"      },
-  { id: "sport",        label: "Sport",        icon: "football-outline"     },
-  { id: "music",        label: "Music",        icon: "musical-notes-outline"},
-  { id: "art",          label: "Art",          icon: "color-palette-outline"},
-  { id: "martial",      label: "Martial Arts", icon: "shield-outline"       },
-  { id: "swimming",     label: "Swimming",     icon: "water-outline"        },
-  { id: "general",      label: "General",      icon: "apps-outline"         },
-] as const;
-
-type StyleId = typeof DISCIPLINES[number]["id"];
+type StyleId = string;
 
 const STORAGE_KEY           = "stride_workshops";
 const SAVED_INSTRUCTORS_KEY = "stride_saved_instructors";
@@ -204,7 +195,8 @@ export default function OperatorCalendar() {
 
   // ── form state ──────────────────────────────────────────────────────────────
   const [wTitle,            setWTitle]           = useState("");
-  const [wStyle,            setWStyle]           = useState<StyleId>("general");
+  const [wStyle,            setWStyle]           = useState<StyleId>("");
+  const [orgDisciplines,    setOrgDisciplines]   = useState<ApiDiscipline[]>([]);
   const [wStartDate,        setWStartDate]       = useState(todayIso());
   const [wEndDate,          setWEndDate]         = useState(todayIso());
   const [wStartTime,        setWStartTime]       = useState("10:00");
@@ -238,6 +230,11 @@ export default function OperatorCalendar() {
 
   // ── persistence ──────────────────────────────────────────────────────────────
   useEffect(() => {
+    api.getDisciplines().then(d => {
+      const active = d.filter(x => x.active !== false);
+      setOrgDisciplines(active);
+      if (active[0]) setWStyle(active[0].name);
+    }).catch(() => {});
     AsyncStorage.getItem(STORAGE_KEY)
       .then(val => { if (val) setWorkshops(JSON.parse(val) as Workshop[]); })
       .catch(() => {});
@@ -874,7 +871,7 @@ export default function OperatorCalendar() {
         }}
       >
         <Ionicons name="calendar-outline" size={20} color={colors.secondary} />
-        <Text style={{ color: colors.secondary, fontWeight: "700", fontSize: 15 }}>Submit Availability</Text>
+        <Text style={{ color: colors.secondary, fontWeight: "700", fontSize: 15 }}>Add Availability</Text>
       </Pressable>
 
       {/* ══ Workshop Creation Sheet ══════════════════════════════════════════════ */}
@@ -927,17 +924,16 @@ export default function OperatorCalendar() {
               {/* ─ Style ─ */}
               <Text style={[styles.fieldLabel, { color: colors.primary }]}>Discipline</Text>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
-                {DISCIPLINES.map(s => {
-                  const active = wStyle === s.id;
+                {(orgDisciplines.length > 0 ? orgDisciplines : [{ id: 0, name: "General", active: true }]).map(d => {
+                  const isActive = wStyle === d.name;
                   return (
                     <Pressable
-                      key={s.id}
-                      onPress={() => setWStyle(s.id)}
-                      style={[styles.chip, { backgroundColor: active ? colors.primary : colors.muted }]}
+                      key={d.id}
+                      onPress={() => setWStyle(d.name)}
+                      style={[styles.chip, { backgroundColor: isActive ? colors.primary : colors.muted }]}
                     >
-                      <Ionicons name={s.icon} size={14} color={active ? colors.secondary : colors.mutedForeground} />
-                      <Text style={[styles.chipText, { color: active ? "#FFF" : colors.mutedForeground }]}>
-                        {s.label}
+                      <Text style={[styles.chipText, { color: isActive ? "#FFF" : colors.mutedForeground }]}>
+                        {d.name}
                       </Text>
                     </Pressable>
                   );

@@ -1912,5 +1912,28 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_ce_org ON course_extras(organization_id);
   `).catch(() => {});
 
+  // ── Operator certificates ────────────────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS operator_certs (
+      id              SERIAL       PRIMARY KEY,
+      operator_id     INTEGER      NOT NULL,
+      organization_id INTEGER      NOT NULL,
+      cert_type       TEXT         NOT NULL CHECK (cert_type IN ('medical','first_aid','license','course','other')),
+      cert_name       TEXT         NOT NULL,
+      file_url        TEXT,
+      file_name       TEXT,
+      expiry_date     DATE,
+      notes           TEXT,
+      status          TEXT         NOT NULL DEFAULT 'pending' CHECK (status IN ('pending','approved','flagged')),
+      ai_verified     BOOLEAN      NOT NULL DEFAULT FALSE,
+      ai_notes        TEXT,
+      uploaded_at     TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+      reviewed_at     TIMESTAMPTZ,
+      reviewed_by     INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_op_certs_operator ON operator_certs(operator_id);
+    CREATE INDEX IF NOT EXISTS idx_op_certs_org     ON operator_certs(organization_id);
+  `).catch(() => {});
+
   initialized = true;
 }

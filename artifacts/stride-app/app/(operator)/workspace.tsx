@@ -16,6 +16,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { ReimbursementRequestForm } from "@/app/(admin)/reimbursements";
+import { useAuth } from "@/context/AuthContext";
 
 // ── Propose Discount Modal ────────────────────────────────────────────────────
 
@@ -156,7 +158,10 @@ export default function OperatorWorkspaceScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { user } = useAuth();
   const [showProposal, setShowProposal] = useState(false);
+  const [showReimbursement, setShowReimbursement] = useState(false);
+  const myName = user?.name || user?.email || "Operator";
 
   const ROWS: Array<{
     icon: keyof typeof import("@expo/vector-icons").Ionicons.glyphMap;
@@ -168,20 +173,20 @@ export default function OperatorWorkspaceScreen() {
     onPress: () => void;
   }> = [
     {
-      icon: "chatbubble-ellipses-outline",
-      label: "Send Message",
-      desc: "Broadcast announcements and files to members or courses",
-      iconBg: (colors.secondary + "15"),
-      iconColor: colors.primary,
-      onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(operator)/communications" as never); },
-    },
-    {
       icon: "briefcase-outline",
       label: "Payroll",
       desc: "View earnings, export payslips and manage billing",
       iconBg: (colors.primary + "12"),
       iconColor: colors.primary,
       onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(operator)/invoicing" as never); },
+    },
+    {
+      icon: "receipt-outline",
+      label: "Request Reimbursement",
+      desc: "Submit an expense claim for admin approval",
+      iconBg: "#10B98112",
+      iconColor: "#059669",
+      onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowReimbursement(true); },
     },
     {
       icon: "pricetag-outline",
@@ -228,6 +233,18 @@ export default function OperatorWorkspaceScreen() {
       </ScrollView>
 
       <ProposeDiscountModal visible={showProposal} onClose={() => setShowProposal(false)} colors={colors} />
+      <ReimbursementRequestForm
+        visible={showReimbursement}
+        onClose={() => setShowReimbursement(false)}
+        claimantRole="paid_operator"
+        claimantName={myName}
+        onSubmit={async (claim) => {
+          const raw = await AsyncStorage.getItem("reimbursement_requests");
+          const stored: unknown[] = raw ? JSON.parse(raw) : [];
+          stored.unshift({ ...claim, id: `RMB-${Date.now()}`, submittedAt: new Date().toISOString(), status: "pending" });
+          await AsyncStorage.setItem("reimbursement_requests", JSON.stringify(stored));
+        }}
+      />
     </View>
   );
 }

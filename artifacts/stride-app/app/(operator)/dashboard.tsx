@@ -2629,7 +2629,7 @@ export default function OperatorDashboard() {
             </View>
 
             <Text style={{ fontSize: 12, color: "#6B7280", marginBottom: 16 }}>
-              All registered members & dependants · Tap 📞 to call immediately
+              All registered members &amp; dependants · Tap 📞 to call emergency contact immediately
             </Text>
 
             {ecLoading ? (
@@ -2643,17 +2643,26 @@ export default function OperatorDashboard() {
                   <Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: 32 }}>No members registered yet.</Text>
                 )}
                 {ecMembers.map(m => {
-                  const callPhone = m.emergency_contact_phone ?? m.parent_phone ?? m.phone;
+                  // Members: primary contact = NOK (emergency_contact_phone), fallback = own phone
+                  // Dependants: primary contact = guardian/parent (parent_phone), fallback = NOK
+                  const isDependent = m.role === "dependant";
+                  const callPhone = isDependent
+                    ? (m.parent_phone ?? m.emergency_contact_phone ?? m.phone)
+                    : (m.emergency_contact_phone ?? m.phone);
+                  const guardianPhone = isDependent && m.parent_phone && m.parent_phone !== callPhone
+                    ? m.parent_phone : null;
                   return (
                     <View key={m.id} style={{ borderBottomWidth: 1, borderColor: "#F3F4F6", paddingVertical: 12, gap: 4 }}>
                       {/* Name + role + ambulance badge */}
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
-                        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: m.role === "dependant" ? "#DBEAFE" : "#F0FDF4", alignItems: "center", justifyContent: "center" }}>
-                          <Ionicons name={m.role === "dependant" ? "happy" : "person"} size={18} color={m.role === "dependant" ? colors.primary : "#15803D"} />
+                        <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: isDependent ? "#DBEAFE" : "#F0FDF4", alignItems: "center", justifyContent: "center" }}>
+                          <Ionicons name={isDependent ? "happy" : "person"} size={18} color={isDependent ? colors.primary : "#15803D"} />
                         </View>
                         <View style={{ flex: 1 }}>
                           <Text style={{ fontSize: 15, fontWeight: "700", color: "#111827" }}>{m.name}</Text>
-                          <Text style={{ fontSize: 12, color: "#6B7280", textTransform: "capitalize" }}>{m.role}</Text>
+                          <Text style={{ fontSize: 12, color: "#6B7280", textTransform: "capitalize" }}>
+                            {isDependent ? "Dependent" : m.role}
+                          </Text>
                         </View>
                         {/* Ambulance consent badge */}
                         {m.ambulance_consent === true && (
@@ -2663,22 +2672,35 @@ export default function OperatorDashboard() {
                         )}
                         {m.ambulance_consent === false && (
                           <View style={{ backgroundColor: "#FEF9C3", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
-                            <Text style={{ fontSize: 11, fontWeight: "700", color: "#854D0E" }}>📞 Call Parent</Text>
+                            <Text style={{ fontSize: 11, fontWeight: "700", color: "#854D0E" }}>
+                              {isDependent ? "📞 Contact Guardian" : "📞 Contact NOK"}
+                            </Text>
                           </View>
                         )}
                       </View>
 
-                      {/* NOK / Emergency contact */}
-                      {m.emergency_contact_name && (
-                        <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 44, gap: 6 }}>
-                          <Ionicons name="person-circle-outline" size={14} color="#9CA3AF" />
-                          <Text style={{ fontSize: 13, color: "#374151" }}>
-                            NOK: <Text style={{ fontWeight: "600" }}>{m.emergency_contact_name}</Text>
-                          </Text>
-                        </View>
+                      {/* NOK label for members; Guardian label for dependants */}
+                      {isDependent ? (
+                        m.parent_phone ? (
+                          <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 44, gap: 6 }}>
+                            <Ionicons name="people-outline" size={14} color="#9CA3AF" />
+                            <Text style={{ fontSize: 13, color: "#374151" }}>
+                              Guardian: <Text style={{ fontWeight: "600" }}>{m.parent_phone}</Text>
+                            </Text>
+                          </View>
+                        ) : null
+                      ) : (
+                        m.emergency_contact_name ? (
+                          <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 44, gap: 6 }}>
+                            <Ionicons name="person-circle-outline" size={14} color="#9CA3AF" />
+                            <Text style={{ fontSize: 13, color: "#374151" }}>
+                              NOK: <Text style={{ fontWeight: "600" }}>{m.emergency_contact_name}</Text>
+                            </Text>
+                          </View>
+                        ) : null
                       )}
 
-                      {/* Phone row with call button */}
+                      {/* Primary call button */}
                       {callPhone ? (
                         <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 44, gap: 8 }}>
                           <Ionicons name="call-outline" size={14} color="#9CA3AF" />
@@ -2693,20 +2715,20 @@ export default function OperatorDashboard() {
                         </View>
                       ) : null}
 
-                      {/* Parent phone (for dependants, if different from NOK) */}
-                      {m.role === "dependant" && m.parent_phone && m.parent_phone !== callPhone && (
+                      {/* Secondary guardian phone if different */}
+                      {guardianPhone ? (
                         <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 44, gap: 8 }}>
                           <Ionicons name="people-outline" size={14} color="#9CA3AF" />
-                          <Text style={{ fontSize: 13, color: "#374151", flex: 1 }}>Parent: {m.parent_phone}</Text>
+                          <Text style={{ fontSize: 13, color: "#374151", flex: 1 }}>Alt: {guardianPhone}</Text>
                           <Pressable
-                            onPress={() => { Haptics.selectionAsync(); Linking.openURL(`tel:${m.parent_phone!}`); }}
+                            onPress={() => { Haptics.selectionAsync(); Linking.openURL(`tel:${guardianPhone!}`); }}
                             style={{ backgroundColor: "#059669", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6, flexDirection: "row", alignItems: "center", gap: 4 }}
                           >
                             <Ionicons name="call" size={13} color="#FFF" />
-                            <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "700" }}>Parent</Text>
+                            <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "700" }}>Call</Text>
                           </Pressable>
                         </View>
-                      )}
+                      ) : null}
                     </View>
                   );
                 })}
@@ -2782,7 +2804,7 @@ export default function OperatorDashboard() {
                       const ambulanceLabel = m.ambulance_consent === true
                         ? "🚑 Ambulance consented"
                         : m.ambulance_consent === false
-                        ? "📞 Call parent only"
+                        ? (m.role === "dependant" ? "📞 Contact guardian" : "📞 Contact NOK")
                         : null;
                       const ambulanceBg = m.ambulance_consent === true ? "#DCFCE7" : "#FEF9C3";
                       const ambulanceFg = m.ambulance_consent === true ? "#15803D" : "#854D0E";
