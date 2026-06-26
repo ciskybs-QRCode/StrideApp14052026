@@ -20,10 +20,57 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { api } from "@/lib/api";
+import { api, getPresetMessages, updatePresetMessage } from "@/lib/api";
+import type { PresetMessage } from "@/lib/api";
 
 const NAVY = "#1E3A8A";
 const GOLD = "#FBBF24";
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Preset-messages metadata
+// ─────────────────────────────────────────────────────────────────────────────
+
+const TEMPLATE_META: Record<string, { label: string; icon: React.ComponentProps<typeof Ionicons>["name"]; group: string }> = {
+  birthday_notification:   { label: "Birthday Notification",          icon: "gift-outline",             group: "Members"      },
+  welcome_member:          { label: "Welcome New Member",             icon: "star-outline",             group: "Members"      },
+  role_change:             { label: "Role Change",                    icon: "key-outline",              group: "Members"      },
+  onboarding_wizard:       { label: "Onboarding Wizard",             icon: "rocket-outline",           group: "Members"      },
+  waitlist_joined:         { label: "Waitlist — Joined",             icon: "time-outline",             group: "Waitlist"     },
+  waitlist_spot_freed:     { label: "Waitlist — Spot Available",     icon: "checkmark-circle-outline", group: "Waitlist"     },
+  new_course_available:    { label: "New Course Available",          icon: "school-outline",           group: "Waitlist"     },
+  cert_reminder_member:    { label: "Medical Certificate Reminder",  icon: "medkit-outline",           group: "Certificates" },
+  cert_reminder_operator:  { label: "First Aid Certificate Reminder",icon: "fitness-outline",          group: "Certificates" },
+  grace_access_warning:    { label: "Grace Access Warning",          icon: "warning-outline",          group: "Access"       },
+  payment_overdue:         { label: "Payment Overdue",               icon: "card-outline",             group: "Payments"     },
+};
+
+const TMPL_GROUPS = ["Members", "Waitlist", "Certificates", "Access", "Payments"];
+
+function brandSwitch(on: boolean, primary: string, secondary: string) {
+  return { trackColor: { false: "#D1D5DB", true: secondary }, thumbColor: on ? primary : "#9CA3AF" } as const;
+}
+
+function ChipTag({ label, color }: { label: string; color: string }) {
+  return (
+    <View style={[tp.chip, { backgroundColor: color + "18" }]}>
+      <Text style={[tp.chipText, { color }]}>{label}</Text>
+    </View>
+  );
+}
+
+function ChannelToggle({ label, icon, value, onChange, color, sw }: {
+  label: string; icon: React.ComponentProps<typeof Ionicons>["name"]; value: boolean;
+  onChange: (v: boolean) => void; color: string;
+  sw: { trackColor: { false: string; true: string }; thumbColor: string };
+}) {
+  return (
+    <View style={tp.toggleRow}>
+      <Ionicons name={icon} size={14} color={value ? color : "#9CA3AF"} />
+      <Text style={[tp.toggleLabel, { color: value ? color : "#9CA3AF" }]}>{label}</Text>
+      <Switch value={value} onValueChange={onChange} trackColor={sw.trackColor} thumbColor={sw.thumbColor} style={{ transform: [{ scaleX: 0.75 }, { scaleY: 0.75 }] }} />
+    </View>
+  );
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Sub-components
@@ -209,7 +256,7 @@ export default function AdminMessagesScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
 
-  type Tab = "messages" | "channels";
+  type Tab = "messages" | "channels" | "templates";
   const [tab, setTab] = useState<Tab>("messages");
 
   // ── Messages tab state ─────────────────────────────────────────────────────
@@ -222,6 +269,52 @@ export default function AdminMessagesScreen() {
       setMemberCount(users.filter(u => u.role === "parent" || u.role === "member" as never).length);
     }).catch(() => {});
   }, []));
+
+  // ── Templates tab state ────────────────────────────────────────────────────
+  const [tplMessages,  setTplMessages]  = useState<PresetMessage[]>([]);
+  const [tplLoading,   setTplLoading]   = useState(false);
+  const [tplLoaded,    setTplLoaded]    = useState(false);
+  const [tplExpanded,  setTplExpanded]  = useState<string | null>(null);
+  const [tplDrafts,    setTplDrafts]    = useState<Record<string, PresetMessage>>({});
+  const [tplSaving,    setTplSaving]    = useState<string | null>(null);
+  const [tplSavedKeys, setTplSavedKeys] = useState<Set<string>>(new Set());
+
+  const loadTemplates = useCallback(async () => {
+    if (tplLoaded) return;
+    setTplLoading(true);
+    try {
+      const data = await getPresetMessages();
+      setTplMessages(data);
+      const d: Record<string, PresetMessage> = {};
+      for (const m of data) d[m.key] = { ...m };
+      setTplDrafts(d);
+      setTplLoaded(true);
+    } catch { Alert.alert("Error", "Could not load message templates."); }
+    setTplLoading(false);
+  }, [tplLoaded]);
+
+  useEffect(() => { if (tab === "templates") loadTemplates(); }, [tab, loadTemplates]);
+
+  const saveTemplate = useCallback(async (key: string) => {
+    const draft = tplDrafts[key];
+    if (!draft) return;
+    setTplSaving(key);
+    try {
+      const updated = await updatePresetMessage(key, {
+        subject: draft.subject, body: draft.body,
+        channel_inapp: draft.channel_inapp, channel_push: draft.channel_push, channel_email: draft.channel_email,
+      });
+      setTplMessages(prev => prev.map(m => m.key === key ? updated : m));
+      setTplSavedKeys(prev => new Set(prev).add(key));
+      setTimeout(() => setTplSavedKeys(prev => { const s = new Set(prev); s.delete(key); return s; }), 2500);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch { Alert.alert("Error", "Could not save template."); }
+    setTplSaving(null);
+  }, [tplDrafts]);
+
+  const updateTplDraft = useCallback((key: string, field: keyof PresetMessage, value: unknown) => {
+    setTplDrafts(prev => ({ ...prev, [key]: { ...prev[key], [field]: value } }));
+  }, []);
 
   // ── Channels tab state ─────────────────────────────────────────────────────
   const [chLoading,      setChLoading]      = useState(true);
@@ -322,8 +415,9 @@ export default function AdminMessagesScreen() {
       {/* ── Tab bar ─────────────────────────────────────────────────────────── */}
       <View style={[s.tabBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         {([
-          { key: "messages", label: "Messages",  icon: "mail-outline"      as const },
-          { key: "channels", label: "Channels",  icon: "radio-outline"     as const },
+          { key: "messages",  label: "Messages",  icon: "mail-outline"      as const },
+          { key: "templates", label: "Templates", icon: "document-text-outline" as const },
+          { key: "channels",  label: "Channels",  icon: "radio-outline"     as const },
         ] as { key: Tab; label: string; icon: keyof typeof Ionicons.glyphMap }[]).map(t => {
           const active = tab === t.key;
           return (
@@ -647,6 +741,113 @@ export default function AdminMessagesScreen() {
         )
       )}
 
+      {/* ════════════════════════════════════════════════════════════════════
+          TEMPLATES TAB
+      ════════════════════════════════════════════════════════════════════ */}
+      {tab === "templates" && (
+        tplLoading ? (
+          <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
+            <ActivityIndicator color={NAVY} />
+          </View>
+        ) : (
+          <ScrollView
+            contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 40 }]}
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={[tp.infoBox, { backgroundColor: colors.card }]}>
+              <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
+              <Text style={[tp.infoText, { color: colors.mutedForeground }]}>
+                Edit any template here and it will be used everywhere in the app. Use the channel toggles to choose how each message is delivered.
+              </Text>
+            </View>
+
+            {TMPL_GROUPS.map(group => {
+              const keys = Object.entries(TEMPLATE_META).filter(([, m]) => m.group === group).map(([k]) => k);
+              const groupMessages = keys.map(k => tplDrafts[k]).filter(Boolean);
+              if (groupMessages.length === 0) return null;
+              return (
+                <View key={group} style={{ marginBottom: 8 }}>
+                  <Text style={[tp.sectionLabel, { color: colors.primary }]}>{group.toUpperCase()}</Text>
+                  <View style={[tp.card, { backgroundColor: colors.card }]}>
+                    {keys.map((key, i) => {
+                      const draft = tplDrafts[key];
+                      if (!draft) return null;
+                      const meta = TEMPLATE_META[key];
+                      const isExpanded = tplExpanded === key;
+                      return (
+                        <View key={key} style={i > 0 ? { borderTopWidth: 1, borderTopColor: colors.border } : undefined}>
+                          <Pressable style={tp.msgHeader} onPress={() => setTplExpanded(isExpanded ? null : key)}>
+                            <View style={[tp.msgIcon, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
+                              <Ionicons name={meta.icon} size={16} color={colors.primary} />
+                            </View>
+                            <View style={{ flex: 1 }}>
+                              <Text style={[tp.msgLabel, { color: colors.foreground }]}>{meta.label}</Text>
+                              <View style={tp.channelRow}>
+                                {draft.channel_inapp && <ChipTag label="In-app" color={colors.primary} />}
+                                {draft.channel_push  && <ChipTag label="Push"   color={colors.primary} />}
+                                {draft.channel_email && <ChipTag label="Email"  color={colors.primary} />}
+                              </View>
+                            </View>
+                            <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={16} color={colors.mutedForeground} />
+                          </Pressable>
+
+                          {isExpanded && (
+                            <View style={[tp.editor, { borderTopWidth: 1, borderTopColor: colors.border }]}>
+                              <Text style={[tp.fieldLabel, { color: colors.mutedForeground }]}>Delivery channels</Text>
+                              <View style={tp.channelToggles}>
+                                <ChannelToggle label="In-app bell" icon="notifications-outline" value={draft.channel_inapp}
+                                  onChange={v => updateTplDraft(key, "channel_inapp", v)}
+                                  color={colors.primary} sw={brandSwitch(draft.channel_inapp, colors.primary, colors.secondary)} />
+                                <ChannelToggle label="Push" icon="phone-portrait-outline" value={draft.channel_push}
+                                  onChange={v => {
+                                    if (v) {
+                                      Alert.alert("Enable Push Notifications",
+                                        "Push notifications are used for urgent messages. Members will receive a device notification even when the app is closed. Only enable this for time-sensitive alerts.",
+                                        [{ text: "Cancel", style: "cancel" }, { text: "Enable", onPress: () => updateTplDraft(key, "channel_push", true) }]);
+                                    } else { updateTplDraft(key, "channel_push", false); }
+                                  }}
+                                  color={colors.primary} sw={brandSwitch(draft.channel_push, colors.primary, colors.secondary)} />
+                                <ChannelToggle label="Email" icon="mail-outline" value={draft.channel_email}
+                                  onChange={v => updateTplDraft(key, "channel_email", v)}
+                                  color={colors.primary} sw={brandSwitch(draft.channel_email, colors.primary, colors.secondary)} />
+                              </View>
+
+                              <Text style={[tp.fieldLabel, { color: colors.mutedForeground, marginTop: 14 }]}>Email Subject</Text>
+                              <TextInput
+                                style={[tp.input, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
+                                value={draft.subject} onChangeText={v => updateTplDraft(key, "subject", v)}
+                                placeholder="Email subject line" placeholderTextColor={colors.mutedForeground}
+                              />
+
+                              <Text style={[tp.fieldLabel, { color: colors.mutedForeground, marginTop: 12 }]}>Message Body</Text>
+                              <TextInput
+                                style={[tp.bodyInput, { color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
+                                value={draft.body} onChangeText={v => updateTplDraft(key, "body", v)}
+                                multiline numberOfLines={5} textAlignVertical="top" placeholderTextColor={colors.mutedForeground}
+                              />
+
+                              <Pressable
+                                style={[tp.saveBtn, { backgroundColor: colors.primary, opacity: tplSaving === key ? 0.7 : 1 }]}
+                                onPress={() => saveTemplate(key)}
+                                disabled={tplSaving === key}
+                              >
+                                {tplSaving === key
+                                  ? <ActivityIndicator size="small" color="#FFF" />
+                                  : <Text style={tp.saveBtnText}>{tplSavedKeys.has(key) ? "Saved ✓" : "Save Template"}</Text>}
+                              </Pressable>
+                            </View>
+                          )}
+                        </View>
+                      );
+                    })}
+                  </View>
+                </View>
+              );
+            })}
+          </ScrollView>
+        )
+      )}
+
       <WAGuideModal visible={showGuide} onClose={() => setShowGuide(false)} />
     </View>
   );
@@ -666,6 +867,28 @@ const wa = StyleSheet.create({
   strideBannerText: { flex: 1, fontSize: 12, color: "#166534", lineHeight: 17 },
   toggleRow:      { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderRadius: 10, padding: 12, marginBottom: 12, borderWidth: 1 },
   toggleLabel:    { fontSize: 13, fontWeight: "700" },
+});
+
+const tp = StyleSheet.create({
+  infoBox:        { flexDirection: "row", alignItems: "flex-start", gap: 10, borderRadius: 14, padding: 14, marginBottom: 16 },
+  infoText:       { flex: 1, fontSize: 13, lineHeight: 18 },
+  sectionLabel:   { fontSize: 11, fontWeight: "800", letterSpacing: 1, marginBottom: 8, paddingHorizontal: 4 },
+  card:           { borderRadius: 18, overflow: "hidden", marginBottom: 16, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.06, shadowRadius: 8, elevation: 3 },
+  msgHeader:      { flexDirection: "row", alignItems: "center", padding: 14, gap: 10 },
+  msgIcon:        { width: 32, height: 32, borderRadius: 9, alignItems: "center", justifyContent: "center", flexShrink: 0 },
+  msgLabel:       { fontSize: 14, fontWeight: "600", marginBottom: 4 },
+  channelRow:     { flexDirection: "row", gap: 4, flexWrap: "wrap" },
+  chip:           { borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 },
+  chipText:       { fontSize: 10, fontWeight: "600" },
+  editor:         { paddingHorizontal: 14, paddingBottom: 14, paddingTop: 12 },
+  channelToggles: { flexDirection: "row", gap: 8, flexWrap: "wrap" },
+  toggleRow:      { flexDirection: "row", alignItems: "center", gap: 4, paddingVertical: 4, paddingHorizontal: 10, borderRadius: 10, borderWidth: 1, borderColor: "#E5E7EB" },
+  toggleLabel:    { fontSize: 12, fontWeight: "500" },
+  fieldLabel:     { fontSize: 11, fontWeight: "700", letterSpacing: 0.5, marginBottom: 6 },
+  input:          { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 14 },
+  bodyInput:      { borderWidth: 1, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 9, fontSize: 13, minHeight: 110 },
+  saveBtn:        { marginTop: 14, borderRadius: 12, paddingVertical: 12, alignItems: "center" },
+  saveBtnText:    { color: "#FFF", fontSize: 14, fontWeight: "700" },
 });
 
 const s = StyleSheet.create({

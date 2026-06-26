@@ -37,12 +37,6 @@ const NAV_ROWS = [
     icon: "settings-outline" as const,
   },
   {
-    key: "preset-messages",
-    title: "Preset Messages",
-    description: "Email and notification templates",
-    icon: "mail-outline" as const,
-  },
-  {
     key: "legal-privacy",
     title: "Legal & Privacy",
     description: "Terms, policies and signatures",
