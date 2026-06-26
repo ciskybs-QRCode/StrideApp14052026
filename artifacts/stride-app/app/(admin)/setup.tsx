@@ -459,7 +459,7 @@ export default function AdminSetup() {
 
   return (
     <View style={[styles.container, { backgroundColor: "#F0F4FF" }]}>
-      <ScreenHeader title="Organisation Setup" onBack={() => router.push("/(admin)/settings" as never)} />
+      <ScreenHeader title="Branding, Setup & QR Code" onBack={() => router.push("/(admin)/settings" as never)} />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: 16, paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}

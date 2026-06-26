@@ -20,7 +20,6 @@ import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { HubCard } from "@/components/HubCard";
-import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 
 // ── Nav rows shown under CONFIGURATION ───────────────────────────────────────
 
@@ -51,12 +50,6 @@ const NAV_ROWS = [
     badge: true,
   },
   {
-    key: "app-customization",
-    title: "App Customisation",
-    description: "Branding, colours and themes",
-    icon: "brush-outline" as const,
-  },
-  {
     key: "communication-settings",
     title: "Communication Settings",
     description: "Email (Resend) and SMS (Twilio) credentials",
@@ -73,7 +66,6 @@ export default function SettingsIndex() {
   const colors = useColors();
   const styles = make_styles(colors.primary, colors.secondary);
   const insets = useSafeAreaInsets();
-  const { can } = usePlanFeatures();
 
   const unsignedCount = legalAdminDocs.filter(d => d.mandatorySignature).length;
 
@@ -187,11 +179,11 @@ export default function SettingsIndex() {
         {/* ── SECTION LABEL ── */}
         <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>ORGANISATION</Text>
 
-        {/* ── SETUP & MEMBER QR ── */}
+        {/* ── BRANDING, SETUP & QR ── */}
         <HubCard
-          icon="qr-code-outline"
-          title="Setup & QR Code"
-          description="Branding, colours and invite QR code"
+          icon="brush-outline"
+          title="Branding, Setup & QR Code"
+          description="Logo, colours, fonts, invite QR and member portal"
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
             router.push("/(admin)/setup" as never);
@@ -236,12 +228,12 @@ export default function SettingsIndex() {
         <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>CONFIGURATION</Text>
 
         {/* ── CONFIG ROWS ── */}
-        {NAV_ROWS.filter(item => item.key !== "app-customization" || can("white_label")).map((item) => (
+        {NAV_ROWS.map((item) => (
           <HubCard
             key={item.key}
             icon={item.icon}
-            title={item.key === "app-customization" ? "Branding & Theme" : item.title}
-            description={item.key === "app-customization" ? "Colours, logo, fonts and button style" : item.description}
+            title={item.title}
+            description={item.description}
             badge={item.key === "legal-privacy" && unsignedCount > 0 ? unsignedCount : undefined}
             onPress={() => navigate(item.key)}
           />
