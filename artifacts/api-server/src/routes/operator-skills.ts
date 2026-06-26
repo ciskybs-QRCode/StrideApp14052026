@@ -16,26 +16,23 @@ router.get("/operator-skills", requireAuth, async (req, res) => {
 
   try {
     let opProfileId: number | null = null;
-    let skillsCompleted = false;
 
     if (user.role === "operator") {
       const { data: profile } = await supabase
         .from("operator_profiles")
-        .select("id, skills_completed")
+        .select("id")
         .eq("user_id", parseInt(String(user.id)))
         .eq("organization_id", user.orgId)
         .maybeSingle();
-      opProfileId    = (profile as { id?: number } | null)?.id ?? null;
-      skillsCompleted = (profile as { skills_completed?: boolean } | null)?.skills_completed ?? false;
+      opProfileId = (profile as { id?: number } | null)?.id ?? null;
     } else if ((user.role === "admin" || user.role === "super_admin") && profileId) {
       const { data: profile } = await supabase
         .from("operator_profiles")
-        .select("id, skills_completed")
+        .select("id")
         .eq("id", profileId)
         .eq("organization_id", user.orgId)
         .maybeSingle();
-      opProfileId    = (profile as { id?: number } | null)?.id ?? null;
-      skillsCompleted = (profile as { skills_completed?: boolean } | null)?.skills_completed ?? false;
+      opProfileId = (profile as { id?: number } | null)?.id ?? null;
     }
 
     if (!opProfileId) {
@@ -43,12 +40,20 @@ router.get("/operator-skills", requireAuth, async (req, res) => {
       return;
     }
 
-    const { rows } = await pool.query(
-      `SELECT id, label, source FROM operator_skills WHERE operator_profile_id = $1 ORDER BY label`,
-      [opProfileId],
-    );
+    // skills_completed comes from pg pool (not Supabase — column may not exist there)
+    const [{ rows: skillRows }, { rows: flagRows }] = await Promise.all([
+      pool.query(
+        `SELECT id, label, source FROM operator_skills WHERE operator_profile_id = $1 ORDER BY label`,
+        [opProfileId],
+      ),
+      pool.query(
+        `SELECT skills_completed FROM operator_profile_flags WHERE operator_profile_id = $1`,
+        [opProfileId],
+      ),
+    ]);
 
-    res.json({ skills: rows, skills_completed: skillsCompleted });
+    const skillsCompleted = (flagRows[0] as { skills_completed?: boolean } | undefined)?.skills_completed ?? false;
+    res.json({ skills: skillRows, skills_completed: skillsCompleted });
   } catch (err) {
     req.log.error(err, "GET /operator-skills");
     res.status(500).json({ error: "Failed to get skills" });
@@ -135,11 +140,15 @@ router.put("/operator-skills", requireAuth, requireRole("operator", "admin"), as
       );
     }
 
-    await supabase
-      .from("operator_profiles")
-      .update({ skills_completed: true })
-      .eq("id", opProfileId)
-      .then(undefined, () => {});
+    // Persist completion flag in pg pool (Supabase column may not exist)
+    await pool.query(
+      `INSERT INTO operator_profile_flags (operator_profile_id, skills_completed, skills_completed_at)
+       VALUES ($1, TRUE, NOW())
+       ON CONFLICT (operator_profile_id)
+       DO UPDATE SET skills_completed = TRUE,
+                     skills_completed_at = COALESCE(operator_profile_flags.skills_completed_at, NOW())`,
+      [opProfileId],
+    );
 
     res.json({ ok: true });
   } catch (err) {

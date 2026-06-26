@@ -30,6 +30,7 @@ interface NotificationsCtx {
   loading: boolean;
   refresh: () => Promise<void>;
   markRead: (id: number) => Promise<void>;
+  markOpen: (id: number) => Promise<void>;
   markAllRead: () => Promise<void>;
 }
 
@@ -42,6 +43,7 @@ const Ctx = createContext<NotificationsCtx>({
   loading: false,
   refresh: async () => {},
   markRead: async () => {},
+  markOpen: async () => {},
   markAllRead: async () => {},
 });
 
@@ -83,6 +85,14 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     } catch { }
   }, []);
 
+  const markOpen = useCallback(async (id: number) => {
+    try {
+      await api.markNotificationOpen(id);
+      // also mark as read locally
+      setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n));
+    } catch { }
+  }, []);
+
   const markAllRead = useCallback(async () => {
     try {
       await api.markAllNotificationsRead();
@@ -110,7 +120,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   }, [unreadCount]);
 
   return (
-    <Ctx.Provider value={{ notifications, unreadCount, unreadDirectCount: directUnreadCount, loading, refresh, markRead, markAllRead }}>
+    <Ctx.Provider value={{ notifications, unreadCount, unreadDirectCount: directUnreadCount, loading, refresh, markRead, markOpen, markAllRead }}>
       {children}
     </Ctx.Provider>
   );

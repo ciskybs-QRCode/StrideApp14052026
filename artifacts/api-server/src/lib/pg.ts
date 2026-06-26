@@ -1860,6 +1860,31 @@ export async function ensureTables(): Promise<void> {
     ADD COLUMN IF NOT EXISTS skills_completed BOOLEAN NOT NULL DEFAULT FALSE;
   `).catch(() => {});
 
+  // ── Notification read receipts (replaces Supabase read column) ──────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS notification_read_receipts (
+      id              SERIAL      PRIMARY KEY,
+      notification_id INTEGER     NOT NULL,
+      recipient_id    INTEGER     NOT NULL,
+      organization_id INTEGER     NOT NULL DEFAULT 0,
+      read_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      opened_at       TIMESTAMPTZ,
+      UNIQUE(notification_id, recipient_id)
+    );
+    CREATE INDEX IF NOT EXISTS idx_nrr_notif     ON notification_read_receipts(notification_id);
+    CREATE INDEX IF NOT EXISTS idx_nrr_recipient ON notification_read_receipts(recipient_id);
+    CREATE INDEX IF NOT EXISTS idx_nrr_org       ON notification_read_receipts(organization_id);
+  `).catch(() => {});
+
+  // ── Operator profile flags (skills_completed replaces Supabase column) ──
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS operator_profile_flags (
+      operator_profile_id INTEGER     PRIMARY KEY,
+      skills_completed    BOOLEAN     NOT NULL DEFAULT FALSE,
+      skills_completed_at TIMESTAMPTZ
+    );
+  `).catch(() => {});
+
   // ── Course labels (free-text suggestions per org) ────────────────────────
   await pool.query(`
     CREATE TABLE IF NOT EXISTS org_course_labels (

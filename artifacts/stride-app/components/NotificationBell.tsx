@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   FlatList,
   Modal,
@@ -53,9 +53,25 @@ function notifIcon(type: string) {
 
 // ── NotifRow ──────────────────────────────────────────────────────────────────
 
-function NotifRow({ item, onRead }: { item: PrivateNotification; onRead: (id: number) => void }) {
-  const colors = useColors();
-  const icon   = notifIcon(item.type);
+function NotifRow({ item, onRead, onOpen }: {
+  item: PrivateNotification;
+  onRead: (id: number) => void;
+  onOpen: (id: number) => void;
+}) {
+  const colors      = useColors();
+  const icon        = notifIcon(item.type);
+  const [expanded, setExpanded] = useState(false);
+
+  const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const willExpand = !expanded;
+    setExpanded(willExpand);
+    if (willExpand) {
+      // Mark as opened (for admin audit) + mark as read
+      onOpen(item.id);
+      if (!item.read) onRead(item.id);
+    }
+  };
 
   return (
     <Pressable
@@ -63,10 +79,10 @@ function NotifRow({ item, onRead }: { item: PrivateNotification; onRead: (id: nu
         styles.row,
         {
           backgroundColor: item.read ? colors.background : (colors.primary + "0D"),
-          borderColor: colors.border,
+          borderColor: item.read ? colors.border : colors.primary + "40",
         },
       ]}
-      onPress={() => { if (!item.read) onRead(item.id); }}
+      onPress={handlePress}
     >
       <View style={[styles.iconWrap, { backgroundColor: icon.color + "1A" }]}>
         <Ionicons name={icon.name} size={20} color={icon.color} />
@@ -75,12 +91,20 @@ function NotifRow({ item, onRead }: { item: PrivateNotification; onRead: (id: nu
         <Text style={[styles.rowTitle, { color: colors.foreground }]} numberOfLines={1}>
           {item.title}
         </Text>
-        <Text style={[styles.rowBody, { color: colors.mutedForeground }]} numberOfLines={2}>
+        <Text
+          style={[styles.rowBody, { color: colors.mutedForeground }]}
+          numberOfLines={expanded ? undefined : 2}
+        >
           {item.body}
         </Text>
-        <Text style={[styles.rowTime, { color: colors.mutedForeground }]}>
-          {relativeTime(item.created_at)}
-        </Text>
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 2 }}>
+          <Text style={[styles.rowTime, { color: colors.mutedForeground }]}>
+            {relativeTime(item.created_at)}
+          </Text>
+          <Text style={[styles.rowTime, { color: colors.primary }]}>
+            {expanded ? "▲ collapse" : "▼ read more"}
+          </Text>
+        </View>
       </View>
       {!item.read && (
         <View style={[styles.unreadDot, { backgroundColor: colors.primary }]} />
@@ -92,7 +116,7 @@ function NotifRow({ item, onRead }: { item: PrivateNotification; onRead: (id: nu
 // ── NotificationBell ──────────────────────────────────────────────────────────
 
 export function NotificationBell({ light = false }: { light?: boolean }) {
-  const { notifications, unreadCount, loading, refresh, markRead, markAllRead } = useNotifications();
+  const { notifications, unreadCount, loading, refresh, markRead, markOpen, markAllRead } = useNotifications();
   const [open, setOpen] = useState(false);
   const colors  = useColors();
   const insets  = useSafeAreaInsets();
@@ -200,7 +224,7 @@ export function NotificationBell({ light = false }: { light?: boolean }) {
               contentContainerStyle={styles.listContent}
               showsVerticalScrollIndicator={false}
               renderItem={({ item }) => (
-                <NotifRow item={item} onRead={markRead} />
+                <NotifRow item={item} onRead={markRead} onOpen={markOpen} />
               )}
               ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
               refreshing={loading}

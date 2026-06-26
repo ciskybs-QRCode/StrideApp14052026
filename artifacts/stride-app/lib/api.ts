@@ -887,6 +887,10 @@ export const api = {
     }
     return request<{ ok: boolean }>("POST", `/private-notifications/${id}/read`, {});
   },
+  markNotificationOpen: async (id: number) => {
+    if (await isDemoSession()) return { ok: true };
+    return request<{ ok: boolean }>("POST", `/private-notifications/${id}/open`, {});
+  },
   markAllNotificationsRead: async () => {
     if (await isDemoSession()) {
       DEMO_PRIVATE_NOTIFICATIONS.forEach(n => { n.read = true; });
