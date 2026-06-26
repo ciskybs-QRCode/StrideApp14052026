@@ -79,6 +79,7 @@ import saFeatureAnalyticsRouter from "./sa-feature-analytics.js";
 import translationsRouter from "./translations.js";
 import courseLabelsRouter  from "./course-labels.js";
 import operatorCertsRouter from "./operator-certs.js";
+import pageGuideRouter from "./page-guide.js";
 
 const router: IRouter = Router();
 
@@ -162,5 +163,6 @@ router.use(translationsRouter);
 router.use(operatorSkillsRouter);
 router.use(courseLabelsRouter);
 router.use(operatorCertsRouter);
+router.use(pageGuideRouter);
 
 export default router;

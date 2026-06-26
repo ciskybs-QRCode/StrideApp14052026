@@ -26,6 +26,7 @@ import { useTerminology } from "@/context/TerminologyContext";
 import { useUnread } from "@/context/UnreadContext";
 import { NotificationsProvider } from "@/context/NotificationsContext";
 import { useT } from "@/context/TranslationContext";
+import { AIPageGuide } from "@/components/AIPageGuide";
 
 function AccountTabIcon({ color, size }: { color: string; size: number }) {
   const colors = useColors();
@@ -224,6 +225,7 @@ export default function ParentTabLayout() {
 
       <SecurityAlarmOverlay alertsRoute="/(parent)/alerts" />
       <BrandingLogoOverlay />
+      <AIPageGuide />
 
       {/* ── Mandatory Legal Signature Gate ──────────────────────────────────── */}
       <Modal visible={blocked} transparent={false} animationType="slide" statusBarTranslucent>

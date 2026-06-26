@@ -14,6 +14,7 @@ import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
 import { NotificationsProvider } from "@/context/NotificationsContext";
 import { BILLING_TIERS } from "@/lib/billingEngine";
 import { useT } from "@/context/TranslationContext";
+import { AIPageGuide } from "@/components/AIPageGuide";
 
 const DOCS_REMINDER_KEY = "stride_docs_reminder_dismissed_v1";
 const FALLBACK_DOC_IDS  = ["ld1", "ld2", "ld3", "ld4"];
@@ -275,6 +276,7 @@ function SettingsTabIcon({ color, size, focused }: { color: string; size: number
 export default function AdminTabLayout() {
   const colors  = useColors();
   const t       = useT();
+  const router  = useRouter();
   const isIOS   = Platform.OS === "ios";
   const isWeb   = Platform.OS === "web";
   const { isSuspended } = useBillingStatus();
@@ -305,7 +307,6 @@ export default function AdminTabLayout() {
             <View style={[StyleSheet.absoluteFill, { backgroundColor: colors.background }]} />
           ) : null,
         tabBarLabelStyle: { fontSize: 9, fontWeight: "500" },
-        tabBarActiveLabelStyle: { fontSize: 9, fontWeight: "800" },
       }}
     >
       {/* ── 6 visible tabs ── */}
@@ -370,6 +371,7 @@ export default function AdminTabLayout() {
     <SecurityAlarmOverlay alertsRoute="/(admin)/alerts" />
     <BrandingLogoOverlay />
     <DocReminderModal />
+    <AIPageGuide />
     </View>
     </NotificationsProvider>
   );

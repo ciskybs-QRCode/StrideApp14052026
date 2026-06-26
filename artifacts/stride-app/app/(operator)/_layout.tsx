@@ -12,6 +12,7 @@ import { usePrivateLessons } from "@/context/PrivateLessonContext";
 import { SecurityAlarmOverlay } from "@/components/SecurityAlarmOverlay";
 import { NotificationsProvider } from "@/context/NotificationsContext";
 import { useT } from "@/context/TranslationContext";
+import { AIPageGuide } from "@/components/AIPageGuide";
 import { useAuth } from "@/context/AuthContext";
 import { getMyOperatorSkills } from "@/lib/api";
 
@@ -177,6 +178,7 @@ export default function OperatorTabLayout() {
 
       <SecurityAlarmOverlay alertsRoute="/(operator)/alerts" />
       <BrandingLogoOverlay />
+      <AIPageGuide />
 
     </View>
     </NotificationsProvider>
