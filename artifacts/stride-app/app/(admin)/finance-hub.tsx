@@ -58,8 +58,8 @@ export default function FinanceHub() {
           icon="time-outline"
           title="Pending Payments"
           description="Confirm cash and bank transfer payments"
-          iconBg="#FFF9E6"
-          iconColor="#B45309"
+          iconBg="#EFF6FF"
+          iconColor={colors.primary}
           onPress={() => router.push("/(admin)/pending-payments" as never)}
         />
 
