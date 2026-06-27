@@ -678,24 +678,22 @@ export default function OperatorCalendar() {
                   ))}
                 </View>
 
-                {/* Legend */}
+                {/* Legend — real courses from DB */}
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 14 }}>
-                  {[
-                    { label: "Sport",              color: colors.primary, round: true },
-                    { label: "Fitness",            color: colors.secondary, round: true },
-                    { label: "Arts",               color: colors.primary, round: true },
-                    { label: "Yoga",               color: "#10B981", round: true },
-                    { label: "Music",              color: "#EF4444", round: true },
-                    { label: "General",            color: "#F59E0B", round: true },
-                    { label: "Other",              color: "#6B7BA4", round: true },
-                    { label: "Event",              color: "#F59E0B", round: false },
-                    { label: "Meeting",            color: colors.primary, round: false },
-                  ].map(({ label, color, round }) => (
-                    <View key={label} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-                      <View style={{ width: 8, height: 8, borderRadius: round ? 4 : 2, backgroundColor: color }} />
-                      <Text style={{ fontSize: 11, color: colors.mutedForeground }}>{label}</Text>
+                  {orgDisciplines.map(d => (
+                    <View key={d.id} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: lessonColor(d.name, colors.primary, colors.secondary) }} />
+                      <Text style={{ fontSize: 11, color: colors.mutedForeground }}>{d.name}</Text>
                     </View>
                   ))}
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                    <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: "#F59E0B" }} />
+                    <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Event</Text>
+                  </View>
+                  <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                    <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: colors.primary }} />
+                    <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Meeting</Text>
+                  </View>
                 </View>
           </>
         )}
