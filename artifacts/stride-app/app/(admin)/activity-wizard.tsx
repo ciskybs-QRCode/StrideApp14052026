@@ -829,7 +829,7 @@ export default function ActivityWizard() {
         </ScrollView>
 
         {/* ── Nav buttons */}
-        <View style={[st.navBar, { borderTopColor: colors.border, paddingBottom: insets.bottom + 68, backgroundColor: colors.background }]}>
+        <View style={[st.navBar, { borderTopColor: colors.border, paddingBottom: insets.bottom + 54, backgroundColor: colors.background }]}>
         {step > 1 && (
           <Pressable style={[st.navBack, { flex: 1, borderColor: colors.border }]} onPress={handleBack}>
             <Ionicons name="chevron-back" size={18} color={colors.primary} />
