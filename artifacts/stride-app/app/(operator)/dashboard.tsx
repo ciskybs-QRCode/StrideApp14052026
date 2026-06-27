@@ -335,6 +335,7 @@ export default function OperatorDashboard() {
   const [showECModal, setShowECModal]     = useState(false);
   const [ecLoading, setEcLoading]         = useState(false);
   const [ecMembers, setEcMembers]         = useState<SosMember[]>([]);
+  const [expandedECId, setExpandedECId]   = useState<number | string | null>(null);
   const [sosCount, setSosCount]           = useState(0);
   const [sosPhase, setSosPhase]           = useState<SosPhase>("type");
   const [sosType, setSosType]             = useState<SosType | null>(null);
@@ -2645,17 +2646,28 @@ export default function OperatorDashboard() {
                   <Text style={{ color: "#9CA3AF", textAlign: "center", paddingVertical: 32 }}>No members registered yet.</Text>
                 )}
                 {ecMembers.map(m => {
-                  // Members: primary contact = NOK (emergency_contact_phone), fallback = own phone
-                  // Dependants: primary contact = guardian/parent (parent_phone), fallback = NOK
                   const isDependent = m.role === "dependant";
                   const callPhone = isDependent
                     ? (m.parent_phone ?? m.emergency_contact_phone ?? m.phone)
                     : (m.emergency_contact_phone ?? m.phone);
                   const guardianPhone = isDependent && m.parent_phone && m.parent_phone !== callPhone
                     ? m.parent_phone : null;
+                  const isExpanded = expandedECId === m.id;
                   return (
-                    <View key={m.id} style={{ borderBottomWidth: 1, borderColor: "#F3F4F6", paddingVertical: 12, gap: 4 }}>
-                      {/* Name + role + ambulance badge */}
+                    <Pressable
+                      key={m.id}
+                      onPress={() => { Haptics.selectionAsync(); setExpandedECId(isExpanded ? null : m.id); }}
+                      style={({ pressed }) => ({
+                        borderRadius: 14,
+                        marginBottom: 8,
+                        backgroundColor: isExpanded ? "#F0F4FF" : (pressed ? "#F9FAFB" : "#FFFFFF"),
+                        borderWidth: 1,
+                        borderColor: isExpanded ? colors.primary + "40" : "#F3F4F6",
+                        padding: 12,
+                        gap: 4,
+                      })}
+                    >
+                      {/* Row: avatar + name + badge + chevron */}
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
                         <View style={{ width: 36, height: 36, borderRadius: 18, backgroundColor: isDependent ? "#DBEAFE" : "#F0FDF4", alignItems: "center", justifyContent: "center" }}>
                           <Ionicons name={isDependent ? "happy" : "person"} size={18} color={isDependent ? colors.primary : "#15803D"} />
@@ -2666,72 +2678,89 @@ export default function OperatorDashboard() {
                             {isDependent ? "Dependent" : m.role}
                           </Text>
                         </View>
-                        {/* Ambulance consent badge */}
                         {m.ambulance_consent === true && (
                           <View style={{ backgroundColor: "#DCFCE7", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
-                            <Text style={{ fontSize: 11, fontWeight: "700", color: "#15803D" }}>🚑 Ambulance OK</Text>
+                            <Text style={{ fontSize: 11, fontWeight: "700", color: "#15803D" }}>🚑 OK</Text>
                           </View>
                         )}
                         {m.ambulance_consent === false && (
                           <View style={{ backgroundColor: "#FEF9C3", borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 }}>
-                            <Text style={{ fontSize: 11, fontWeight: "700", color: "#854D0E" }}>
-                              {isDependent ? "📞 Contact Guardian" : "📞 Contact NOK"}
-                            </Text>
+                            <Text style={{ fontSize: 11, fontWeight: "700", color: "#854D0E" }}>📞 NOK</Text>
                           </View>
                         )}
+                        <Ionicons name={isExpanded ? "chevron-up" : "chevron-down"} size={16} color="#9CA3AF" />
                       </View>
 
-                      {/* NOK label for members; Guardian label for dependants */}
-                      {isDependent ? (
-                        m.parent_phone ? (
-                          <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 44, gap: 6 }}>
-                            <Ionicons name="people-outline" size={14} color="#9CA3AF" />
-                            <Text style={{ fontSize: 13, color: "#374151" }}>
-                              Guardian: <Text style={{ fontWeight: "600" }}>{m.parent_phone}</Text>
-                            </Text>
-                          </View>
-                        ) : null
-                      ) : (
-                        m.emergency_contact_name ? (
-                          <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 44, gap: 6 }}>
-                            <Ionicons name="person-circle-outline" size={14} color="#9CA3AF" />
-                            <Text style={{ fontSize: 13, color: "#374151" }}>
-                              NOK: <Text style={{ fontWeight: "600" }}>{m.emergency_contact_name}</Text>
-                            </Text>
-                          </View>
-                        ) : null
+                      {/* Expanded details */}
+                      {isExpanded && (
+                        <View style={{ marginTop: 8, gap: 8 }}>
+                          {/* NOK / Guardian name */}
+                          {isDependent ? (
+                            m.parent_phone ? (
+                              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                                <Ionicons name="people-outline" size={14} color="#9CA3AF" />
+                                <Text style={{ fontSize: 13, color: "#374151" }}>
+                                  Guardian: <Text style={{ fontWeight: "600" }}>{m.parent_phone}</Text>
+                                </Text>
+                              </View>
+                            ) : null
+                          ) : (
+                            m.emergency_contact_name ? (
+                              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                                <Ionicons name="person-circle-outline" size={14} color="#9CA3AF" />
+                                <Text style={{ fontSize: 13, color: "#374151" }}>
+                                  NOK: <Text style={{ fontWeight: "600" }}>{m.emergency_contact_name}</Text>
+                                </Text>
+                              </View>
+                            ) : null
+                          )}
+
+                          {/* Primary call */}
+                          {callPhone ? (
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                              <Ionicons name="call-outline" size={14} color="#9CA3AF" />
+                              <Text style={{ fontSize: 13, color: "#374151", flex: 1 }}>{callPhone}</Text>
+                              <Pressable
+                                onPress={(e) => { e.stopPropagation?.(); Haptics.selectionAsync(); Linking.openURL(`tel:${callPhone}`); }}
+                                style={{ backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7, flexDirection: "row", alignItems: "center", gap: 4 }}
+                              >
+                                <Ionicons name="call" size={13} color="#FFF" />
+                                <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "700" }}>Call</Text>
+                              </Pressable>
+                            </View>
+                          ) : null}
+
+                          {/* Secondary guardian phone */}
+                          {guardianPhone ? (
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                              <Ionicons name="people-outline" size={14} color="#9CA3AF" />
+                              <Text style={{ fontSize: 13, color: "#374151", flex: 1 }}>Alt: {guardianPhone}</Text>
+                              <Pressable
+                                onPress={(e) => { e.stopPropagation?.(); Haptics.selectionAsync(); Linking.openURL(`tel:${guardianPhone!}`); }}
+                                style={{ backgroundColor: "#059669", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 7, flexDirection: "row", alignItems: "center", gap: 4 }}
+                              >
+                                <Ionicons name="call" size={13} color="#FFF" />
+                                <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "700" }}>Call</Text>
+                              </Pressable>
+                            </View>
+                          ) : null}
+
+                          {/* Ambulance consent detail */}
+                          {m.ambulance_consent === true && (
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                              <Ionicons name="checkmark-circle" size={14} color="#15803D" />
+                              <Text style={{ fontSize: 12, color: "#15803D" }}>Ambulance consent granted</Text>
+                            </View>
+                          )}
+                          {m.ambulance_consent === false && (
+                            <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                              <Ionicons name="alert-circle" size={14} color="#B45309" />
+                              <Text style={{ fontSize: 12, color: "#B45309" }}>Contact next of kin before ambulance</Text>
+                            </View>
+                          )}
+                        </View>
                       )}
-
-                      {/* Primary call button */}
-                      {callPhone ? (
-                        <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 44, gap: 8 }}>
-                          <Ionicons name="call-outline" size={14} color="#9CA3AF" />
-                          <Text style={{ fontSize: 13, color: "#374151", flex: 1 }}>{callPhone}</Text>
-                          <Pressable
-                            onPress={() => { Haptics.selectionAsync(); Linking.openURL(`tel:${callPhone}`); }}
-                            style={{ backgroundColor: colors.primary, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6, flexDirection: "row", alignItems: "center", gap: 4 }}
-                          >
-                            <Ionicons name="call" size={13} color="#FFF" />
-                            <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "700" }}>Call</Text>
-                          </Pressable>
-                        </View>
-                      ) : null}
-
-                      {/* Secondary guardian phone if different */}
-                      {guardianPhone ? (
-                        <View style={{ flexDirection: "row", alignItems: "center", marginLeft: 44, gap: 8 }}>
-                          <Ionicons name="people-outline" size={14} color="#9CA3AF" />
-                          <Text style={{ fontSize: 13, color: "#374151", flex: 1 }}>Alt: {guardianPhone}</Text>
-                          <Pressable
-                            onPress={() => { Haptics.selectionAsync(); Linking.openURL(`tel:${guardianPhone!}`); }}
-                            style={{ backgroundColor: "#059669", borderRadius: 10, paddingHorizontal: 12, paddingVertical: 6, flexDirection: "row", alignItems: "center", gap: 4 }}
-                          >
-                            <Ionicons name="call" size={13} color="#FFF" />
-                            <Text style={{ color: "#FFF", fontSize: 12, fontWeight: "700" }}>Call</Text>
-                          </Pressable>
-                        </View>
-                      ) : null}
-                    </View>
+                    </Pressable>
                   );
                 })}
                 <View style={{ height: 32 }} />
