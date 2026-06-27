@@ -52,7 +52,7 @@ router.post("/auth/login", authLimiter, async (req, res) => {
 
   const { data: users, error } = await supabase
     .from("users")
-    .select("id, name, email, password_hash, role, roles, organization_id, blocked, profile_photo_url, preferred_name")
+    .select("id, name, email, password_hash, role, roles, organization_id, blocked, profile_photo_url")
     .ilike("email", email.trim())
     .limit(1);
 
@@ -147,7 +147,7 @@ router.patch("/user/me", requireAuth, async (req, res) => {
   const updates: Record<string, unknown> = {};
   if (profilePhotoUri !== undefined) updates["profile_photo_url"] = profilePhotoUri;
   if (name !== undefined) updates["name"] = name;
-  if (preferred_name !== undefined) updates["preferred_name"] = preferred_name;
+  // preferred_name lives in pg user_profiles (account.ts), not Supabase users
 
   if (Object.keys(updates).length === 0) {
     res.status(400).json({ error: "No fields to update" });
