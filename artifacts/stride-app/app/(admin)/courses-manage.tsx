@@ -9,7 +9,6 @@ import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
   RefreshControl,
@@ -56,29 +55,31 @@ export default function AdminCoursesManageScreen() {
   const insets  = useSafeAreaInsets();
   const router  = useRouter();
 
-  const [courses,     setCourses]     = useState<ApiCourse[]>([]);
-  const [disciplines, setDisciplines] = useState<ApiDiscipline[]>([]);
-  const [loading,     setLoading]     = useState(true);
-  const [refreshing,  setRefreshing]  = useState(false);
-  const [saving,      setSaving]      = useState(false);
-  const [search,      setSearch]      = useState("");
-  const [showModal,   setShowModal]   = useState(false);
-  const [editing,     setEditing]     = useState<ApiCourse | null>(null);
+  const [courses,       setCourses]       = useState<ApiCourse[]>([]);
+  const [disciplines,   setDisciplines]   = useState<ApiDiscipline[]>([]);
+  const [loading,       setLoading]       = useState(true);
+  const [refreshing,    setRefreshing]    = useState(false);
+  const [saving,        setSaving]        = useState(false);
+  const [deleting,      setDeleting]      = useState<number | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<number | null>(null);
+  const [search,        setSearch]        = useState("");
+  const [showModal,     setShowModal]     = useState(false);
+  const [editing,       setEditing]       = useState<ApiCourse | null>(null);
+  const [saveError,     setSaveError]     = useState<string | null>(null);
 
   // ── Form state ───────────────────────────────────────────────────────────────
-  const [fName,        setFName]        = useState("");
-  const [fDiscipline,  setFDiscipline]  = useState("");
-  const [fLevel,       setFLevel]       = useState<Level>("open");
-  const [fAgeMin,      setFAgeMin]      = useState("3");
-  const [fAgeMax,      setFAgeMax]      = useState("18");
-  const [fCapacity,    setFCapacity]    = useState("15");
-  const [fPrice,       setFPrice]       = useState("0");
-  const [fDescription, setFDescription] = useState("");
-  const [fDays,        setFDays]        = useState<boolean[]>(Array(7).fill(false));
+  const [fName,            setFName]            = useState("");
+  const [fDiscipline,      setFDiscipline]      = useState("");
+  const [fLevel,           setFLevel]           = useState<Level>("open");
+  const [fAgeMin,          setFAgeMin]          = useState("3");
+  const [fAgeMax,          setFAgeMax]          = useState("18");
+  const [fCapacity,        setFCapacity]        = useState("15");
+  const [fPrice,           setFPrice]           = useState("0");
+  const [fDescription,     setFDescription]     = useState("");
+  const [fDays,            setFDays]            = useState<boolean[]>(Array(7).fill(false));
   const [fRequireApproval, setFRequireApproval] = useState(false);
 
   // ── Load ─────────────────────────────────────────────────────────────────────
-
   const load = useCallback(async () => {
     const [c, d] = await Promise.allSettled([
       api.getCourses(),
@@ -98,16 +99,19 @@ export default function AdminCoursesManageScreen() {
   useFocusEffect(useCallback(() => { void load(); }, [load]));
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
-
   const resetForm = () => {
     setFName(""); setFDiscipline(""); setFLevel("open");
     setFAgeMin("3"); setFAgeMax("18"); setFCapacity("15");
     setFPrice("0"); setFDescription("");
     setFDays(Array(7).fill(false)); setFRequireApproval(false);
-    setEditing(null);
+    setEditing(null); setSaveError(null);
   };
 
-  const openNew = () => { resetForm(); setShowModal(true); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); };
+  const openNew = () => {
+    resetForm();
+    setShowModal(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
 
   const openEdit = (c: ApiCourse) => {
     setEditing(c);
@@ -124,16 +128,17 @@ export default function AdminCoursesManageScreen() {
       (c.days_of_week as number[]).forEach(d => { if (d >= 0 && d < 7) dArr[d] = true; });
     }
     setFDays(dArr);
-    setFRequireApproval(false);
+    setFRequireApproval(!!c.requires_approval);
+    setSaveError(null);
     setShowModal(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const save = async () => {
-    if (!fName.trim() || !fDiscipline.trim()) {
-      Alert.alert("Missing fields", "Name and discipline are required.");
-      return;
-    }
+    setSaveError(null);
+    if (!fName.trim()) { setSaveError("Course name is required."); return; }
+    if (!fDiscipline.trim()) { setSaveError("Discipline is required."); return; }
+
     const price    = parseFloat(fPrice.replace(",", ".")) || 0;
     const ageMin   = parseInt(fAgeMin, 10) || 3;
     const ageMax   = parseInt(fAgeMax, 10) || 18;
@@ -158,27 +163,28 @@ export default function AdminCoursesManageScreen() {
         });
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      setShowModal(false); resetForm(); void load();
+      setShowModal(false);
+      resetForm();
+      void load();
     } catch (e: unknown) {
-      Alert.alert("Error", e instanceof Error ? e.message : "Failed to save course");
-    } finally { setSaving(false); }
+      setSaveError(e instanceof Error ? e.message : "Failed to save course. Please try again.");
+    } finally {
+      setSaving(false);
+    }
   };
 
-  const deleteCourse = (c: ApiCourse) => {
-    Alert.alert(
-      "Delete Course?",
-      `"${c.name}" and all its enrollments will be permanently removed.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete", style: "destructive",
-          onPress: async () => {
-            try { await api.deleteCourse(c.id); void load(); }
-            catch { Alert.alert("Error", "Could not delete course."); }
-          },
-        },
-      ],
-    );
+  const confirmAndDelete = async (id: number) => {
+    setDeleting(id);
+    setConfirmDelete(null);
+    try {
+      await api.deleteCourse(id);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setCourses(prev => prev.filter(c => c.id !== id));
+    } catch {
+      // show inline error via state
+      setDeleting(null);
+    }
+    setDeleting(null);
   };
 
   // ── Filter ───────────────────────────────────────────────────────────────────
@@ -191,7 +197,7 @@ export default function AdminCoursesManageScreen() {
   // ── Render ───────────────────────────────────────────────────────────────────
   return (
     <View style={[S.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Courses" onBack={() => router.push("/(admin)/operations-hub")} />
+      <ScreenHeader title="Courses" onBack={() => router.push("/(admin)/operations-hub" as never)} />
 
       {/* Search bar */}
       <View style={[S.searchBar, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -235,6 +241,8 @@ export default function AdminCoursesManageScreen() {
           const daysStr = Array.isArray(c.days_of_week) && (c.days_of_week as number[]).length > 0
             ? (c.days_of_week as number[]).map(d => DAYS[d] ?? "?").join(", ")
             : null;
+          const isConfirming = confirmDelete === c.id;
+          const isDeleting   = deleting === c.id;
 
           return (
             <View key={c.id} style={[S.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -271,20 +279,44 @@ export default function AdminCoursesManageScreen() {
                 </Text>
               ) : null}
 
+              {/* Actions — normal or confirm-delete state */}
               <View style={S.cardActions}>
-                <View style={{ flex: 1 }} />
-                <Pressable
-                  style={[S.actionBtn, { backgroundColor: `colors.primary12` }]}
-                  onPress={() => openEdit(c)}
-                >
-                  <Ionicons name="pencil-outline" size={15} color={colors.primary} />
-                </Pressable>
-                <Pressable
-                  style={[S.actionBtn, { backgroundColor: "#FEE2E2" }]}
-                  onPress={() => deleteCourse(c)}
-                >
-                  <Ionicons name="trash-outline" size={15} color="#991B1B" />
-                </Pressable>
+                {isConfirming ? (
+                  <>
+                    <Text style={[S.confirmText, { color: colors.mutedForeground }]}>Delete this course?</Text>
+                    <Pressable
+                      style={[S.actionBtn, { backgroundColor: colors.muted }]}
+                      onPress={() => setConfirmDelete(null)}
+                    >
+                      <Text style={[S.actionLabel, { color: colors.foreground }]}>Cancel</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[S.actionBtn, { backgroundColor: "#FEE2E2" }]}
+                      onPress={() => confirmAndDelete(c.id)}
+                      disabled={isDeleting}
+                    >
+                      {isDeleting
+                        ? <ActivityIndicator size="small" color="#991B1B" />
+                        : <Text style={[S.actionLabel, { color: "#991B1B" }]}>Delete</Text>}
+                    </Pressable>
+                  </>
+                ) : (
+                  <>
+                    <View style={{ flex: 1 }} />
+                    <Pressable
+                      style={[S.actionBtn, { backgroundColor: "#EFF6FF" }]}
+                      onPress={() => openEdit(c)}
+                    >
+                      <Ionicons name="pencil-outline" size={15} color={colors.primary} />
+                    </Pressable>
+                    <Pressable
+                      style={[S.actionBtn, { backgroundColor: "#FEE2E2" }]}
+                      onPress={() => { setConfirmDelete(c.id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium); }}
+                    >
+                      <Ionicons name="trash-outline" size={15} color="#991B1B" />
+                    </Pressable>
+                  </>
+                )}
               </View>
             </View>
           );
@@ -309,11 +341,19 @@ export default function AdminCoursesManageScreen() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
           >
+            {/* Inline error */}
+            {saveError ? (
+              <View style={[S.errorBanner, { backgroundColor: "#FEE2E2" }]}>
+                <Ionicons name="alert-circle-outline" size={16} color="#991B1B" />
+                <Text style={S.errorText}>{saveError}</Text>
+              </View>
+            ) : null}
+
             {/* Name */}
             <Text style={[S.label, { color: colors.mutedForeground }]}>COURSE NAME *</Text>
             <TextInput
               style={[S.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
-              value={fName} onChangeText={setFName}
+              value={fName} onChangeText={v => { setFName(v); setSaveError(null); }}
               placeholder="e.g. Beginner Gymnastics" placeholderTextColor={colors.mutedForeground}
             />
 
@@ -327,7 +367,7 @@ export default function AdminCoursesManageScreen() {
                     return (
                       <Pressable
                         key={d.id}
-                        onPress={() => setFDiscipline(d.name)}
+                        onPress={() => { setFDiscipline(d.name); setSaveError(null); }}
                         style={[S.chip, {
                           backgroundColor: active ? colors.primary : colors.card,
                           borderColor: active ? colors.primary : colors.border,
@@ -344,7 +384,7 @@ export default function AdminCoursesManageScreen() {
             ) : null}
             <TextInput
               style={[S.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
-              value={fDiscipline} onChangeText={setFDiscipline}
+              value={fDiscipline} onChangeText={v => { setFDiscipline(v); setSaveError(null); }}
               placeholder="e.g. Gymnastics" placeholderTextColor={colors.mutedForeground}
             />
 
@@ -483,10 +523,16 @@ const S = StyleSheet.create({
   metaChip:       { flexDirection: "row", alignItems: "center", gap: 4, backgroundColor: "rgba(0,0,0,0.04)", paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 },
   metaText:       { fontSize: 11, fontWeight: "600" },
   cardDesc:       { fontSize: 12, lineHeight: 17, marginBottom: 6 },
-  cardActions:    { flexDirection: "row", gap: 8, marginTop: 4 },
-  actionBtn:      { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  cardActions:    { flexDirection: "row", alignItems: "center", gap: 8, marginTop: 4 },
+  actionBtn:      { paddingHorizontal: 12, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center" },
+  actionLabel:    { fontSize: 12, fontWeight: "700" },
+  confirmText:    { flex: 1, fontSize: 12, fontWeight: "600" },
   levelBadge:     { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
   levelBadgeText: { fontSize: 11, fontWeight: "700" },
+
+  // Error banner
+  errorBanner:    { flexDirection: "row", alignItems: "center", gap: 8, borderRadius: 10, padding: 12, marginBottom: 12 },
+  errorText:      { flex: 1, fontSize: 13, color: "#991B1B", fontWeight: "600" },
 
   // Modal
   modal:          { flex: 1 },
@@ -505,6 +551,6 @@ const S = StyleSheet.create({
   switchRow:      { flexDirection: "row", alignItems: "center", gap: 12, borderWidth: 1.5, borderRadius: 14, padding: 14, marginTop: 12, marginBottom: 4 },
   switchLabel:    { fontSize: 14, fontWeight: "700" },
   switchSub:      { fontSize: 11, marginTop: 2 },
-  saveBtn:        { borderRadius: 14, paddingVertical: 16, alignItems: "center", marginTop: 20 },
-  saveBtnText:    { color: "#FFF", fontWeight: "800", fontSize: 16 },
+  saveBtn:        { borderRadius: 14, paddingVertical: 15, alignItems: "center", marginTop: 20 },
+  saveBtnText:    { color: "#FFF", fontWeight: "700", fontSize: 15 },
 });

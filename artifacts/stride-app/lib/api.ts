@@ -1692,6 +1692,7 @@ export interface ApiCourse {
   description?: string;
   days_of_week?: string;
   start_date?: string;
+  requires_approval?: boolean;
   instructor?: { id: number; name: string } | null;
   venue?: { id: number; name: string } | null;
 }

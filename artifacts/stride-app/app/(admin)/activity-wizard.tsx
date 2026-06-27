@@ -360,7 +360,7 @@ export default function ActivityWizard() {
           requires_approval: false,
         });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        router.replace("/(admin)/courses" as never);
+        router.back();
 
       } else if (activityType === "workshop" || activityType === "single") {
         if (!evtTitle.trim() || !evtDate || !evtStartTime) {
