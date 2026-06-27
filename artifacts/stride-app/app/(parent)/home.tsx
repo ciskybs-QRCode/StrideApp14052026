@@ -671,8 +671,8 @@ export default function ParentHome() {
                   style={({ pressed }) => [styles.paidLessonCard, { backgroundColor: colors.card, borderColor: colors.primary, opacity: pressed ? 0.9 : 1 }]}
                   onPress={() => setSelectedLesson(lesson)}
                 >
-                  <View style={[styles.paidLessonIcon, { backgroundColor: colors.secondary + "33" }]}>
-                    <Ionicons name="star" size={20} color={colors.secondary} />
+                  <View style={[styles.paidLessonIcon, { backgroundColor: colors.muted }]}>
+                    <Ionicons name="star" size={20} color={colors.primary} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.paidLessonTitle, { color: colors.primary }]} numberOfLines={1}>{discipline}</Text>
@@ -701,8 +701,8 @@ export default function ParentHome() {
             style={({ pressed }) => [styles.featureBanner, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
             onPress={() => router.push("/(parent)/marketplace" as Parameters<typeof router.push>[0])}
           >
-            <View style={[styles.featureBannerIcon, { backgroundColor: "rgba(251,191,36,0.15)" }]}>
-              <Ionicons name="storefront" size={22} color={colors.secondary} />
+            <View style={[styles.featureBannerIcon, { backgroundColor: colors.muted }]}>
+              <Ionicons name="storefront" size={22} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
               <Text style={[styles.featureBannerTitle, { color: colors.primary }]}>Marketplace</Text>
