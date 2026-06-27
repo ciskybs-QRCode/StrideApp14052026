@@ -238,13 +238,9 @@ export default function CartScreen() {
   };
 
   const handleRemove = (id: string, name: string) => {
-    Alert.alert("Remove Item", `Remove "${name}" from cart?`, [
-      { text: "Cancel", style: "cancel" },
-      { text: "Remove", style: "destructive", onPress: () => {
-        removeItem(id);
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-      }},
-    ]);
+    removeItem(id);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    showSnack(`"${name}" removed from cart`);
   };
 
   const allPending = items.length > 0 && items.every(i => i.status === "pending_approval");
@@ -259,13 +255,14 @@ export default function CartScreen() {
         </Pressable>
         <Text style={[styles.headerTitle, { color: colors.primary }]}>Shopping Cart</Text>
         {count > 0 ? (
-          <Pressable style={styles.clearBtn} onPress={() => Alert.alert("Clear Cart", "Remove all items?", [
-            { text: "Cancel", style: "cancel" },
-            { text: "Clear All", style: "destructive", onPress: () => { clearCart(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); } },
-          ])}>
-            <Text style={[styles.clearBtnText, { color: "#EF4444" }]}>Clear</Text>
+          <Pressable
+            style={[styles.clearBtn, { flexDirection: "row", alignItems: "center", gap: 4 }]}
+            onPress={() => { clearCart(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); showSnack("Cart emptied"); }}
+          >
+            <Ionicons name="trash-outline" size={14} color="#EF4444" />
+            <Text style={[styles.clearBtnText, { color: "#EF4444" }]}>Empty Cart</Text>
           </Pressable>
-        ) : <View style={{ width: 50 }} />}
+        ) : <View style={{ width: 80 }} />}
       </View>
 
       {/* Empty State */}
