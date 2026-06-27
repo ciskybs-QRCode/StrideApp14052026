@@ -353,6 +353,7 @@ export const api = {
     description?: string; instructor_id?: number | null; venue_id?: number | null;
     start_date?: string | null; end_date?: string | null; recurring_pattern?: string | null;
     days_of_week?: number[]; requires_approval?: boolean;
+    min_weekly_hours?: number | null; max_weekly_hours?: number | null;
   }) => request<ApiCourse>("POST", "/courses", data),
   updateCourse: (id: number, data: Partial<{
     name: string; discipline: string; type: string; level: string;
@@ -360,6 +361,7 @@ export const api = {
     description: string; instructor_id: number | null; venue_id: number | null;
     start_date: string | null; end_date: string | null; recurring_pattern: string | null;
     days_of_week: number[]; requires_approval: boolean; confirmation_status: string;
+    min_weekly_hours: number | null; max_weekly_hours: number | null;
   }>) => request<ApiCourse>("PATCH", `/courses/${id}`, data),
   deleteCourse: (id: number) => request<void>("DELETE", `/courses/${id}`),
   unenroll: (enrollmentId: number) => request<void>("DELETE", `/enrollments/${enrollmentId}`),
@@ -1695,6 +1697,8 @@ export interface ApiCourse {
   requires_approval?: boolean;
   instructor?: { id: number; name: string } | null;
   venue?: { id: number; name: string } | null;
+  min_weekly_hours?: number | null;
+  max_weekly_hours?: number | null;
 }
 
 export interface ApiEnrollment {

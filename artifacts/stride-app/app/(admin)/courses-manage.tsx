@@ -78,6 +78,8 @@ export default function AdminCoursesManageScreen() {
   const [fDescription,     setFDescription]     = useState("");
   const [fDays,            setFDays]            = useState<boolean[]>(Array(7).fill(false));
   const [fRequireApproval, setFRequireApproval] = useState(false);
+  const [fMinHrs,          setFMinHrs]          = useState("");
+  const [fMaxHrs,          setFMaxHrs]          = useState("");
 
   // ── Load ─────────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
@@ -104,6 +106,7 @@ export default function AdminCoursesManageScreen() {
     setFAgeMin("3"); setFAgeMax("18"); setFCapacity("15");
     setFPrice("0"); setFDescription("");
     setFDays(Array(7).fill(false)); setFRequireApproval(false);
+    setFMinHrs(""); setFMaxHrs("");
     setEditing(null); setSaveError(null);
   };
 
@@ -129,6 +132,8 @@ export default function AdminCoursesManageScreen() {
     }
     setFDays(dArr);
     setFRequireApproval(!!c.requires_approval);
+    setFMinHrs(c.min_weekly_hours != null ? String(c.min_weekly_hours) : "");
+    setFMaxHrs(c.max_weekly_hours != null ? String(c.max_weekly_hours) : "");
     setSaveError(null);
     setShowModal(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -144,6 +149,8 @@ export default function AdminCoursesManageScreen() {
     const ageMax   = parseInt(fAgeMax, 10) || 18;
     const capacity = parseInt(fCapacity, 10) || 15;
     const daysArr  = fDays.map((on, i) => on ? i : -1).filter(i => i >= 0);
+    const minHrs   = fMinHrs.trim() ? parseFloat(fMinHrs.replace(",", ".")) : null;
+    const maxHrs   = fMaxHrs.trim() ? parseFloat(fMaxHrs.replace(",", ".")) : null;
 
     setSaving(true);
     try {
@@ -153,6 +160,7 @@ export default function AdminCoursesManageScreen() {
           age_min: ageMin, age_max: ageMax, capacity, price,
           description: fDescription.trim() || undefined,
           days_of_week: daysArr, requires_approval: fRequireApproval,
+          min_weekly_hours: minHrs, max_weekly_hours: maxHrs,
         });
       } else {
         await api.createCourse({
@@ -160,6 +168,7 @@ export default function AdminCoursesManageScreen() {
           age_min: ageMin, age_max: ageMax, capacity, price,
           description: fDescription.trim() || undefined,
           days_of_week: daysArr, requires_approval: fRequireApproval,
+          min_weekly_hours: minHrs, max_weekly_hours: maxHrs,
         });
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -269,6 +278,18 @@ export default function AdminCoursesManageScreen() {
                   <View style={S.metaChip}>
                     <Ionicons name="calendar-outline" size={12} color={colors.mutedForeground} />
                     <Text style={[S.metaText, { color: colors.mutedForeground }]}>{daysStr}</Text>
+                  </View>
+                )}
+                {(c.min_weekly_hours != null || c.max_weekly_hours != null) && (
+                  <View style={S.metaChip}>
+                    <Ionicons name="time-outline" size={12} color={colors.mutedForeground} />
+                    <Text style={[S.metaText, { color: colors.mutedForeground }]}>
+                      {c.min_weekly_hours != null && c.max_weekly_hours != null
+                        ? `${c.min_weekly_hours}–${c.max_weekly_hours} h/wk`
+                        : c.min_weekly_hours != null
+                        ? `≥${c.min_weekly_hours} h/wk`
+                        : `≤${c.max_weekly_hours} h/wk`}
+                    </Text>
                   </View>
                 )}
               </View>
@@ -468,6 +489,30 @@ export default function AdminCoursesManageScreen() {
               })}
             </View>
 
+            {/* Weekly hours target */}
+            <Text style={[S.label, { color: colors.mutedForeground }]}>WEEKLY HOURS TARGET (optional)</Text>
+            <View style={[S.twoCol, { marginBottom: 4 }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[S.subLabel, { color: colors.mutedForeground }]}>Min hrs/wk</Text>
+                <TextInput
+                  style={[S.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
+                  value={fMinHrs} onChangeText={setFMinHrs}
+                  keyboardType="decimal-pad" placeholder="e.g. 2" placeholderTextColor={colors.mutedForeground}
+                />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[S.subLabel, { color: colors.mutedForeground }]}>Max hrs/wk</Text>
+                <TextInput
+                  style={[S.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
+                  value={fMaxHrs} onChangeText={setFMaxHrs}
+                  keyboardType="decimal-pad" placeholder="e.g. 6" placeholderTextColor={colors.mutedForeground}
+                />
+              </View>
+            </View>
+            <Text style={[S.hintText, { color: colors.mutedForeground }]}>
+              Used by AI schedule builder. Defaults to 1 h/wk if left blank.
+            </Text>
+
             {/* Description */}
             <Text style={[S.label, { color: colors.mutedForeground }]}>DESCRIPTION</Text>
             <TextInput
@@ -553,4 +598,6 @@ const S = StyleSheet.create({
   switchSub:      { fontSize: 11, marginTop: 2 },
   saveBtn:        { borderRadius: 14, paddingVertical: 15, alignItems: "center", marginTop: 20 },
   saveBtnText:    { color: "#FFF", fontWeight: "700", fontSize: 15 },
+  subLabel:       { fontSize: 10, fontWeight: "700", marginBottom: 4 },
+  hintText:       { fontSize: 11, marginBottom: 12, lineHeight: 16, opacity: 0.7 },
 });
