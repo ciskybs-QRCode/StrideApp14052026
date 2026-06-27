@@ -167,10 +167,22 @@ router.post("/billing/checkout-session", requireAuth, requireRole("admin"), asyn
       welcomeCouponId = coupon.id;
     }
 
+    // Use pre-created Stripe Price IDs when available (preferred — avoids ad-hoc price creation).
+    // Fall back to price_data for environments where env vars are not yet set.
+    const STRIPE_PRICE_IDS: Record<string, string | undefined> = {
+      core:    process.env["STRIPE_PRICE_CORE"],
+      plus:    process.env["STRIPE_PRICE_PLUS"],
+      premium: process.env["STRIPE_PRICE_PREMIUM"],
+    };
+    const stripePriceId = STRIPE_PRICE_IDS[planTier];
+
     const session = await stripe.checkout.sessions.create({
       mode:     "subscription",
       customer: customerId,
-      line_items: [{
+      line_items: [stripePriceId ? {
+        price:    stripePriceId,
+        quantity: 1,
+      } : {
         price_data: {
           currency:     orgCurrency.toLowerCase(),
           product_data: { name: `Stride Platform — ${planName} Plan` },
