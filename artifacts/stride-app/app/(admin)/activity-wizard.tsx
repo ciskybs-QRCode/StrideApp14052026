@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   Alert,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   Pressable,
   ScrollView,
@@ -25,6 +26,11 @@ import {
   type ApiAiMatchResult,
   type ApiOperatorSkillSummary,
 } from "@/lib/api";
+import {
+  CalendarPicker,
+  TimePickerSheet,
+  NumberPickerSheet,
+} from "@/components/WizardPickers";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -209,6 +215,11 @@ export default function ActivityWizard() {
   const [ageMin,       setAgeMin]       = useState("5");
   const [ageMax,       setAgeMax]       = useState("18");
   const [capacity,     setCapacity]     = useState("15");
+
+  // ── Picker modal visibility
+  const [calPicker,  setCalPicker]  = useState<"start" | "end" | null>(null);
+  const [timePicker, setTimePicker] = useState<{ day: number; field: "start" | "end" } | null>(null);
+  const [numPicker,  setNumPicker]  = useState<"ageMin" | "ageMax" | "capacity" | null>(null);
 
   // ── Step 4: Pricing (Course)
   const [trialFree,      setTrialFree]      = useState(false);
@@ -520,27 +531,16 @@ export default function ActivityWizard() {
   );
 
   const renderStep3Course = () => {
-    const adj = (setter: (v: string) => void, val: string, delta: number, min: number, max: number) => {
-      const n = Math.max(min, Math.min(max, (parseInt(val) || min) + delta));
-      setter(String(n));
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    };
-
     const toggleDay = (i: number) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
       setSelectedDays(prev => {
         if (prev.includes(i)) {
           return prev.filter(d => d !== i);
         } else {
-          // Add default times for new day
           setDayTimes(dt => dt[i] ? dt : { ...dt, [i]: { start: "09:00", end: "10:00" } });
           return [...prev, i].sort((a, b) => a - b);
         }
       });
-    };
-
-    const updateDayTime = (day: number, field: "start" | "end", val: string) => {
-      setDayTimes(dt => ({ ...dt, [day]: { ...dt[day] ?? { start: "09:00", end: "10:00" }, [field]: fmtTime(val) } }));
     };
 
     return (
@@ -548,18 +548,36 @@ export default function ActivityWizard() {
         <Text style={[st.sectionTitle, { color: colors.foreground }]}>Season & Schedule</Text>
         <View style={{ height: 12 }} />
 
+        {/* ── Season Dates ── */}
         <Text style={[st.groupLabel, { color: colors.primary }]}>SEASON DATES</Text>
         <View style={{ flexDirection: "row", gap: 10, marginBottom: 18 }}>
           <View style={{ flex: 1 }}>
             <Text style={st.fieldLabel}>Starts</Text>
-            <TextInput value={startDate} onChangeText={t => setStartDate(fmtDate(t))} placeholder="DD/MM/YYYY" keyboardType="numeric" maxLength={10} placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+            <Pressable
+              style={[ps.pickerBtn, { backgroundColor: colors.card, borderColor: startDate ? colors.primary : colors.border }]}
+              onPress={() => { setCalPicker("start"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+            >
+              <Ionicons name="calendar-outline" size={15} color={startDate ? colors.primary : colors.mutedForeground} />
+              <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: startDate ? "600" : "400", color: startDate ? colors.foreground : colors.mutedForeground }}>
+                {startDate || "DD/MM/YYYY"}
+              </Text>
+            </Pressable>
           </View>
           <View style={{ flex: 1 }}>
             <Text style={st.fieldLabel}>Ends</Text>
-            <TextInput value={endDate} onChangeText={t => setEndDate(fmtDate(t))} placeholder="DD/MM/YYYY" keyboardType="numeric" maxLength={10} placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+            <Pressable
+              style={[ps.pickerBtn, { backgroundColor: colors.card, borderColor: endDate ? colors.primary : colors.border }]}
+              onPress={() => { setCalPicker("end"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+            >
+              <Ionicons name="calendar-outline" size={15} color={endDate ? colors.primary : colors.mutedForeground} />
+              <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: endDate ? "600" : "400", color: endDate ? colors.foreground : colors.mutedForeground }}>
+                {endDate || "DD/MM/YYYY"}
+              </Text>
+            </Pressable>
           </View>
         </View>
 
+        {/* ── Days ── */}
         <Text style={[st.groupLabel, { color: colors.primary }]}>DAYS  *  <Text style={{ fontWeight: "400", textTransform: "none", fontSize: 11 }}>Select one or more</Text></Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
           {DAY_SHORT.map((d, i) => {
@@ -573,40 +591,38 @@ export default function ActivityWizard() {
           })}
         </View>
 
+        {/* ── Day time rows ── */}
         {selectedDays.length > 0 && (
           <View style={{ gap: 8, marginBottom: 18 }}>
             {selectedDays.map(day => {
-              const times = dayTimes[day] ?? { start: "", end: "" };
+              const times = dayTimes[day] ?? { start: "09:00", end: "10:00" };
               return (
-                <View key={day} style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 10 }}>
+                <View key={day} style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 10, paddingVertical: 8 }}>
                   <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primary + "18", alignItems: "center", justifyContent: "center" }}>
                     <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>{DAY_SHORT[day]}</Text>
                   </View>
-                  <TextInput
-                    value={times.start}
-                    onChangeText={v => updateDayTime(day, "start", v)}
-                    placeholder="09:00"
-                    keyboardType="numeric"
-                    maxLength={5}
-                    placeholderTextColor={colors.mutedForeground}
-                    style={[st.textInput, { flex: 1, backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, textAlign: "center", fontSize: 17, fontWeight: "600", marginBottom: 0 }]}
-                  />
-                  <Text style={{ color: colors.mutedForeground, fontSize: 16 }}>→</Text>
-                  <TextInput
-                    value={times.end}
-                    onChangeText={v => updateDayTime(day, "end", v)}
-                    placeholder="10:00"
-                    keyboardType="numeric"
-                    maxLength={5}
-                    placeholderTextColor={colors.mutedForeground}
-                    style={[st.textInput, { flex: 1, backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, textAlign: "center", fontSize: 17, fontWeight: "600", marginBottom: 0 }]}
-                  />
+                  <Pressable
+                    style={[ps.timeBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    onPress={() => { setTimePicker({ day, field: "start" }); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                  >
+                    <Ionicons name="time-outline" size={13} color={colors.primary} />
+                    <Text style={{ fontSize: 16, fontWeight: "700", color: colors.foreground }}>{times.start || "09:00"}</Text>
+                  </Pressable>
+                  <Text style={{ color: colors.mutedForeground, fontSize: 15 }}>→</Text>
+                  <Pressable
+                    style={[ps.timeBtn, { backgroundColor: colors.background, borderColor: colors.border }]}
+                    onPress={() => { setTimePicker({ day, field: "end" }); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                  >
+                    <Ionicons name="time-outline" size={13} color={colors.primary} />
+                    <Text style={{ fontSize: 16, fontWeight: "700", color: colors.foreground }}>{times.end || "10:00"}</Text>
+                  </Pressable>
                 </View>
               );
             })}
           </View>
         )}
 
+        {/* ── Frequency ── */}
         <Text style={[st.groupLabel, { color: colors.primary }]}>FREQUENCY</Text>
         <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 18 }}>
           {FREQ_OPTIONS.map(opt => {
@@ -620,43 +636,38 @@ export default function ActivityWizard() {
           })}
         </View>
 
+        {/* ── Participants ── */}
         <Text style={[st.groupLabel, { color: colors.primary }]}>PARTICIPANTS</Text>
         <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
           <View style={{ flex: 1 }}>
             <Text style={st.fieldLabel}>Age min</Text>
-            <View style={st.stepper}>
-              <Pressable style={st.stepBtn} onPress={() => adj(setAgeMin, ageMin, -1, 0, 99)}>
-                <Ionicons name="remove" size={16} color={colors.foreground} />
-              </Pressable>
-              <Text style={[st.stepVal, { color: colors.foreground }]}>{ageMin}</Text>
-              <Pressable style={st.stepBtn} onPress={() => adj(setAgeMin, ageMin, 1, 0, 99)}>
-                <Ionicons name="add" size={16} color={colors.foreground} />
-              </Pressable>
-            </View>
+            <Pressable
+              style={[ps.numBtn, { backgroundColor: colors.card, borderColor: colors.primary }]}
+              onPress={() => { setNumPicker("ageMin"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+            >
+              <Text style={{ fontSize: 24, fontWeight: "700", color: colors.foreground }}>{ageMin}</Text>
+              <Text style={{ fontSize: 10, color: colors.mutedForeground }}>yrs</Text>
+            </Pressable>
           </View>
           <View style={{ flex: 1 }}>
             <Text style={st.fieldLabel}>Age max</Text>
-            <View style={st.stepper}>
-              <Pressable style={st.stepBtn} onPress={() => adj(setAgeMax, ageMax, -1, 1, 99)}>
-                <Ionicons name="remove" size={16} color={colors.foreground} />
-              </Pressable>
-              <Text style={[st.stepVal, { color: colors.foreground }]}>{ageMax}</Text>
-              <Pressable style={st.stepBtn} onPress={() => adj(setAgeMax, ageMax, 1, 1, 99)}>
-                <Ionicons name="add" size={16} color={colors.foreground} />
-              </Pressable>
-            </View>
+            <Pressable
+              style={[ps.numBtn, { backgroundColor: colors.card, borderColor: colors.primary }]}
+              onPress={() => { setNumPicker("ageMax"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+            >
+              <Text style={{ fontSize: 24, fontWeight: "700", color: colors.foreground }}>{ageMax}</Text>
+              <Text style={{ fontSize: 10, color: colors.mutedForeground }}>yrs</Text>
+            </Pressable>
           </View>
           <View style={{ flex: 1 }}>
             <Text style={st.fieldLabel}>Max spots</Text>
-            <View style={st.stepper}>
-              <Pressable style={st.stepBtn} onPress={() => adj(setCapacity, capacity, -1, 1, 999)}>
-                <Ionicons name="remove" size={16} color={colors.foreground} />
-              </Pressable>
-              <Text style={[st.stepVal, { color: colors.foreground }]}>{capacity}</Text>
-              <Pressable style={st.stepBtn} onPress={() => adj(setCapacity, capacity, 1, 1, 999)}>
-                <Ionicons name="add" size={16} color={colors.foreground} />
-              </Pressable>
-            </View>
+            <Pressable
+              style={[ps.numBtn, { backgroundColor: colors.card, borderColor: colors.primary }]}
+              onPress={() => { setNumPicker("capacity"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+            >
+              <Text style={{ fontSize: 24, fontWeight: "700", color: colors.foreground }}>{capacity}</Text>
+              <Text style={{ fontSize: 10, color: colors.mutedForeground }}>spots</Text>
+            </Pressable>
           </View>
         </View>
       </View>
@@ -957,6 +968,75 @@ export default function ActivityWizard() {
         )}
       </View>
       </KeyboardAvoidingView>
+
+      {/* ── Calendar picker modal ── */}
+      <Modal visible={!!calPicker} transparent animationType="fade">
+        <Pressable
+          style={[ps.overlay, { alignItems: "center", justifyContent: "center" }]}
+          onPress={() => setCalPicker(null)}
+        >
+          <Pressable onPress={() => {}}>
+            <CalendarPicker
+              value={calPicker === "start" ? startDate : endDate}
+              onConfirm={v => {
+                if (calPicker === "start") setStartDate(v);
+                else setEndDate(v);
+                setCalPicker(null);
+              }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ── Time picker modal ── */}
+      <Modal visible={!!timePicker} transparent animationType="slide">
+        <Pressable
+          style={[ps.overlay, { justifyContent: "flex-end" }]}
+          onPress={() => setTimePicker(null)}
+        >
+          <Pressable onPress={() => {}}>
+            <TimePickerSheet
+              value={timePicker
+                ? (dayTimes[timePicker.day]?.[timePicker.field] ?? (timePicker.field === "start" ? "09:00" : "10:00"))
+                : "09:00"}
+              onConfirm={v => {
+                if (timePicker) {
+                  const field = timePicker.field;
+                  const day   = timePicker.day;
+                  setDayTimes(dt => ({
+                    ...dt,
+                    [day]: { ...(dt[day] ?? { start: "09:00", end: "10:00" }), [field]: v },
+                  }));
+                }
+                setTimePicker(null);
+              }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ── Number picker modal ── */}
+      <Modal visible={!!numPicker} transparent animationType="slide">
+        <Pressable
+          style={[ps.overlay, { justifyContent: "flex-end" }]}
+          onPress={() => setNumPicker(null)}
+        >
+          <Pressable onPress={() => {}}>
+            <NumberPickerSheet
+              value={numPicker === "ageMin" ? ageMin : numPicker === "ageMax" ? ageMax : capacity}
+              min={numPicker === "ageMin" ? 0 : 1}
+              max={numPicker === "ageMin" || numPicker === "ageMax" ? 99 : 150}
+              label={numPicker === "ageMin" ? "Minimum Age" : numPicker === "ageMax" ? "Maximum Age" : "Max Spots"}
+              onConfirm={v => {
+                if (numPicker === "ageMin")      setAgeMin(v);
+                else if (numPicker === "ageMax") setAgeMax(v);
+                else                             setCapacity(v);
+                setNumPicker(null);
+              }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -1001,4 +1081,12 @@ const st = StyleSheet.create({
   navBackText:{ fontSize: 15, fontWeight: "600" },
   navNext:    { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 15, borderRadius: 14 },
   navNextText:{ fontSize: 15, fontWeight: "700", color: "#fff" },
+});
+
+// ── Picker trigger styles (form-side buttons that open pickers) ───────────────
+const ps = StyleSheet.create({
+  overlay:   { flex: 1, backgroundColor: "rgba(0,0,0,0.55)" },
+  pickerBtn: { flexDirection: "row", alignItems: "center", gap: 8, borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 12, paddingVertical: 13 },
+  timeBtn:   { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, borderWidth: 1.5, borderRadius: 10, paddingVertical: 10 },
+  numBtn:    { alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderRadius: 12, paddingVertical: 12, gap: 2 },
 });
