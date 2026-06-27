@@ -210,6 +210,11 @@ const DEFAULT_INFO: SchoolInfo = {
         phone:   org.contact_phone    || prev.phone,
         email:   org.official_email   || prev.email,
       }));
+      // Pre-fill WhatsApp from backend if not already in AsyncStorage
+      if (org.whatsapp_number) {
+        setSocial(prev => prev.whatsapp ? prev : { ...prev, whatsapp: org.whatsapp_number! });
+        setDraftSocial(prev => prev.whatsapp ? prev : { ...prev, whatsapp: org.whatsapp_number! });
+      }
     } catch { /* keep defaults — API unavailable */ }
     // Load campuses from AsyncStorage
     try {
@@ -280,6 +285,10 @@ const DEFAULT_INFO: SchoolInfo = {
     try {
       await AsyncStorage.setItem(SOCIAL_KEY, JSON.stringify(draftSocial));
     } catch { /* non-fatal */ }
+    // Persist the WhatsApp number server-side so all parent devices can read it
+    if (draftSocial.whatsapp !== undefined) {
+      api.updateOrg({ whatsapp_number: draftSocial.whatsapp || null } as Parameters<typeof api.updateOrg>[0]).catch(() => {});
+    }
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     Alert.alert("Saved", "Social media links updated.");
   };

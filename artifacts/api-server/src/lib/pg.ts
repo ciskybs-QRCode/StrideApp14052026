@@ -1657,6 +1657,13 @@ export async function ensureTables(): Promise<void> {
       ADD COLUMN IF NOT EXISTS test_whatsapp_sent_at TIMESTAMPTZ;
   `).catch(() => {});
 
+  // ── Public WhatsApp contact number on organizations (Supabase) ────────────
+  // Stored server-side so all parent devices see the same number without
+  // relying on AsyncStorage (which is device-local to the admin only).
+  // We use a raw Supabase RPC call at runtime; the ALTER TABLE runs via pg pool
+  // only to keep a record — the actual column lives in Supabase.
+  // No pg pool ALTER needed here because organizations is a Supabase table.
+
   // ── Schema migrations ──────────────────────────────────────────────────────
   // Re-point enrollments.child_id FK to members table (original pointed to
   // the empty `children` table which blocked all enrollment inserts).

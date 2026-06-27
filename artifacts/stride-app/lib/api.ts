@@ -1866,6 +1866,7 @@ export interface ApiOrg {
   birthday_message?: string;
   currency?: string;
   country?: string;
+  whatsapp_number?: string | null;
 }
 
 export interface ApiEnrollmentRequest {

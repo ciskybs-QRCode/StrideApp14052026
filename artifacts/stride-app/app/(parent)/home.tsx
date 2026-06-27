@@ -131,6 +131,7 @@ export default function ParentHome() {
   const [showSOSModal, setShowSOSModal] = useState(false);
   const [orgContactPhone, setOrgContactPhone] = useState("");
   const [orgContactEmail, setOrgContactEmail] = useState("");
+  const [orgWhatsApp, setOrgWhatsApp] = useState("");
   const [social, setSocial] = useState<Record<string, string>>({});
 
   // ── Emergency Pulse ────────────────────────────────────────────────────────
@@ -220,6 +221,7 @@ export default function ParentHome() {
       if (org.logo_url) setOrgLogoUri(org.logo_url);
       if (org.contact_phone) setOrgContactPhone(org.contact_phone);
       if (org.official_email) setOrgContactEmail(org.official_email);
+      if (org.whatsapp_number) setOrgWhatsApp(org.whatsapp_number);
     }).catch(() => {});
   }, []);
 
@@ -720,18 +722,19 @@ export default function ParentHome() {
         {/* Contact */}
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Contact the Office</Text>
         <View style={[styles.contactCard, { backgroundColor: colors.card }]}>
-          {(orgContactPhone || orgContactEmail || social.whatsapp) ? (
+          {(orgContactPhone || orgContactEmail || orgWhatsApp || social.whatsapp) ? (
             <View style={styles.contactRow}>
-              {!!(social.whatsapp || orgContactPhone) && (
+              {!!(orgWhatsApp || social.whatsapp || orgContactPhone) && (
                 <Pressable
-                  style={[styles.contactBtn, { backgroundColor: "rgba(30,58,138,0.1)" }]}
+                  style={[styles.contactBtn, { backgroundColor: "#25D36618" }]}
                   onPress={() => {
-                    const num = (social.whatsapp || orgContactPhone).replace(/\D/g, "");
+                    const raw = orgWhatsApp || social.whatsapp || orgContactPhone;
+                    const num = raw.replace(/\D/g, "");
                     Linking.openURL(`https://wa.me/${num}`);
                   }}
                 >
-                  <Ionicons name="logo-whatsapp" size={22} color={colors.primary} />
-                  <Text style={[styles.contactBtnText, { color: colors.primary }]}>WhatsApp</Text>
+                  <Ionicons name="logo-whatsapp" size={22} color="#25D366" />
+                  <Text style={[styles.contactBtnText, { color: "#25D366" }]}>WhatsApp</Text>
                 </Pressable>
               )}
               {!!orgContactEmail && (
