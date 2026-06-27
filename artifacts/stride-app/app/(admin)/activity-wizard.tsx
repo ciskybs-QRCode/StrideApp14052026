@@ -317,38 +317,50 @@ export default function ActivityWizard() {
         if (selectedDays.length === 0) {
           Alert.alert("Incomplete", "Select at least one day of the week."); setSaving(false); return;
         }
-        const freq = FREQ_OPTIONS.find(f => f.key === freqKey) ?? FREQ_OPTIONS[0];
-        const sharedParams = {
-          disciplineName:           disciplineName.trim() || undefined,
-          courseName:               courseName.trim() || undefined,
-          skillLevel:               levelName.trim() || undefined,
-          startDate:                parseDate(startDate) ?? undefined,
-          billingEndDate:           parseDate(endDate) ?? undefined,
-          weekInterval:             freq.interval,
-          ageMin:                   parseInt(ageMin) || 5,
-          ageMax:                   parseInt(ageMax) || 18,
-          capacity:                 parseInt(capacity) || undefined,
-          trialLessonFree:          trialFree,
-          pricePerLessonCents:      eurosToCents(priceLesson) || undefined,
-          packageSize:              bundleEnabled ? parseInt(bundleSize) || undefined : undefined,
-          packagePriceCents:        bundleEnabled ? eurosToCents(bundlePrice) || undefined : undefined,
-          monthlyPriceCents:        monthlyEnabled ? eurosToCents(monthlyPrice) || undefined : undefined,
-          pricePerYearCents:        annualEnabled ? eurosToCents(annualPrice) || undefined : undefined,
-          paymentType:              monthlyEnabled ? "monthly_billing" : bundleEnabled ? "package" : "single",
-          operatorProfileId:        operatorProfileId ?? undefined,
-          operatorPayOverrideCents: payOverride ? eurosToCents(payOverride) : undefined,
-          notes:                    courseNotes.trim() || undefined,
-        } as const;
-        for (const day of selectedDays) {
-          const times = dayTimes[day] ?? { start: "09:00", end: "10:00" };
-          await api.createScheduledCourse({ ...sharedParams, dayOfWeek: day, startTime: times.start, endTime: times.end });
+        if (!disciplineName.trim()) {
+          Alert.alert("Incomplete", "A discipline name is required."); setSaving(false); return;
         }
+        const freqOpt = FREQ_OPTIONS.find(f => f.key === freqKey) ?? FREQ_OPTIONS[0];
+
+        // Build a readable schedule string for display in the member courses list
+        const scheduleStr = selectedDays
+          .map(d => { const t = dayTimes[d]; return `${DAY_LONG[d]} ${t?.start ?? "09:00"}–${t?.end ?? "10:00"}`; })
+          .join(", ") + ` · ${freqOpt.label}`;
+
+        // Encode pricing details into description
+        const pricingParts: string[] = [];
+        if (trialFree) pricingParts.push("Free trial");
+        if (priceLesson) pricingParts.push(`€${priceLesson}/lesson`);
+        if (bundleEnabled && bundlePrice) pricingParts.push(`${bundleSize}×bundle €${bundlePrice}`);
+        if (monthlyEnabled && monthlyPrice) pricingParts.push(`€${monthlyPrice}/month`);
+        if (annualEnabled && annualPrice) pricingParts.push(`€${annualPrice}/year`);
+        const pricingStr = pricingParts.join(" · ");
+        const descParts = [courseNotes.trim(), pricingStr].filter(Boolean);
+
+        // Resolve instructor user_id from operator profile selection
+        const instructorUserId = operatorProfileId
+          ? (operatorSkillsAll.find(o => o.operator_profile_id === operatorProfileId)?.operator_user_id ?? null)
+          : null;
+
+        await api.createCourse({
+          name:             (courseName.trim() || disciplineName.trim()),
+          discipline:       disciplineName.trim(),
+          type:             "recurring",
+          level:            levelName.trim() || "open",
+          age_min:          parseInt(ageMin) || 5,
+          age_max:          parseInt(ageMax) || 18,
+          capacity:         parseInt(capacity) || 15,
+          price:            priceLesson ? parseFloat(priceLesson) : 0,
+          instructor_id:    instructorUserId,
+          start_date:       parseDate(startDate) ?? undefined,
+          end_date:         parseDate(endDate) ?? undefined,
+          days_of_week:     selectedDays,
+          recurring_pattern: scheduleStr,
+          description:      descParts.join(" | ") || undefined,
+          requires_approval: false,
+        });
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        Alert.alert("Course Created!", operatorProfileId
-          ? "The instructor will receive a confirmation request."
-          : "The course has been saved. You can assign an instructor later.",
-          [{ text: "Done", onPress: () => router.back() }],
-        );
+        router.replace("/(admin)/courses" as never);
 
       } else if (activityType === "workshop" || activityType === "single") {
         if (!evtTitle.trim() || !evtDate || !evtStartTime) {
