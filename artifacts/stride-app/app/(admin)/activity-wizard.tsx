@@ -35,6 +35,15 @@ type ActivityType = "course" | "workshop" | "private" | "single";
 const DAY_SHORT = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const DAY_LONG  = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 
+const FREQ_OPTIONS: { key: string; label: string; interval: number }[] = [
+  { key: "weekly",     label: "Every week",     interval: 1  },
+  { key: "biweekly",   label: "Bi-weekly",      interval: 2  },
+  { key: "monthly",    label: "Monthly",        interval: 4  },
+  { key: "bimonthly",  label: "Every 2 months", interval: 8  },
+  { key: "quarterly",  label: "Quarterly",      interval: 13 },
+  { key: "semiannual", label: "Every 6 months", interval: 26 },
+];
+
 function fmtTime(raw: string): string {
   const d = raw.replace(/\D/g, "").slice(0, 4);
   if (d.length <= 2) return d;
@@ -194,10 +203,9 @@ export default function ActivityWizard() {
   // ── Step 3: Season & Schedule (Course)
   const [startDate,    setStartDate]    = useState("");
   const [endDate,      setEndDate]      = useState("");
-  const [dayOfWeek,    setDayOfWeek]    = useState<number | null>(null);
-  const [startTime,    setStartTime]    = useState("");
-  const [endTime,      setEndTime]      = useState("");
-  const [weekInterval, setWeekInterval] = useState<1 | 2>(1);
+  const [selectedDays, setSelectedDays] = useState<number[]>([]);
+  const [dayTimes,     setDayTimes]     = useState<Record<number, { start: string; end: string }>>({});
+  const [freqKey,      setFreqKey]      = useState("weekly");
   const [ageMin,       setAgeMin]       = useState("5");
   const [ageMax,       setAgeMax]       = useState("18");
   const [capacity,     setCapacity]     = useState("15");
@@ -276,13 +284,14 @@ export default function ActivityWizard() {
     }
     if (step === 3) {
       if (activityType === "course") {
-        if (dayOfWeek === null) { Alert.alert("Required", "Select a day of the week."); return; }
-        if (!startTime || !endTime) { Alert.alert("Required", "Enter start and end times."); return; }
+        if (selectedDays.length === 0) { Alert.alert("Required", "Select at least one day of the week."); return; }
+        const hasAllTimes = selectedDays.every(d => dayTimes[d]?.start && dayTimes[d]?.end);
+        if (!hasAllTimes) { Alert.alert("Required", "Set start and end times for each selected day."); return; }
       }
       setStep(4); return;
     }
     setStep(s => Math.min(s + 1, maxStep));
-  }, [step, activityType, disciplineName, evtTitle, dayOfWeek, startTime, endTime]);
+  }, [step, activityType, disciplineName, evtTitle, selectedDays, dayTimes]);
 
   const handleBack = useCallback(() => {
     if (step === 1) { router.back(); return; }
@@ -305,33 +314,35 @@ export default function ActivityWizard() {
     setSaving(true);
     try {
       if (activityType === "course") {
-        if (dayOfWeek === null || !startTime || !endTime) {
-          Alert.alert("Incomplete", "Day, start time and end time are required."); setSaving(false); return;
+        if (selectedDays.length === 0) {
+          Alert.alert("Incomplete", "Select at least one day of the week."); setSaving(false); return;
         }
-        await api.createScheduledCourse({
-          disciplineName:          disciplineName.trim() || undefined,
-          courseName:              courseName.trim() || undefined,
-          skillLevel:              levelName.trim() || undefined,
-          startDate:               parseDate(startDate) ?? undefined,
-          billingEndDate:          parseDate(endDate) ?? undefined,
-          dayOfWeek:               dayOfWeek,
-          startTime:               startTime,
-          endTime:                 endTime,
-          weekInterval:            weekInterval,
-          ageMin:                  parseInt(ageMin) || 5,
-          ageMax:                  parseInt(ageMax) || 18,
-          capacity:                parseInt(capacity) || undefined,
-          trialLessonFree:         trialFree,
-          pricePerLessonCents:     eurosToCents(priceLesson) || undefined,
-          packageSize:             bundleEnabled ? parseInt(bundleSize) || undefined : undefined,
-          packagePriceCents:       bundleEnabled ? eurosToCents(bundlePrice) || undefined : undefined,
-          monthlyPriceCents:       monthlyEnabled ? eurosToCents(monthlyPrice) || undefined : undefined,
-          pricePerYearCents:       annualEnabled ? eurosToCents(annualPrice) || undefined : undefined,
-          paymentType:             monthlyEnabled ? "monthly_billing" : bundleEnabled ? "package" : "single",
-          operatorProfileId:       operatorProfileId ?? undefined,
+        const freq = FREQ_OPTIONS.find(f => f.key === freqKey) ?? FREQ_OPTIONS[0];
+        const sharedParams = {
+          disciplineName:           disciplineName.trim() || undefined,
+          courseName:               courseName.trim() || undefined,
+          skillLevel:               levelName.trim() || undefined,
+          startDate:                parseDate(startDate) ?? undefined,
+          billingEndDate:           parseDate(endDate) ?? undefined,
+          weekInterval:             freq.interval,
+          ageMin:                   parseInt(ageMin) || 5,
+          ageMax:                   parseInt(ageMax) || 18,
+          capacity:                 parseInt(capacity) || undefined,
+          trialLessonFree:          trialFree,
+          pricePerLessonCents:      eurosToCents(priceLesson) || undefined,
+          packageSize:              bundleEnabled ? parseInt(bundleSize) || undefined : undefined,
+          packagePriceCents:        bundleEnabled ? eurosToCents(bundlePrice) || undefined : undefined,
+          monthlyPriceCents:        monthlyEnabled ? eurosToCents(monthlyPrice) || undefined : undefined,
+          pricePerYearCents:        annualEnabled ? eurosToCents(annualPrice) || undefined : undefined,
+          paymentType:              monthlyEnabled ? "monthly_billing" : bundleEnabled ? "package" : "single",
+          operatorProfileId:        operatorProfileId ?? undefined,
           operatorPayOverrideCents: payOverride ? eurosToCents(payOverride) : undefined,
-          notes:                   courseNotes.trim() || undefined,
-        });
+          notes:                    courseNotes.trim() || undefined,
+        } as const;
+        for (const day of selectedDays) {
+          const times = dayTimes[day] ?? { start: "09:00", end: "10:00" };
+          await api.createScheduledCourse({ ...sharedParams, dayOfWeek: day, startTime: times.start, endTime: times.end });
+        }
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Alert.alert("Course Created!", operatorProfileId
           ? "The instructor will receive a confirmation request."
@@ -502,13 +513,31 @@ export default function ActivityWizard() {
       setter(String(n));
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     };
+
+    const toggleDay = (i: number) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setSelectedDays(prev => {
+        if (prev.includes(i)) {
+          return prev.filter(d => d !== i);
+        } else {
+          // Add default times for new day
+          setDayTimes(dt => dt[i] ? dt : { ...dt, [i]: { start: "09:00", end: "10:00" } });
+          return [...prev, i].sort((a, b) => a - b);
+        }
+      });
+    };
+
+    const updateDayTime = (day: number, field: "start" | "end", val: string) => {
+      setDayTimes(dt => ({ ...dt, [day]: { ...dt[day] ?? { start: "09:00", end: "10:00" }, [field]: fmtTime(val) } }));
+    };
+
     return (
       <View style={{ gap: 4 }}>
         <Text style={[st.sectionTitle, { color: colors.foreground }]}>Season & Schedule</Text>
         <View style={{ height: 12 }} />
 
         <Text style={[st.groupLabel, { color: colors.primary }]}>SEASON DATES</Text>
-        <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
+        <View style={{ flexDirection: "row", gap: 10, marginBottom: 18 }}>
           <View style={{ flex: 1 }}>
             <Text style={st.fieldLabel}>Starts</Text>
             <TextInput value={startDate} onChangeText={t => setStartDate(fmtDate(t))} placeholder="DD/MM/YYYY" keyboardType="numeric" maxLength={10} placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
@@ -519,42 +548,61 @@ export default function ActivityWizard() {
           </View>
         </View>
 
-        <Text style={[st.groupLabel, { color: colors.primary }]}>DAY OF WEEK  *</Text>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 18 }}>
+        <Text style={[st.groupLabel, { color: colors.primary }]}>DAYS  *  <Text style={{ fontWeight: "400", textTransform: "none", fontSize: 11 }}>Select one or more</Text></Text>
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
           {DAY_SHORT.map((d, i) => {
-            const sel = dayOfWeek === i;
+            const sel = selectedDays.includes(i);
             return (
               <Pressable key={i} style={[st.dayPill, { backgroundColor: sel ? colors.primary : colors.card, borderColor: sel ? colors.primary : colors.border }]}
-                onPress={() => { setDayOfWeek(i); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
+                onPress={() => toggleDay(i)}>
                 <Text style={{ fontSize: 13, fontWeight: "600", color: sel ? "#fff" : colors.foreground }}>{d}</Text>
               </Pressable>
             );
           })}
         </View>
 
-        <Text style={[st.groupLabel, { color: colors.primary }]}>TIME  *</Text>
-        <View style={{ flexDirection: "row", gap: 10, marginBottom: 18 }}>
-          <View style={{ flex: 1 }}>
-            <Text style={st.fieldLabel}>Start</Text>
-            <TextInput value={startTime} onChangeText={t => setStartTime(fmtTime(t))} placeholder="09:00" keyboardType="numeric" maxLength={5} placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground, textAlign: "center", fontSize: 18, fontWeight: "600" }]} />
+        {selectedDays.length > 0 && (
+          <View style={{ gap: 8, marginBottom: 18 }}>
+            {selectedDays.map(day => {
+              const times = dayTimes[day] ?? { start: "", end: "" };
+              return (
+                <View key={day} style={{ flexDirection: "row", alignItems: "center", gap: 10, backgroundColor: colors.card, borderRadius: 12, borderWidth: 1, borderColor: colors.border, paddingHorizontal: 12, paddingVertical: 10 }}>
+                  <View style={{ width: 36, height: 36, borderRadius: 10, backgroundColor: colors.primary + "18", alignItems: "center", justifyContent: "center" }}>
+                    <Text style={{ fontSize: 11, fontWeight: "700", color: colors.primary }}>{DAY_SHORT[day]}</Text>
+                  </View>
+                  <TextInput
+                    value={times.start}
+                    onChangeText={v => updateDayTime(day, "start", v)}
+                    placeholder="09:00"
+                    keyboardType="numeric"
+                    maxLength={5}
+                    placeholderTextColor={colors.mutedForeground}
+                    style={[st.textInput, { flex: 1, backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, textAlign: "center", fontSize: 17, fontWeight: "600", marginBottom: 0 }]}
+                  />
+                  <Text style={{ color: colors.mutedForeground, fontSize: 16 }}>→</Text>
+                  <TextInput
+                    value={times.end}
+                    onChangeText={v => updateDayTime(day, "end", v)}
+                    placeholder="10:00"
+                    keyboardType="numeric"
+                    maxLength={5}
+                    placeholderTextColor={colors.mutedForeground}
+                    style={[st.textInput, { flex: 1, backgroundColor: colors.background, borderColor: colors.border, color: colors.foreground, textAlign: "center", fontSize: 17, fontWeight: "600", marginBottom: 0 }]}
+                  />
+                </View>
+              );
+            })}
           </View>
-          <View style={{ justifyContent: "flex-end", paddingBottom: 13 }}>
-            <Text style={{ fontSize: 18, color: colors.mutedForeground }}>→</Text>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={st.fieldLabel}>End</Text>
-            <TextInput value={endTime} onChangeText={t => setEndTime(fmtTime(t))} placeholder="10:00" keyboardType="numeric" maxLength={5} placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground, textAlign: "center", fontSize: 18, fontWeight: "600" }]} />
-          </View>
-        </View>
+        )}
 
         <Text style={[st.groupLabel, { color: colors.primary }]}>FREQUENCY</Text>
-        <View style={{ flexDirection: "row", gap: 10, marginBottom: 18 }}>
-          {([1, 2] as const).map(v => {
-            const sel = weekInterval === v;
+        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 18 }}>
+          {FREQ_OPTIONS.map(opt => {
+            const sel = freqKey === opt.key;
             return (
-              <Pressable key={v} style={[st.freqPill, { flex: 1, backgroundColor: sel ? colors.primary : colors.card, borderColor: sel ? colors.primary : colors.border }]}
-                onPress={() => { setWeekInterval(v); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
-                <Text style={{ fontSize: 14, fontWeight: "600", color: sel ? "#fff" : colors.foreground }}>{v === 1 ? "Every week" : "Bi-weekly"}</Text>
+              <Pressable key={opt.key} style={[st.freqPill, { backgroundColor: sel ? colors.primary : colors.card, borderColor: sel ? colors.primary : colors.border, paddingHorizontal: 14, paddingVertical: 9 }]}
+                onPress={() => { setFreqKey(opt.key); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
+                <Text style={{ fontSize: 13, fontWeight: "600", color: sel ? "#fff" : colors.foreground }}>{opt.label}</Text>
               </Pressable>
             );
           })}
@@ -688,6 +736,15 @@ export default function ActivityWizard() {
       return parts.length > 0 ? parts.join(" · ") : "No pricing set";
     };
 
+    // Min enrollment calculation
+    const opRateCents = selectedOp?.contractor_rate_cents ?? 0;
+    const overrideCents = payOverride ? Math.round(parseFloat(payOverride) * 100) : 0;
+    const effectiveOpCostCents = overrideCents || opRateCents;
+    const lessonPriceCents = priceLesson ? Math.round(parseFloat(priceLesson) * 100) : 0;
+    const minEnrollment = (effectiveOpCostCents > 0 && lessonPriceCents > 0)
+      ? Math.ceil(effectiveOpCostCents / lessonPriceCents)
+      : null;
+
     return (
       <View style={{ gap: 4 }}>
         <Text style={[st.sectionTitle, { color: colors.foreground }]}>Instructor & Review</Text>
@@ -701,6 +758,15 @@ export default function ActivityWizard() {
           }
         </Pressable>
 
+        {aiMatchDone && (
+          <View style={{ flexDirection: "row", alignItems: "center", gap: 8, backgroundColor: aiMatches.length > 0 ? colors.primary + "12" : colors.border + "40", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10, marginTop: 6 }}>
+            <Ionicons name={aiMatches.length > 0 ? "checkmark-circle" : "information-circle"} size={18} color={aiMatches.length > 0 ? colors.primary : colors.mutedForeground} />
+            <Text style={{ fontSize: 13, color: aiMatches.length > 0 ? colors.primary : colors.mutedForeground, fontWeight: "600" }}>
+              {aiMatches.length > 0 ? `${aiMatches.length} match${aiMatches.length > 1 ? "es" : ""} found` : "No AI matches — showing all instructors"}
+            </Text>
+          </View>
+        )}
+
         <View style={{ height: 8 }} />
         <Text style={[st.groupLabel, { color: colors.primary }]}>
           {displayList ? "AI RECOMMENDATIONS" : "ALL INSTRUCTORS"}
@@ -711,10 +777,19 @@ export default function ActivityWizard() {
           : (displayList ?? operatorSkillsAll.map(op => ({ operator_profile_id: op.operator_profile_id, name: op.name, skills: op.skills, reason: undefined }))).map((item) => {
             const op = operatorSkillsAll.find(o => o.operator_profile_id === item.operator_profile_id);
             const isSelected = operatorProfileId === item.operator_profile_id;
+            const rateCents = op?.contractor_rate_cents ?? 0;
             return (
               <Pressable key={item.operator_profile_id}
                 style={[st.opCard, { backgroundColor: colors.card, borderColor: isSelected ? colors.primary : colors.border, borderWidth: isSelected ? 2 : 1 }]}
-                onPress={() => { setOperatorProfileId(isSelected ? null : item.operator_profile_id); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}>
+                onPress={() => {
+                  const newId = isSelected ? null : item.operator_profile_id;
+                  setOperatorProfileId(newId);
+                  if (newId && rateCents > 0 && !payOverride) {
+                    setPayOverride((rateCents / 100).toFixed(2));
+                  }
+                  if (!newId) setPayOverride("");
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}>
                 <View style={[st.opAvatar, { backgroundColor: colors.primary + "25" }]}>
                   <Text style={{ fontSize: 16, fontWeight: "700", color: colors.primary }}>
                     {(op?.name ?? "?").charAt(0).toUpperCase()}
@@ -724,6 +799,9 @@ export default function ActivityWizard() {
                   <Text style={{ fontSize: 15, fontWeight: "600", color: colors.foreground }}>{op?.name ?? "—"}</Text>
                   {op?.skills && op.skills.length > 0 && (
                     <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 2 }} numberOfLines={1}>{op.skills.slice(0, 4).join(" · ")}</Text>
+                  )}
+                  {rateCents > 0 && (
+                    <Text style={{ fontSize: 11, color: colors.primary + "cc", marginTop: 2 }}>€{(rateCents / 100).toFixed(2)}/h</Text>
                   )}
                   {item.reason ? (
                     <Text style={{ fontSize: 11, color: colors.primary, marginTop: 2 }} numberOfLines={1}>✦ {String(item.reason)}</Text>
@@ -737,12 +815,25 @@ export default function ActivityWizard() {
 
         {selectedOp && (
           <View style={{ marginTop: 8, marginBottom: 4 }}>
-            <Text style={st.fieldLabel}>Pay override (€/lesson, optional)</Text>
+            <Text style={st.fieldLabel}>Pay override (€/lesson)</Text>
+            {selectedOp.contractor_rate_cents ? (
+              <Text style={{ fontSize: 11, color: colors.mutedForeground, marginBottom: 6 }}>
+                Suggested from profile: €{(selectedOp.contractor_rate_cents / 100).toFixed(2)}/h — adjust if needed
+              </Text>
+            ) : null}
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
               <Text style={{ color: colors.mutedForeground }}>€</Text>
               <TextInput value={payOverride} onChangeText={setPayOverride} placeholder="0.00" keyboardType="decimal-pad" placeholderTextColor={colors.mutedForeground} style={[st.textInput, { flex: 1, backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
               <Text style={{ color: colors.mutedForeground, fontSize: 13 }}>/lesson</Text>
             </View>
+            {minEnrollment !== null && (
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 10, backgroundColor: colors.primary + "10", borderRadius: 10, paddingHorizontal: 14, paddingVertical: 10 }}>
+                <Ionicons name="people" size={16} color={colors.primary} />
+                <Text style={{ fontSize: 13, color: colors.primary, fontWeight: "600", flex: 1 }}>
+                  Min. {minEnrollment} student{minEnrollment > 1 ? "s" : ""} needed to cover instructor cost
+                </Text>
+              </View>
+            )}
           </View>
         )}
 
@@ -754,7 +845,10 @@ export default function ActivityWizard() {
               {(courseName || disciplineName) && <ReviewRow label="Course" value={courseName || disciplineName} />}
               {disciplineName && <ReviewRow label="Discipline" value={levelName ? `${disciplineName} · ${levelName}` : disciplineName} />}
               {(startDate || endDate) && <ReviewRow label="Season" value={[startDate, endDate].filter(Boolean).join(" → ")} />}
-              {dayOfWeek !== null && startTime && <ReviewRow label="Schedule" value={`${DAY_LONG[dayOfWeek]} ${startTime}–${endTime || "?"} · ${weekInterval === 1 ? "Weekly" : "Bi-weekly"}`} />}
+              {selectedDays.length > 0 && <ReviewRow label="Schedule" value={
+                selectedDays.map(d => { const t = dayTimes[d]; return `${DAY_LONG[d] ?? DAY_SHORT[d]} ${t?.start ?? "?"}–${t?.end ?? "?"}`; }).join(", ")
+                + ` · ${FREQ_OPTIONS.find(f => f.key === freqKey)?.label ?? "Weekly"}`
+              } />}
               <ReviewRow label="Pricing" value={priceSummary()} />
               <ReviewRow label="Participants" value={`${capacity} max · Age ${ageMin}–${ageMax}`} />
             </>

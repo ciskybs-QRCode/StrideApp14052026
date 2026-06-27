@@ -3948,6 +3948,8 @@ export interface ApiOperatorSkillSummary {
   name: string;
   skills_completed: boolean;
   skills: string[];
+  contractor_rate_cents?: number;
+  contractor_billing_unit?: string;
 }
 
 export interface ApiAiMatchResult {

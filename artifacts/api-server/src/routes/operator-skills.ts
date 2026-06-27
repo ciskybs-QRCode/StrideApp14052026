@@ -83,6 +83,16 @@ router.get("/operator-skills/all", requireAuth, requireRole("admin", "super_admi
       skillMap[r.operator_profile_id].push(r.label as string);
     }
 
+    // Fetch hourly rates from Supabase (contractor_rate_cents column on operator_profiles)
+    const { data: rateRows } = ids.length
+      ? await supabase.from("operator_profiles").select("id, contractor_rate_cents, contractor_billing_unit").in("id", ids)
+      : { data: [] };
+    const rateMap: Record<number, { cents: number; unit: string }> = {};
+    for (const r of rateRows ?? []) {
+      const row = r as { id: number; contractor_rate_cents?: number; contractor_billing_unit?: string };
+      rateMap[row.id] = { cents: row.contractor_rate_cents ?? 0, unit: row.contractor_billing_unit ?? "per_hour" };
+    }
+
     const result = (profiles ?? []).map((p: Record<string, unknown>) => {
       const u = p["user"] as { id?: number; name?: string } | null;
       const pid = p["id"] as number;
@@ -92,6 +102,8 @@ router.get("/operator-skills/all", requireAuth, requireRole("admin", "super_admi
         name: u?.name ?? "Unnamed",
         skills_completed: (p["skills_completed"] as boolean) ?? false,
         skills: skillMap[pid] ?? [],
+        contractor_rate_cents: rateMap[pid]?.cents ?? 0,
+        contractor_billing_unit: rateMap[pid]?.unit ?? "per_hour",
       };
     });
 
