@@ -33,6 +33,48 @@ export function DrumRoll({ items, value, onChange }: {
   value: string;
   onChange: (v: string) => void;
 }) {
+  const colors = useColors();
+
+  // ── Web: native <select> — reliable, no scroll hacks needed
+  if (Platform.OS === "web") {
+    return (
+      <View style={{ flex: 1, height: DRUM_H, justifyContent: "center", alignItems: "center" }}>
+        {/* @ts-ignore — web-only select element */}
+        <select
+          value={value}
+          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.target.value)}
+          style={{
+            fontSize: 22,
+            fontWeight: "700",
+            color: colors.foreground,
+            backgroundColor: colors.card,
+            border: `2px solid ${colors.primary}`,
+            borderRadius: 12,
+            padding: "10px 18px",
+            outline: "none",
+            cursor: "pointer",
+            minWidth: 90,
+            textAlign: "center",
+          }}
+        >
+          {items.map(item => (
+            // @ts-ignore
+            <option key={item} value={item}>{item}</option>
+          ))}
+        </select>
+      </View>
+    );
+  }
+
+  // ── Native: drum roll ScrollView
+  return <DrumRollNative items={items} value={value} onChange={onChange} />;
+}
+
+function DrumRollNative({ items, value, onChange }: {
+  items: string[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
   const colors          = useColors();
   const idx             = Math.max(0, items.indexOf(value));
   const ref             = useRef<ScrollView>(null);
@@ -77,7 +119,6 @@ export function DrumRoll({ items, value, onChange }: {
         onScrollBeginDrag={() => { hasMomentumRef.current = false; }}
         onScrollEndDrag={e => {
           const y = e.nativeEvent.contentOffset.y;
-          // Schedule a snap; if momentum kicks in, onMomentumScrollBegin will cancel it
           if (dragSnapTimer.current) clearTimeout(dragSnapTimer.current);
           dragSnapTimer.current = setTimeout(() => {
             if (!hasMomentumRef.current) snap(y);
