@@ -50,6 +50,12 @@ export default function FinanceHub() {
         />
         <HubCard
           icon="cash-outline"
+          title="Payout & Pay Runs"
+          description="Payout frequency, operator pay-runs and invoice review"
+          onPress={() => router.push("/(admin)/settings/payout-settings" as never)}
+        />
+        <HubCard
+          icon="cash-outline"
           title="Reimbursements"
           description="Operator expense claims and approvals"
           onPress={() => router.push("/(admin)/reimbursements" as never)}

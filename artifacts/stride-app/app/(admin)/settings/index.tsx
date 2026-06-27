@@ -186,15 +186,6 @@ export default function SettingsIndex() {
           onPress={() => navigate("terminals")}
         />
 
-        {/* ── PAYOUT & INVOICES ── */}
-        <HubCard
-          icon="cash-outline"
-          title="Payout &amp; Invoices"
-          description="Payout frequency, invoice review and operator pay-runs"
-          onPress={() => navigate("payout-settings")}
-        />
-
-
         {/* ── SECTION LABEL ── */}
         <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>CONFIGURATION</Text>
 
