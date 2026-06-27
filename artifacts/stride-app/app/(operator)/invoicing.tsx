@@ -42,7 +42,6 @@ import {
   reminderMessage,
   frequencyLabel,
 } from "@/lib/strideChannel";
-import { ReimbursementRequestForm, type ClaimantRole } from "@/app/(admin)/reimbursements";
 
 // ── Bank field types & locale config ─────────────────────────────────────────
 
@@ -474,7 +473,6 @@ export default function OperatorInvoicing() {
   const [reminderDismissed, setReminderDismissed] = useState(false);
 
   // UI modals
-  const [showReimbursement, setShowReimbursement]   = useState(false);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
   const [showSuccessModal, setShowSuccessModal]     = useState(false);
   const [submittedId, setSubmittedId]             = useState("");
@@ -1444,21 +1442,6 @@ export default function OperatorInvoicing() {
           )}
         </View>
 
-        {/* ── Request Reimbursement ── */}
-        <Pressable
-          style={[styles.reimbBtn, { backgroundColor: colors.card, borderColor: colors.border }]}
-          onPress={() => setShowReimbursement(true)}
-        >
-          <View style={[styles.reimbIconBox, { backgroundColor: "#D1FAE5" }]}>
-            <Ionicons name="cash-outline" size={20} color="#059669" />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={[styles.reimbTitle, { color: colors.foreground }]}>Request Reimbursement</Text>
-            <Text style={[styles.reimbSub, { color: colors.mutedForeground }]}>Submit an out-of-pocket expense claim</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
-        </Pressable>
-
         {/* ── Payout Settings (Stripe Connect) ── */}
         <View style={{ marginTop: 8, marginBottom: 8 }}>
           <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 10 }]}>Payout Settings</Text>
@@ -1664,23 +1647,6 @@ export default function OperatorInvoicing() {
         </View>
       </Modal>
 
-      <ReimbursementRequestForm
-        visible={showReimbursement}
-        onClose={() => setShowReimbursement(false)}
-        onSubmit={async (req) => {
-          const newReq = { ...req, id: `RMB-${Date.now()}`, status: "pending" as const, submittedAt: new Date().toISOString() };
-          try {
-            const raw = await AsyncStorage.getItem("reimbursement_requests");
-            const stored = raw ? JSON.parse(raw) : [];
-            stored.unshift(newReq);
-            await AsyncStorage.setItem("reimbursement_requests", JSON.stringify(stored));
-          } catch { /* local only */ }
-          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        }}
-        claimantName={user?.name ?? "Operator"}
-        claimantRole={"paid_operator" as ClaimantRole}
-        receiptThresholdCents={5000}
-      />
 
     </View>
   );
