@@ -173,7 +173,7 @@ export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [], 
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Account" onBack={() => router.navigate(parentRoute as never)} />
+      <ScreenHeader title="Settings" onBack={() => router.navigate(parentRoute as never)} />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}

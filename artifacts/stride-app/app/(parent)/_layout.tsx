@@ -204,7 +204,7 @@ export default function ParentTabLayout() {
         <Tabs.Screen name="membership" options={{ href: null }} />
         <Tabs.Screen name="profile"                options={{ href: null }} />
         <Tabs.Screen name="notification-settings"  options={{ href: null }} />
-        <Tabs.Screen name="documents" options={{ title: t("tab.account", "Account"), tabBarIcon: ({ color, size }) => <AccountTabIcon color={color} size={size} /> }} />
+        <Tabs.Screen name="documents" options={{ title: t("tab.account", "Settings"), tabBarIcon: ({ color, size }) => <AccountTabIcon color={color} size={size} /> }} />
         <Tabs.Screen name="checkout"    options={{ href: null }} />
         <Tabs.Screen name="book-lesson" options={{ href: null }} />
         <Tabs.Screen name="alerts"          options={{ href: null }} />

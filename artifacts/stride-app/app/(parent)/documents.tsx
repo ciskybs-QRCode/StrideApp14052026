@@ -316,10 +316,10 @@ export default function DocumentsScreen() {
         </View>
 
         {/* ── Account Controls ── */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Account</Text>
+        <Text style={[styles.sectionTitle, { color: colors.primary }]}>Settings</Text>
         <HubCard
           icon="person-circle-outline"
-          title="Account"
+          title="Settings"
           description="Profile, email, password and account management"
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

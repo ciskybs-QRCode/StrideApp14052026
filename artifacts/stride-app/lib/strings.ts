@@ -28,7 +28,7 @@ export const strings: Record<string, string> = {
   "tab.messages": "Messages",
   "tab.cart": "Cart",
   "tab.membership": "Membership",
-  "tab.account": "Account",
+  "tab.account": "Settings",
   "tab.calendar": "Calendar",
   "tab.settings": "Settings",
   "tab.operations": "Operations",
