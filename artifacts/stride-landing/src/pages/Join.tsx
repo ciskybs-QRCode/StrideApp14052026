@@ -153,7 +153,11 @@ export default function Join() {
   }, []);
 
   useEffect(() => {
-    if (!slug) return;
+    if (!slug) {
+      // No org slug — render the page in generic mode (no org data needed)
+      setLoading(false);
+      return;
+    }
     fetch(`/api/public/join/${slug}`)
       .then(r => r.ok ? r.json() : Promise.reject(r.status))
       .then((data: OrgData) => { setOrg(data); setLoading(false); })
