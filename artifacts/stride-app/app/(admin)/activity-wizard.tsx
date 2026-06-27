@@ -29,7 +29,6 @@ import {
 import {
   CalendarPicker,
   TimePickerSheet,
-  NumberPickerSheet,
 } from "@/components/WizardPickers";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -40,6 +39,8 @@ type ActivityType = "course" | "workshop" | "private" | "single";
 
 const DAY_SHORT = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const DAY_LONG  = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+// Display Mon→Sun (JS: 1 2 3 4 5 6 0)
+const DAY_DISPLAY_ORDER = [1, 2, 3, 4, 5, 6, 0];
 
 const FREQ_OPTIONS: { key: string; label: string; interval: number }[] = [
   { key: "weekly",     label: "Every week",     interval: 1  },
@@ -219,7 +220,6 @@ export default function ActivityWizard() {
   // ── Picker modal visibility
   const [calPicker,  setCalPicker]  = useState<"start" | "end" | null>(null);
   const [timePicker, setTimePicker] = useState<{ day: number; field: "start" | "end" } | null>(null);
-  const [numPicker,  setNumPicker]  = useState<"ageMin" | "ageMax" | "capacity" | null>(null);
 
   // ── Step 4: Pricing (Course)
   const [trialFree,      setTrialFree]      = useState(false);
@@ -579,13 +579,13 @@ export default function ActivityWizard() {
 
         {/* ── Days ── */}
         <Text style={[st.groupLabel, { color: colors.primary }]}>DAYS  *  <Text style={{ fontWeight: "400", textTransform: "none", fontSize: 11 }}>Select one or more</Text></Text>
-        <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8, marginBottom: 10 }}>
-          {DAY_SHORT.map((d, i) => {
-            const sel = selectedDays.includes(i);
+        <View style={{ flexDirection: "row", gap: 5, marginBottom: 10 }}>
+          {DAY_DISPLAY_ORDER.map((dayNum) => {
+            const sel = selectedDays.includes(dayNum);
             return (
-              <Pressable key={i} style={[st.dayPill, { backgroundColor: sel ? colors.primary : colors.card, borderColor: sel ? colors.primary : colors.border }]}
-                onPress={() => toggleDay(i)}>
-                <Text style={{ fontSize: 13, fontWeight: "600", color: sel ? "#fff" : colors.foreground }}>{d}</Text>
+              <Pressable key={dayNum} style={[st.dayPill, { flex: 1, backgroundColor: sel ? colors.primary : colors.card, borderColor: sel ? colors.primary : colors.border }]}
+                onPress={() => toggleDay(dayNum)}>
+                <Text style={{ fontSize: 12, fontWeight: "600", color: sel ? "#fff" : colors.foreground }}>{DAY_SHORT[dayNum]}</Text>
               </Pressable>
             );
           })}
@@ -639,36 +639,39 @@ export default function ActivityWizard() {
         {/* ── Participants ── */}
         <Text style={[st.groupLabel, { color: colors.primary }]}>PARTICIPANTS</Text>
         <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
-          <View style={{ flex: 1 }}>
-            <Text style={st.fieldLabel}>Age min</Text>
-            <Pressable
-              style={[ps.numBtn, { backgroundColor: colors.card, borderColor: colors.primary }]}
-              onPress={() => { setNumPicker("ageMin"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-            >
-              <Text style={{ fontSize: 24, fontWeight: "700", color: colors.foreground }}>{ageMin}</Text>
-              <Text style={{ fontSize: 10, color: colors.mutedForeground }}>yrs</Text>
-            </Pressable>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={st.fieldLabel}>Age max</Text>
-            <Pressable
-              style={[ps.numBtn, { backgroundColor: colors.card, borderColor: colors.primary }]}
-              onPress={() => { setNumPicker("ageMax"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-            >
-              <Text style={{ fontSize: 24, fontWeight: "700", color: colors.foreground }}>{ageMax}</Text>
-              <Text style={{ fontSize: 10, color: colors.mutedForeground }}>yrs</Text>
-            </Pressable>
-          </View>
-          <View style={{ flex: 1 }}>
-            <Text style={st.fieldLabel}>Max spots</Text>
-            <Pressable
-              style={[ps.numBtn, { backgroundColor: colors.card, borderColor: colors.primary }]}
-              onPress={() => { setNumPicker("capacity"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
-            >
-              <Text style={{ fontSize: 24, fontWeight: "700", color: colors.foreground }}>{capacity}</Text>
-              <Text style={{ fontSize: 10, color: colors.mutedForeground }}>spots</Text>
-            </Pressable>
-          </View>
+          {([
+            { key: "ageMin",   label: "Age min",   unit: "yrs",   val: ageMin,   set: setAgeMin,   min: 0,  max: 99  },
+            { key: "ageMax",   label: "Age max",   unit: "yrs",   val: ageMax,   set: setAgeMax,   min: 1,  max: 99  },
+            { key: "capacity", label: "Max spots", unit: "spots", val: capacity, set: setCapacity, min: 1,  max: 200 },
+          ] as const).map(({ key, label, unit, val, set, min, max }) => (
+            <View key={key} style={{ flex: 1 }}>
+              <Text style={st.fieldLabel}>{label}</Text>
+              <View style={[st.stepper, { borderColor: colors.primary, backgroundColor: colors.card }]}>
+                <Pressable
+                  style={st.stepBtn}
+                  onPress={() => {
+                    const n = parseInt(val) - 1;
+                    if (n >= min) { set(String(n)); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }
+                  }}
+                >
+                  <Ionicons name="remove" size={16} color={colors.primary} />
+                </Pressable>
+                <View style={{ flex: 1, alignItems: "center" }}>
+                  <Text style={{ fontSize: 20, fontWeight: "700", color: colors.foreground }}>{val}</Text>
+                  <Text style={{ fontSize: 9, color: colors.mutedForeground }}>{unit}</Text>
+                </View>
+                <Pressable
+                  style={st.stepBtn}
+                  onPress={() => {
+                    const n = parseInt(val) + 1;
+                    if (n <= max) { set(String(n)); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }
+                  }}
+                >
+                  <Ionicons name="add" size={16} color={colors.primary} />
+                </Pressable>
+              </View>
+            </View>
+          ))}
         </View>
       </View>
     );
@@ -1015,28 +1018,6 @@ export default function ActivityWizard() {
         </Pressable>
       </Modal>
 
-      {/* ── Number picker modal ── */}
-      <Modal visible={!!numPicker} transparent animationType="slide">
-        <Pressable
-          style={[ps.overlay, { justifyContent: "flex-end" }]}
-          onPress={() => setNumPicker(null)}
-        >
-          <Pressable onPress={() => {}}>
-            <NumberPickerSheet
-              value={numPicker === "ageMin" ? ageMin : numPicker === "ageMax" ? ageMax : capacity}
-              min={numPicker === "ageMin" ? 0 : 1}
-              max={numPicker === "ageMin" || numPicker === "ageMax" ? 99 : 150}
-              label={numPicker === "ageMin" ? "Minimum Age" : numPicker === "ageMax" ? "Maximum Age" : "Max Spots"}
-              onConfirm={v => {
-                if (numPicker === "ageMin")      setAgeMin(v);
-                else if (numPicker === "ageMax") setAgeMax(v);
-                else                             setCapacity(v);
-                setNumPicker(null);
-              }}
-            />
-          </Pressable>
-        </Pressable>
-      </Modal>
     </View>
   );
 }
