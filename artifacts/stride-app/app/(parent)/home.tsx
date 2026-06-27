@@ -334,8 +334,13 @@ export default function ParentHome() {
     setShowSOSModal(true);
   };
 
-  const rawFirst  = user?.preferredName || user?.name?.split(" ")[0] || "";
-  const firstName = (rawFirst.startsWith("{") || rawFirst === "") ? (user?.name?.split(" ")[0] || "there") : rawFirst;
+  const firstName = (() => {
+    const pref = user?.preferredName;
+    if (pref && !pref.startsWith("{") && pref.trim() !== "") return pref.trim();
+    const first = user?.name?.split(" ")[0];
+    if (first && !first.startsWith("{") && first.trim() !== "") return first.trim();
+    return "there";
+  })();
 
   // ── Emergency Pulse dynamic content ───────────────────────────────────────
   const pulseType       = activePulse?.type ?? "emergency_pulse";

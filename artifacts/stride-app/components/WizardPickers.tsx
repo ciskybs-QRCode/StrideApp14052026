@@ -33,11 +33,13 @@ export function DrumRoll({ items, value, onChange }: {
   value: string;
   onChange: (v: string) => void;
 }) {
-  const colors  = useColors();
-  const idx     = Math.max(0, items.indexOf(value));
-  const ref     = useRef<ScrollView>(null);
-  const selRef  = useRef(idx);
+  const colors          = useColors();
+  const idx             = Math.max(0, items.indexOf(value));
+  const ref             = useRef<ScrollView>(null);
+  const selRef          = useRef(idx);
   const [selIdx, setSelIdx] = useState(idx);
+  const hasMomentumRef  = useRef(false);
+  const dragSnapTimer   = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -72,9 +74,22 @@ export function DrumRoll({ items, value, onChange }: {
         decelerationRate="fast"
         scrollEventThrottle={16}
         contentContainerStyle={{ paddingVertical: ITEM_H * 2 }}
-        onMomentumScrollEnd={e => snap(e.nativeEvent.contentOffset.y)}
+        onScrollBeginDrag={() => { hasMomentumRef.current = false; }}
         onScrollEndDrag={e => {
-          if (Platform.OS === "web") snap(e.nativeEvent.contentOffset.y);
+          const y = e.nativeEvent.contentOffset.y;
+          // Schedule a snap; if momentum kicks in, onMomentumScrollBegin will cancel it
+          if (dragSnapTimer.current) clearTimeout(dragSnapTimer.current);
+          dragSnapTimer.current = setTimeout(() => {
+            if (!hasMomentumRef.current) snap(y);
+          }, 60);
+        }}
+        onMomentumScrollBegin={() => {
+          hasMomentumRef.current = true;
+          if (dragSnapTimer.current) { clearTimeout(dragSnapTimer.current); dragSnapTimer.current = null; }
+        }}
+        onMomentumScrollEnd={e => {
+          hasMomentumRef.current = false;
+          snap(e.nativeEvent.contentOffset.y);
         }}
       >
         {items.map((item, i) => (
