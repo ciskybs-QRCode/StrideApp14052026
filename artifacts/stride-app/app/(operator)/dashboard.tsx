@@ -415,7 +415,7 @@ export default function OperatorDashboard() {
   const checkedIn     = students.filter(s => s.checkedIn).length;
   const operatorQrValue = `STRIDE:OPERATOR:${user?.id ?? "0"}:${user?.orgId ?? "1"}`;
   const logoSource    = orgLogoUri ?? (user?.logoUri ?? null);
-  const displayName   = preferredName || user?.name?.split(" ")[0] || "";
+  const displayName   = preferredName || user?.name || "";
   const firstName     = displayName || "Operator";
   const hour          = new Date().getHours();
   const greeting      = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";

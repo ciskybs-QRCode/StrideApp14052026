@@ -501,7 +501,7 @@ export default function AdminHome() {
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.pageTitle, { color: colors.primary }]}>
-              {(() => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; })()}, {preferredName || user?.name?.split(" ")[0] || "Admin"} 👋
+              {(() => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; })()}, {preferredName || user?.name || "Admin"} 👋
             </Text>
             {!!(orgName || user?.schoolName) && (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginTop: 1 }}>

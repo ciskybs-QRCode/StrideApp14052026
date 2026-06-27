@@ -298,7 +298,6 @@ export default function AdminTabLayout() {
           borderTopWidth: isWeb ? 1 : 0,
           borderTopColor: colors.border,
           elevation: 0,
-          height: isWeb ? 84 : undefined,
         },
         tabBarBackground: () =>
           isIOS ? (
