@@ -4,6 +4,7 @@ import { Alert, Platform } from "react-native";
 import { router } from "expo-router";
 import * as Notifications from "expo-notifications";
 import Constants from "expo-constants";
+import * as FileSystem from "expo-file-system";
 import { api, setToken, clearToken, getToken, apiSwitchOrgContext } from "../lib/api";
 
 export type UserRole =
@@ -304,7 +305,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // ── updateUser ─────────────────────────────────────────────────────────────
   const updateUser = async (updates: Partial<User>) => {
     if (!user) return;
-    const updated = { ...user, ...updates };
+
+    // If a local file:// URI was provided for the profile photo, convert it to a
+    // base64 data-URI so it survives across sessions and devices (file:// paths are
+    // ephemeral on-device and become invalid after the app is closed or reinstalled).
+    let resolvedUpdates = { ...updates };
+    if (
+      resolvedUpdates.profilePhotoUri &&
+      !resolvedUpdates.profilePhotoUri.startsWith("data:") &&
+      !resolvedUpdates.profilePhotoUri.startsWith("http")
+    ) {
+      try {
+        const b64 = await FileSystem.readAsStringAsync(resolvedUpdates.profilePhotoUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        resolvedUpdates = { ...resolvedUpdates, profilePhotoUri: `data:image/jpeg;base64,${b64}` };
+      } catch {
+        // If conversion fails keep the original URI as a fallback.
+      }
+    }
+
+    const updated = { ...user, ...resolvedUpdates };
     try {
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(updated));
     } catch (e) {
@@ -314,8 +335,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Persist profile fields to backend so they sync across devices on login.
     const backendPayload: { profilePhotoUri?: string | null; name?: string } = {};
-    if ("profilePhotoUri" in updates) backendPayload.profilePhotoUri = updates.profilePhotoUri ?? null;
-    if ("name" in updates && updates.name) backendPayload.name = updates.name;
+    if ("profilePhotoUri" in resolvedUpdates) backendPayload.profilePhotoUri = resolvedUpdates.profilePhotoUri ?? null;
+    if ("name" in resolvedUpdates && resolvedUpdates.name) backendPayload.name = resolvedUpdates.name;
     if (Object.keys(backendPayload).length > 0) {
       api.updateMyProfile(backendPayload).catch(() => {
         // Fire-and-forget — local state is already updated; backend sync best-effort.

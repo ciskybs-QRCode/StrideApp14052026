@@ -429,7 +429,7 @@ export default function OperatorDashboard() {
         mediaTypes: ["images"],
         allowsEditing: true,
         aspect: [1, 1],
-        quality: 0.8,
+        quality: 0.25,
       });
       if (!result.canceled && result.assets[0]?.uri) {
         await updateUser({ profilePhotoUri: result.assets[0].uri });
