@@ -2101,48 +2101,77 @@ export default function AdminLessonsScreen() {
               <View style={[styles.modalHeaderIcon, { backgroundColor: "rgba(255,255,255,0.15)" }]}>
                 <Ionicons name="checkmark-done-outline" size={20} color="#FFF" />
               </View>
-              <View>
+              <View style={{ flex: 1 }}>
                 <Text style={styles.modalHeaderTitle}>Review Availability</Text>
                 <Text style={styles.modalHeaderSub}>Set pricing then approve or reject</Text>
               </View>
+              <Pressable
+                onPress={() => { setReviewSlot(null); setReviewPrice(""); setReviewOpPay(""); }}
+                style={{ padding: 6 }}
+                hitSlop={10}
+              >
+                <Ionicons name="close" size={22} color="#FFF" />
+              </Pressable>
             </View>
 
             <View style={styles.modalBody}>
               {reviewSlot && (
                 <>
                   {/* Slot summary card */}
-                  <View style={[styles.reviewDetail, { backgroundColor: colors.muted }]}>
-                    {([
-                      ["Operator",   reviewSlot.operator_profile?.user?.name ?? "—"],
-                      ["Discipline", reviewSlot.discipline?.name ?? "—"],
-                      ["Date",       fmtDate(reviewSlot.slot_date)],
-                      ["Time",       `${fmtTime(reviewSlot.start_time)} – ${fmtTime(reviewSlot.end_time)}`],
-                      ["Location",   reviewSlot.location],
-                    ] as [string, string][]).map(([k, v]) => (
-                      <View key={k} style={styles.reviewRow}>
-                        <Text style={[styles.reviewKey, { color: colors.mutedForeground }]}>{k}</Text>
-                        <Text style={[styles.reviewVal, { color: colors.foreground }]}>{v}</Text>
+                  {(() => {
+                    const [sh, sm] = reviewSlot.start_time.split(":").map(Number);
+                    const [eh, em] = reviewSlot.end_time.split(":").map(Number);
+                    const durationMins = (eh * 60 + em) - (sh * 60 + sm);
+                    const durationLabel = durationMins >= 60
+                      ? `${Math.floor(durationMins / 60)}h${durationMins % 60 > 0 ? ` ${durationMins % 60}m` : ""}`
+                      : `${durationMins}m`;
+                    const profile = profiles.find(p => p.id === reviewSlot.operator_profile_id);
+                    const rate = profile?.rates?.find(r => r.discipline_id === reviewSlot.discipline_id);
+                    const hourlyRateCents = rate?.hourly_rate_cents;
+                    return (
+                      <View style={[styles.reviewDetail, { backgroundColor: colors.muted }]}>
+                        {([
+                          ["Operator",   reviewSlot.operator_profile?.user?.name ?? "—"],
+                          ["Discipline", reviewSlot.discipline?.name ?? "—"],
+                          ["Date",       fmtDate(reviewSlot.slot_date)],
+                          ["Time",       `${fmtTime(reviewSlot.start_time)} – ${fmtTime(reviewSlot.end_time)}`],
+                          ["Duration",   durationLabel],
+                          ["Location",   reviewSlot.location],
+                        ] as [string, string][]).map(([k, v]) => (
+                          <View key={k} style={styles.reviewRow}>
+                            <Text style={[styles.reviewKey, { color: colors.mutedForeground }]}>{k}</Text>
+                            <Text style={[styles.reviewVal, { color: colors.foreground }]}>{v}</Text>
+                          </View>
+                        ))}
+                        {reviewSlot.operator_profile?.profile_type && (
+                          <View style={styles.reviewRow}>
+                            <Text style={[styles.reviewKey, { color: colors.mutedForeground }]}>Type</Text>
+                            <View style={[styles.typePill, {
+                              backgroundColor: reviewSlot.operator_profile.profile_type === "paid" ? "#FEF9C3" : "#EFF6FF",
+                            }]}>
+                              <Text style={{ fontSize: 11, fontWeight: "700", color: reviewSlot.operator_profile.profile_type === "paid" ? "#92400E" : colors.primary }}>
+                                {reviewSlot.operator_profile.profile_type === "paid" ? "Paid Operator" : "Volunteer"}
+                              </Text>
+                            </View>
+                          </View>
+                        )}
+                        {hourlyRateCents != null && (
+                          <View style={styles.reviewRow}>
+                            <Text style={[styles.reviewKey, { color: colors.mutedForeground }]}>Hourly Rate</Text>
+                            <Text style={[styles.reviewVal, { color: "#059669", fontWeight: "700" }]}>
+                              €{(hourlyRateCents / 100).toFixed(2)}/hr
+                            </Text>
+                          </View>
+                        )}
+                        {reviewSlot.notes ? (
+                          <View style={styles.reviewRow}>
+                            <Text style={[styles.reviewKey, { color: colors.mutedForeground }]}>Notes</Text>
+                            <Text style={[styles.reviewVal, { color: colors.foreground, flex: 1, textAlign: "right" }]} numberOfLines={2}>{reviewSlot.notes}</Text>
+                          </View>
+                        ) : null}
                       </View>
-                    ))}
-                    {reviewSlot.operator_profile?.profile_type && (
-                      <View style={styles.reviewRow}>
-                        <Text style={[styles.reviewKey, { color: colors.mutedForeground }]}>Type</Text>
-                        <View style={[styles.typePill, {
-                          backgroundColor: reviewSlot.operator_profile.profile_type === "paid" ? "#FEF9C3" : "#EFF6FF",
-                        }]}>
-                          <Text style={{ fontSize: 11, fontWeight: "700", color: reviewSlot.operator_profile.profile_type === "paid" ? "#92400E" : colors.primary }}>
-                            {reviewSlot.operator_profile.profile_type === "paid" ? "Paid Operator" : "Volunteer"}
-                          </Text>
-                        </View>
-                      </View>
-                    )}
-                    {reviewSlot.notes ? (
-                      <View style={styles.reviewRow}>
-                        <Text style={[styles.reviewKey, { color: colors.mutedForeground }]}>Notes</Text>
-                        <Text style={[styles.reviewVal, { color: colors.foreground, flex: 1, textAlign: "right" }]} numberOfLines={2}>{reviewSlot.notes}</Text>
-                      </View>
-                    ) : null}
-                  </View>
+                    );
+                  })()}
 
                   {/* Member price */}
                   <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 16 }]}>
@@ -2198,7 +2227,7 @@ export default function AdminLessonsScreen() {
                                 color={margin >= 0 ? "#065F46" : "#991B1B"}
                               />
                               <Text style={[styles.marginText, { color: margin >= 0 ? "#065F46" : "#991B1B" }]}>
-                                Margin: ${margin.toFixed(2)} per lesson
+                                Markup: €{margin.toFixed(2)} per lesson
                               </Text>
                             </View>
                           );

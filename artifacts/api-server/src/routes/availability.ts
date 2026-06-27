@@ -6,6 +6,18 @@ import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
 
+// Ensure operator_pay_cents column exists (idempotent)
+async function ensureAvailabilityColumns() {
+  try {
+    await pool.query(`
+      ALTER TABLE operator_availability
+        ADD COLUMN IF NOT EXISTS operator_pay_cents integer,
+        ADD COLUMN IF NOT EXISTS parent_price_cents integer
+    `);
+  } catch { /* ignore — table may be on Supabase only */ }
+}
+ensureAvailabilityColumns().catch(() => {});
+
 // GET /availability — approved slots visible to parents; all for admin/operator
 router.get("/availability", requireAuth, async (req, res) => {
   const user = (req as AuthReq).user;
@@ -28,9 +40,12 @@ router.get("/availability", requireAuth, async (req, res) => {
     }
     const { rows } = await pool.query(
       `SELECT oa.*,
-              op.id AS op_id, op.profile_type,
-              u.id AS op_user_id, u.name AS op_user_name,
-              d.id AS disc_id, d.name AS disc_name
+              json_build_object(
+                'id',           op.id,
+                'profile_type', op.profile_type,
+                'user',         json_build_object('id', u.id, 'name', u.name)
+              ) AS operator_profile,
+              json_build_object('id', d.id, 'name', d.name) AS discipline
        FROM operator_availability oa
        LEFT JOIN operator_profiles op ON op.id = oa.operator_profile_id
        LEFT JOIN users u ON u.id = op.user_id
@@ -107,39 +122,60 @@ router.post("/availability", requireAuth, requireRole("operator", "admin"), asyn
   res.status(201).json(data);
 });
 
-// PATCH /availability/:id — admin approves/rejects + sets parent price
+// PATCH /availability/:id — admin approves/rejects + sets parent price + operator pay
 router.patch("/availability/:id", requireAuth, requireRole("admin"), async (req, res) => {
   const user = (req as AuthReq).user;
-  const { status, parentPriceCents } = req.body as {
+  const { status, parentPriceCents, operatorPayCents } = req.body as {
     status: "approved" | "rejected";
     parentPriceCents?: number;
+    operatorPayCents?: number;
   };
   if (!status) { res.status(400).json({ error: "status required" }); return; }
 
-  const { data: slot, error } = await supabase
-    .from("operator_availability")
-    .update({ status, parent_price_cents: parentPriceCents })
-    .eq("id", parseInt(String(req.params["id"])))
-    .eq("organization_id", user.orgId)
-    .select(`*, operator_profile:operator_profiles!operator_profile_id(user_id)`)
-    .single();
-  if (error) { res.status(500).json({ error: error.message }); return; }
+  const slotId = parseInt(String(req.params["id"]));
 
-  // Notify operator
-  const opUserId = (slot.operator_profile as { user_id: number } | null)?.user_id;
-  if (opUserId) {
-    await supabase.from("private_notifications").insert({
-      organization_id: user.orgId,
-      recipient_id: opUserId,
-      sender_id: user.id,
-      type: status === "approved" ? "availability_approved" : "availability_rejected",
-      title: status === "approved" ? "Availability Approved" : "Availability Rejected",
-      body: status === "approved"
-        ? `Your slot on ${slot.slot_date} at ${slot.start_time} is live for booking.`
-        : `Your slot on ${slot.slot_date} at ${slot.start_time} was not approved.`,
-    });
+  // Update via pool (avoids Supabase schema-cache issues on new columns)
+  try {
+    const { rows } = await pool.query(
+      `UPDATE operator_availability
+          SET status              = $1,
+              parent_price_cents  = COALESCE($2, parent_price_cents),
+              operator_pay_cents  = COALESCE($3, operator_pay_cents)
+        WHERE id = $4 AND organization_id = $5
+        RETURNING *`,
+      [status, parentPriceCents ?? null, operatorPayCents ?? null, slotId, user.orgId],
+    );
+    if (!rows.length) { res.status(404).json({ error: "Slot not found" }); return; }
+    const slot = rows[0] as { slot_date: string; start_time: string; operator_profile_id: number };
+
+    // Look up operator user_id for notification
+    try {
+      const { rows: opRows } = await pool.query(
+        `SELECT u.id AS user_id FROM operator_profiles op
+           JOIN users u ON u.id = op.user_id
+          WHERE op.id = $1 LIMIT 1`,
+        [slot.operator_profile_id],
+      );
+      const opUserId = opRows[0]?.user_id as number | undefined;
+      if (opUserId) {
+        await supabase.from("private_notifications").insert({
+          organization_id: user.orgId,
+          recipient_id: opUserId,
+          sender_id: user.id,
+          type: status === "approved" ? "availability_approved" : "availability_rejected",
+          title: status === "approved" ? "Availability Approved" : "Availability Rejected",
+          body: status === "approved"
+            ? `Your slot on ${slot.slot_date} at ${slot.start_time} is live for booking.`
+            : `Your slot on ${slot.slot_date} at ${slot.start_time} was not approved.`,
+        });
+      }
+    } catch { /* notification failure is non-fatal */ }
+
+    res.json(rows[0]);
+  } catch (err) {
+    req.log.error(err, "PATCH /availability/:id failed");
+    res.status(500).json({ error: "Failed to update availability" });
   }
-  res.json(slot);
 });
 
 // POST /availability/resign — operator submits resignation with notice period
