@@ -334,7 +334,8 @@ export default function ParentHome() {
     setShowSOSModal(true);
   };
 
-  const firstName = user?.preferredName || user?.name?.split(" ")[0] || "User";
+  const rawFirst  = user?.preferredName || user?.name?.split(" ")[0] || "";
+  const firstName = (rawFirst.startsWith("{") || rawFirst === "") ? (user?.name?.split(" ")[0] || "there") : rawFirst;
 
   // ── Emergency Pulse dynamic content ───────────────────────────────────────
   const pulseType       = activePulse?.type ?? "emergency_pulse";

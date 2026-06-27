@@ -208,6 +208,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       ? dbRoles.map(r => r.role).filter((v, i, a) => a.indexOf(v) === i)
       : derivedRoles;
 
+    // Preserve locally-stored photo if server doesn't have one (local URI from pick)
+    const storedRaw = await AsyncStorage.getItem(USER_KEY).catch(() => null);
+    const storedPhoto = storedRaw ? (JSON.parse(storedRaw) as User).profilePhotoUri : undefined;
+
+    const serverPhoto = ((apiUser as unknown) as Record<string, unknown>).profilePhotoUri as string | null | undefined;
+    const serverName  = ((apiUser as unknown) as Record<string, unknown>).preferredName  as string | null | undefined;
+
     const mapped: User = {
       id:             String(apiUser.id),
       name:           apiUser.name,
@@ -217,8 +224,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       activeRole:     primaryRole,
       orgId:          apiUser.orgId ?? (apiUser.organization_id as number | undefined),
       is_owner:       apiUser.is_owner ?? false,
-      profilePhotoUri: ((apiUser as unknown) as Record<string, unknown>).profilePhotoUri as string | undefined ?? undefined,
-      preferredName:  ((apiUser as unknown) as Record<string, unknown>).preferredName as string | undefined ?? undefined,
+      // Prefer server photo; fall back to locally-stored URI so it survives re-login
+      profilePhotoUri: (serverPhoto ?? storedPhoto) || undefined,
+      // Reject stale template placeholders (e.g. "{first name}") from old storage
+      preferredName:  (serverName && !serverName.startsWith("{")) ? serverName : undefined,
     };
 
     const finalAllRoles = dbRoles ?? derivedRoles.map(r => ({ role: r, orgId: mapped.orgId ?? 0 }));

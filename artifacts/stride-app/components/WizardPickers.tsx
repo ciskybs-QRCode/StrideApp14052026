@@ -249,49 +249,27 @@ export function TimePickerSheet({ value, onConfirm }: {
 }) {
   const colors = useColors();
   const parts  = value && value.includes(":") ? value.split(":") : ["09", "00"];
-  const initH  = parseInt(parts[0] ?? "9");
-  const initM  = Math.round(parseInt(parts[1] ?? "0") / 5) * 5;
+  const initH  = String(parseInt(parts[0] ?? "9")).padStart(2, "0");
+  const initM  = String(Math.round(parseInt(parts[1] ?? "0") / 5) * 5).padStart(2, "0");
 
-  const [hour, setHour] = useState(initH);
-  const [min,  setMin]  = useState(initM);
-
-  const addH = (d: number) => { setHour(h => (h + d + 24) % 24); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); };
-  const addM = (d: number) => { setMin(m  => (m + d * 5 + 60) % 60); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); };
-
-  const hStr = String(hour).padStart(2, "0");
-  const mStr = String(min).padStart(2, "0");
+  const [selH, setSelH] = useState(initH);
+  const [selM, setSelM] = useState(initM);
 
   return (
     <View style={[wp.sheet, { backgroundColor: colors.card }]}>
       <Text style={[wp.sheetTitle, { color: colors.foreground }]}>Select Time</Text>
-      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 12, marginBottom: 28 }}>
-        {/* Hour stepper */}
-        <View style={{ alignItems: "center", gap: 10 }}>
-          <Pressable onPress={() => addH(1)} hitSlop={12} style={[wp.stepperBtn, { borderColor: colors.primary }]}>
-            <Ionicons name="chevron-up" size={20} color={colors.primary} />
-          </Pressable>
-          <Text style={{ fontSize: 44, fontWeight: "700", color: colors.foreground, width: 70, textAlign: "center" }}>{hStr}</Text>
-          <Pressable onPress={() => addH(-1)} hitSlop={12} style={[wp.stepperBtn, { borderColor: colors.primary }]}>
-            <Ionicons name="chevron-down" size={20} color={colors.primary} />
-          </Pressable>
-        </View>
-        <Text style={{ fontSize: 42, fontWeight: "700", color: colors.foreground, marginBottom: 2 }}>:</Text>
-        {/* Minute stepper */}
-        <View style={{ alignItems: "center", gap: 10 }}>
-          <Pressable onPress={() => addM(1)} hitSlop={12} style={[wp.stepperBtn, { borderColor: colors.primary }]}>
-            <Ionicons name="chevron-up" size={20} color={colors.primary} />
-          </Pressable>
-          <Text style={{ fontSize: 44, fontWeight: "700", color: colors.foreground, width: 70, textAlign: "center" }}>{mStr}</Text>
-          <Pressable onPress={() => addM(-1)} hitSlop={12} style={[wp.stepperBtn, { borderColor: colors.primary }]}>
-            <Ionicons name="chevron-down" size={20} color={colors.primary} />
-          </Pressable>
-        </View>
+
+      <View style={[wp.drumRow, { justifyContent: "center" }]}>
+        <DrumRoll items={HOURS} value={selH} onChange={setSelH} />
+        <Text style={[wp.drumSep, { color: colors.foreground }]}>:</Text>
+        <DrumRoll items={MINS}  value={selM} onChange={setSelM} />
       </View>
+
       <Pressable
         style={[wp.confirmBtn, { backgroundColor: colors.primary }]}
-        onPress={() => onConfirm(`${hStr}:${mStr}`)}
+        onPress={() => onConfirm(`${selH}:${selM}`)}
       >
-        <Text style={wp.confirmText}>Set  {hStr}:{mStr}</Text>
+        <Text style={wp.confirmText}>OK — {selH}:{selM}</Text>
       </Pressable>
     </View>
   );

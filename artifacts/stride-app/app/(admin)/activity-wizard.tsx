@@ -29,6 +29,7 @@ import {
 import {
   CalendarPicker,
   TimePickerSheet,
+  NumberPickerSheet,
 } from "@/components/WizardPickers";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -220,6 +221,7 @@ export default function ActivityWizard() {
   // ── Picker modal visibility
   const [calPicker,  setCalPicker]  = useState<"start" | "end" | null>(null);
   const [timePicker, setTimePicker] = useState<{ day: number; field: "start" | "end" } | null>(null);
+  const [numPicker,  setNumPicker]  = useState<{ label: string; val: string; set: (v: string) => void; min: number; max: number } | null>(null);
 
   // ── Step 4: Pricing (Course)
   const [trialFree,      setTrialFree]      = useState(false);
@@ -643,34 +645,19 @@ export default function ActivityWizard() {
             { key: "ageMin",   label: "Age min",   unit: "yrs",   val: ageMin,   set: setAgeMin,   min: 0,  max: 99  },
             { key: "ageMax",   label: "Age max",   unit: "yrs",   val: ageMax,   set: setAgeMax,   min: 1,  max: 99  },
             { key: "capacity", label: "Max spots", unit: "spots", val: capacity, set: setCapacity, min: 1,  max: 200 },
-          ] as const).map(({ key, label, unit, val, set, min, max }) => (
-            <View key={key} style={{ flex: 1 }}>
-              <Text style={st.fieldLabel}>{label}</Text>
-              <View style={[st.stepper, { borderColor: colors.primary, backgroundColor: colors.card }]}>
-                <Pressable
-                  style={st.stepBtn}
-                  onPress={() => {
-                    const n = parseInt(val) - 1;
-                    if (n >= min) { set(String(n)); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }
-                  }}
-                >
-                  <Ionicons name="remove" size={16} color={colors.primary} />
-                </Pressable>
-                <View style={{ flex: 1, alignItems: "center" }}>
-                  <Text style={{ fontSize: 20, fontWeight: "700", color: colors.foreground }}>{val}</Text>
-                  <Text style={{ fontSize: 9, color: colors.mutedForeground }}>{unit}</Text>
-                </View>
-                <Pressable
-                  style={st.stepBtn}
-                  onPress={() => {
-                    const n = parseInt(val) + 1;
-                    if (n <= max) { set(String(n)); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }
-                  }}
-                >
-                  <Ionicons name="add" size={16} color={colors.primary} />
-                </Pressable>
-              </View>
-            </View>
+          ] as { key: string; label: string; unit: string; val: string; set: (v: string) => void; min: number; max: number }[]).map(({ key, label, unit, val, set, min, max }) => (
+            <Pressable
+              key={key}
+              style={[st.numTile, { borderColor: colors.primary, backgroundColor: colors.card }]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                setNumPicker({ label, val, set, min, max });
+              }}
+            >
+              <Text style={{ fontSize: 26, fontWeight: "800", color: colors.primary }}>{val}</Text>
+              <Text style={{ fontSize: 10, color: colors.mutedForeground, marginTop: 2 }}>{unit}</Text>
+              <Text style={{ fontSize: 11, fontWeight: "600", color: colors.mutedForeground, marginTop: 4 }}>{label}</Text>
+            </Pressable>
           ))}
         </View>
       </View>
@@ -1018,6 +1005,29 @@ export default function ActivityWizard() {
         </Pressable>
       </Modal>
 
+      {/* ── Number picker modal ── */}
+      <Modal visible={!!numPicker} transparent animationType="slide">
+        <Pressable
+          style={[ps.overlay, { justifyContent: "flex-end" }]}
+          onPress={() => setNumPicker(null)}
+        >
+          <Pressable onPress={() => {}}>
+            {numPicker && (
+              <NumberPickerSheet
+                label={numPicker.label}
+                value={numPicker.val}
+                min={numPicker.min}
+                max={numPicker.max}
+                onConfirm={v => {
+                  numPicker.set(v);
+                  setNumPicker(null);
+                }}
+              />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
     </View>
   );
 }
@@ -1044,6 +1054,7 @@ const st = StyleSheet.create({
   stepper:   { flexDirection: "row", alignItems: "center", borderWidth: 1.5, borderRadius: 12, overflow: "hidden" },
   stepBtn:   { paddingHorizontal: 12, paddingVertical: 13, alignItems: "center", justifyContent: "center" },
   stepVal:   { flex: 1, textAlign: "center", fontSize: 16, fontWeight: "700" },
+  numTile:   { flex: 1, alignItems: "center", justifyContent: "center", borderWidth: 1.5, borderRadius: 14, paddingVertical: 16, paddingHorizontal: 8 },
 
   toggleRow: { flexDirection: "row", alignItems: "center", padding: 14, borderRadius: 14, borderWidth: 1.5, gap: 12, marginBottom: 8 },
   toggleDot: { width: 26, height: 26, borderRadius: 13, alignItems: "center", justifyContent: "center" },
