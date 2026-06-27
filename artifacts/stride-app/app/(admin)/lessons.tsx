@@ -13,7 +13,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { useRouter } from "expo-router";
 import {
   api,
-  type ApiDiscipline, type ApiOperatorProfile, type ApiAvailabilitySlot, type ApiUser,
+  type ApiDiscipline, type ApiOperatorProfile, type ApiAvailabilitySlot,
   type ApiScheduledCourse, type ApiCourseAvailTemplate,
 } from "@/lib/api";
 
@@ -26,7 +26,7 @@ function fmtDate(d: string) {
   catch { return d; }
 }
 
-type Tab = "operators" | "disciplines" | "availability" | "scheduler" | "private";
+type Tab = "disciplines" | "availability" | "scheduler" | "private";
 
 // ── Private Lessons Tab component ────────────────────────────────────────────
 
@@ -297,36 +297,14 @@ export default function AdminLessonsScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
-  const [tab, setTab]           = useState<Tab>("operators");
+  const [tab, setTab]           = useState<Tab>("disciplines");
   const [refreshing, setRefreshing] = useState(false);
 
   // Data
   const [disciplines, setDisciplines] = useState<ApiDiscipline[]>([]);
   const [profiles, setProfiles]       = useState<ApiOperatorProfile[]>([]);
   const [slots, setSlots]             = useState<ApiAvailabilitySlot[]>([]);
-  const [users, setUsers]             = useState<ApiUser[]>([]);
   const [saving, setSaving]           = useState(false);
-
-  // ── Operator profile form state ───────────────────────────────────────────────
-  const [showProfileModal, setShowProfileModal] = useState(false);
-  const [profileUserId, setProfileUserId]       = useState("");
-  /** true = Volunteer (unpaid), false = Paid instructor */
-  const [isVolunteer, setIsVolunteer]           = useState(false);
-  const [profileBio, setProfileBio]             = useState("");
-  /** Set of discipline IDs the operator teaches */
-  const [selectedDiscs, setSelectedDiscs]       = useState<Set<number>>(new Set());
-  /** disciplineId → hourly rate string in dollars */
-  const [profileRates, setProfileRates]         = useState<Record<number, string>>({});
-  // ── Volunteer reimbursement/donation fields ───────────────────────────────
-  const [volReimburse,          setVolReimburse]          = useState(false);
-  const [volReimburseAmount,    setVolReimburseAmount]    = useState("");
-  const [volReimburseReason,    setVolReimburseReason]    = useState("");
-  const [volReimburseRecurring, setVolReimburseRecurring] = useState(false);
-  const [volReimburseFreq,      setVolReimburseFreq]      = useState<"weekly"|"monthly"|"annual">("monthly");
-  const [volBankHolder,         setVolBankHolder]         = useState("");
-  const [volBankIban,           setVolBankIban]           = useState("");
-  const [volBankBic,            setVolBankBic]            = useState("");
-  const [volStripeLink,         setVolStripeLink]         = useState("");
 
   // ── Availability review ───────────────────────────────────────────────────────
   const [reviewSlot, setReviewSlot]   = useState<ApiAvailabilitySlot | null>(null);
@@ -340,7 +318,6 @@ export default function AdminLessonsScreen() {
   const [discDesc, setDiscDesc]             = useState("");
   const [discSaving, setDiscSaving]         = useState(false);
   const [confirmDeleteDiscId, setConfirmDeleteDiscId] = useState<number | null>(null);
-  const [confirmDeleteProfileId, setConfirmDeleteProfileId] = useState<number | null>(null);
 
   // ── Scheduler tab state ───────────────────────────────────────────────────────
   const [scheduledCourses,     setScheduledCourses]     = useState<ApiScheduledCourse[]>([]);
@@ -384,18 +361,16 @@ export default function AdminLessonsScreen() {
   // ── Data loading ──────────────────────────────────────────────────────────────
 
   const load = useCallback(async () => {
-    const [disc, prof, avail, usrList, sched, templates] = await Promise.allSettled([
+    const [disc, prof, avail, sched, templates] = await Promise.allSettled([
       api.getDisciplines(),
       api.getOperatorProfiles(),
       api.getAvailability(),
-      api.getUsers(),
       api.getScheduledCourses(),
       api.getCourseAvailability(),
     ]);
     if (disc.status      === "fulfilled") setDisciplines(disc.value);
     if (prof.status      === "fulfilled") setProfiles(prof.value);
     if (avail.status     === "fulfilled") setSlots(avail.value);
-    if (usrList.status   === "fulfilled") setUsers(usrList.value);
     if (sched.status     === "fulfilled") setScheduledCourses(sched.value);
     if (templates.status === "fulfilled") setCourseAvailTemplates(templates.value);
   }, []);
@@ -407,8 +382,6 @@ export default function AdminLessonsScreen() {
   }, [load]);
 
   useFocusEffect(useCallback(() => { load(); }, [load]));
-
-  // ── Operator profile helpers ──────────────────────────────────────────────────
 
   // ── Discipline CRUD ───────────────────────────────────────────────────────────
 
@@ -453,102 +426,6 @@ export default function AdminLessonsScreen() {
     catch { /* ignore in demo */ setDisciplines(prev => prev.filter(x => x.id !== d.id)); }
   };
 
-  const [editingProfile, setEditingProfile] = useState<ApiOperatorProfile | null>(null);
-
-  const resetProfileForm = () => {
-    setProfileUserId("");
-    setIsVolunteer(false);
-    setProfileBio("");
-    setSelectedDiscs(new Set());
-    setProfileRates({});
-    setEditingProfile(null);
-    setVolReimburse(false);
-    setVolReimburseAmount("");
-    setVolReimburseReason("");
-    setVolReimburseRecurring(false);
-    setVolReimburseFreq("monthly");
-    setVolBankHolder("");
-    setVolBankIban("");
-    setVolBankBic("");
-    setVolStripeLink("");
-  };
-
-  const openNewProfile = () => {
-    resetProfileForm();
-    setShowProfileModal(true);
-  };
-
-  const openEditProfile = (p: ApiOperatorProfile) => {
-    setEditingProfile(p);
-    setProfileUserId(String(p.user_id));
-    setIsVolunteer(p.profile_type === "volunteer");
-    setProfileBio(p.bio ?? "");
-    setSelectedDiscs(new Set((p.rates ?? []).map(r => r.discipline_id)));
-    setProfileRates(Object.fromEntries((p.rates ?? []).map(r => [r.discipline_id, (r.hourly_rate_cents / 100).toFixed(2)])));
-    setShowProfileModal(true);
-  };
-
-  const toggleDiscSelection = (id: number) => {
-    setSelectedDiscs(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-        // also clear its rate
-        setProfileRates(r => { const nr = { ...r }; delete nr[id]; return nr; });
-      } else {
-        next.add(id);
-      }
-      return next;
-    });
-  };
-
-  const saveProfile = async () => {
-    if (!profileUserId.trim()) return;
-    setSaving(true);
-    try {
-      const rates = isVolunteer
-        ? Array.from(selectedDiscs).map(id => ({ disciplineId: id, hourlyRateCents: 0 }))
-        : Array.from(selectedDiscs)
-            .filter(id => profileRates[id] !== undefined)
-            .map(id => ({
-              disciplineId:    id,
-              hourlyRateCents: Math.round(parseFloat(profileRates[id] || "0") * 100),
-            }));
-
-      if (editingProfile) {
-        await api.updateOperatorProfile(editingProfile.id, {
-          profileType: isVolunteer ? "volunteer" : "paid",
-          bio:         profileBio.trim() || undefined,
-          rates,
-        });
-      } else {
-        await api.createOperatorProfile({
-          userId:      parseInt(profileUserId),
-          profileType: isVolunteer ? "volunteer" : "paid",
-          bio:         profileBio.trim() || undefined,
-          rates,
-        });
-      }
-      await load();
-      setShowProfileModal(false);
-      resetProfileForm();
-    } catch (e: unknown) {
-      Alert.alert("Error", e instanceof Error ? e.message : "Failed to save");
-    } finally { setSaving(false); }
-  };
-
-  const deleteProfile = async (p: ApiOperatorProfile) => {
-    setConfirmDeleteProfileId(null);
-    try { await api.deleteOperatorProfile(p.id); } catch { /* ignore in demo */ }
-    setProfiles(prev => prev.filter(x => x.id !== p.id));
-  };
-
-  // Validate: paid operators must have a rate for every selected discipline
-  const paidRatesMissing = !isVolunteer && Array.from(selectedDiscs).some(
-    id => !profileRates[id]?.trim()
-  );
-  const canSave = profileUserId.trim() && !paidRatesMissing;
-
   // ── Availability review ────────────────────────────────────────────────────────
 
   const openReview = (s: ApiAvailabilitySlot) => {
@@ -592,7 +469,6 @@ export default function AdminLessonsScreen() {
 
   const pendingSlots  = slots.filter(s => s.status === "pending");
   const approvedSlots = slots.filter(s => s.status === "approved");
-  const operatorUsers = users.filter(u => u.role === "operator" || (u.roles?.includes("operator")));
   const activeDiscs   = disciplines.filter(d => d.active);
 
   // ── Render ────────────────────────────────────────────────────────────────────
@@ -604,7 +480,6 @@ export default function AdminLessonsScreen() {
       {/* ── Sticky tab bar — outside scroll ── */}
       <View style={[styles.tabBar, { backgroundColor: colors.card, borderBottomColor: colors.border }]}>
         {([
-          { key: "operators",    label: "Staff",      icon: "people-outline"          as const },
           { key: "disciplines",  label: "Activities", icon: "barbell-outline"         as const },
           { key: "availability", label: "Requests",   icon: "calendar-outline"        as const },
           { key: "scheduler",    label: "Schedule",   icon: "calendar-number-outline" as const },
@@ -643,87 +518,6 @@ export default function AdminLessonsScreen() {
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
         showsVerticalScrollIndicator={false}
       >
-
-        {/* ══ OPERATORS TAB ══ */}
-        {tab === "operators" && (
-          <>
-            <Pressable style={[styles.addBtn, { backgroundColor: colors.primary }]} onPress={openNewProfile}>
-              <Ionicons name="person-add-outline" size={18} color="#FFF" />
-              <Text style={styles.addBtnText}>Add Operator Profile</Text>
-            </Pressable>
-
-            {profiles.length === 0 && (
-              <View style={styles.emptyCard}>
-                <Ionicons name="people-outline" size={40} color={colors.mutedForeground} />
-                <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No operator profiles yet</Text>
-              </View>
-            )}
-
-            {profiles.map(p => (
-              <View key={p.id} style={[styles.cleanCard, { backgroundColor: colors.card }]}>
-                {/* Row: avatar + name/email + type badge */}
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                  <View style={[styles.profileAvatar, { backgroundColor: "rgba(30,58,138,0.08)" }]}>
-                    <Ionicons name="person" size={20} color={colors.primary} />
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.cardTitle, { color: colors.foreground }]}>{p.user?.name ?? `User #${p.user_id}`}</Text>
-                    <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>{p.user?.email}</Text>
-                  </View>
-                  <View style={[styles.typeBadge, { backgroundColor: p.profile_type === "paid" ? "#FEF9C3" : "#EFF6FF" }]}>
-                    <Text style={[styles.typeBadgeText, { color: p.profile_type === "paid" ? "#92400E" : colors.primary }]}>
-                      {p.profile_type === "paid" ? "Paid" : "Volunteer"}
-                    </Text>
-                  </View>
-                </View>
-
-                {/* Bio */}
-                {p.bio ? <Text style={[styles.cardSub, { color: colors.mutedForeground, marginBottom: 8 }]} numberOfLines={2}>{p.bio}</Text> : null}
-
-                {/* Discipline rates chips */}
-                {p.rates && p.rates.filter(r => r.discipline?.name).length > 0 && (
-                  <View style={[styles.ratesRow, { marginBottom: 10 }]}>
-                    {p.rates.filter(r => r.discipline?.name).map(r => (
-                      <View key={r.id} style={[styles.rateChip, { backgroundColor: colors.muted }]}>
-                        <Text style={[styles.rateChipText, { color: colors.foreground }]}>
-                          {r.discipline?.name}: {fmt(r.hourly_rate_cents)}/hr
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                )}
-
-                {/* Action row at bottom */}
-                {confirmDeleteProfileId === p.id ? (
-                  <View style={styles.cardActions}>
-                    <Text style={{ fontSize: 12, color: "#DC2626", fontWeight: "700", flex: 1 }}>Remove this operator?</Text>
-                    <Pressable style={[styles.actionChip, { backgroundColor: colors.muted }]} onPress={() => setConfirmDeleteProfileId(null)}>
-                      <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>Cancel</Text>
-                    </Pressable>
-                    <Pressable style={[styles.actionChip, { backgroundColor: "#EF4444" }]} onPress={() => deleteProfile(p)}>
-                      <Text style={{ fontSize: 12, fontWeight: "700", color: "#FFF" }}>Delete</Text>
-                    </Pressable>
-                  </View>
-                ) : (
-                  <View style={styles.cardActions}>
-                    {!p.active && (
-                      <View style={[styles.typeBadge, { backgroundColor: "#FEE2E2" }]}>
-                        <Text style={[styles.typeBadgeText, { color: "#991B1B" }]}>Inactive</Text>
-                      </View>
-                    )}
-                    <View style={{ flex: 1 }} />
-                    <Pressable style={[styles.discActionBtn, { backgroundColor: `colors.primary12` }]} onPress={() => openEditProfile(p)}>
-                      <Ionicons name="pencil-outline" size={15} color={colors.primary} />
-                    </Pressable>
-                    <Pressable style={[styles.discActionBtn, { backgroundColor: "#FEE2E2" }]} onPress={() => setConfirmDeleteProfileId(p.id)}>
-                      <Ionicons name="trash-outline" size={15} color="#991B1B" />
-                    </Pressable>
-                  </View>
-                )}
-              </View>
-            ))}
-          </>
-        )}
 
         {/* ══ DISCIPLINES TAB ══ */}
         {tab === "disciplines" && (
@@ -987,8 +781,7 @@ export default function AdminLessonsScreen() {
               ) : (
                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
                   {profiles.map(p => {
-                    const opUser = users.find(u => u.id === p.user_id);
-                    const label  = opUser?.name ?? `Staff #${p.id}`;
+                    const label  = p.user?.name ?? `Staff #${p.id}`;
                     const sel    = scOperatorId === p.id;
                     return (
                       <Pressable
@@ -1605,431 +1398,6 @@ export default function AdminLessonsScreen() {
         {/* ══ PRIVATE LESSONS TAB ══ */}
         {tab === "private" && <PrivateLessonsTab />}
       </ScrollView>
-
-      {/* ══════════════════════════════════════════════════
-          OPERATOR PROFILE MODAL
-          Step 1 — Select operator user
-          Step 2 — Paid / Volunteer toggle
-          Step 3 — Discipline checkboxes
-          Step 4 — Hourly rates (Paid only, per selected discipline)
-          Step 5 — Bio
-      ══════════════════════════════════════════════════ */}
-      <Modal visible={showProfileModal} transparent animationType="slide" onRequestClose={() => setShowProfileModal(false)}>
-        <View style={styles.modalOverlay}>
-          <ScrollView
-            style={{ width: "100%" }}
-            contentContainerStyle={{ alignItems: "center", paddingVertical: 40 }}
-            keyboardShouldPersistTaps="handled"
-          >
-            <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
-
-              {/* Modal header — clean light style */}
-              <View style={styles.modalCleanHeader}>
-                <View style={[styles.modalCleanIconBox, { backgroundColor: `${colors.primary}14` }]}>
-                  <Ionicons name={editingProfile ? "pencil-outline" : "person-add-outline"} size={22} color={colors.primary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.modalCleanTitle, { color: colors.primary }]}>
-                    {editingProfile ? "Edit Profile" : "New Operator Profile"}
-                  </Text>
-                  <Text style={[styles.modalCleanSub, { color: colors.mutedForeground }]}>
-                    {editingProfile ? (editingProfile.user?.name ?? "Operator") : "Configure operator settings"}
-                  </Text>
-                </View>
-                <Pressable
-                  style={[styles.modalCloseBtn, { backgroundColor: colors.muted }]}
-                  onPress={() => { setShowProfileModal(false); resetProfileForm(); }}
-                  hitSlop={8}
-                >
-                  <Ionicons name="close" size={18} color={colors.mutedForeground} />
-                </Pressable>
-              </View>
-
-              <View style={styles.modalBody}>
-
-                {/* ── Step 1: Select user (hidden in edit mode) ── */}
-                {!editingProfile && (
-                  <>
-                    <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Operator</Text>
-                    <View style={[styles.pickerContainer, { borderColor: colors.border, backgroundColor: colors.muted }]}>
-                      {operatorUsers.length === 0 ? (
-                        <Text style={[styles.pickerPlaceholder, { color: colors.mutedForeground }]}>
-                          No operator-role users found
-                        </Text>
-                      ) : (
-                        operatorUsers.map(u => (
-                          <Pressable
-                            key={u.id}
-                            style={[styles.pickerOption, profileUserId === String(u.id) && { backgroundColor: `colors.secondary60` }]}
-                            onPress={() => setProfileUserId(String(u.id))}
-                          >
-                            <View style={[styles.pickerAvatar, { backgroundColor: profileUserId === String(u.id) ? colors.primary : colors.border }]}>
-                              <Text style={styles.pickerAvatarText}>{String(u.name).charAt(0)}</Text>
-                            </View>
-                            <View style={{ flex: 1 }}>
-                              <Text style={[styles.pickerOptionName, { color: colors.foreground }]}>{u.name}</Text>
-                              <Text style={[styles.pickerOptionEmail, { color: colors.mutedForeground }]}>{u.email}</Text>
-                            </View>
-                            {profileUserId === String(u.id) && (
-                              <Ionicons name="checkmark-circle" size={20} color={colors.primary} />
-                            )}
-                          </Pressable>
-                        ))
-                      )}
-                    </View>
-                  </>
-                )}
-
-                {/* ── Step 2: Paid / Volunteer — stacked card selector ── */}
-                <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginBottom: 8 }]}>Contract Type</Text>
-                <View style={styles.typeCardGroup}>
-                  {/* Paid */}
-                  <Pressable
-                    style={[
-                      styles.typeCard,
-                      { borderColor: !isVolunteer ? colors.primary : colors.border,
-                        backgroundColor: !isVolunteer ? `colors.primary10` : colors.background },
-                    ]}
-                    onPress={() => setIsVolunteer(false)}
-                  >
-                    <View style={[styles.typeCardIcon, { backgroundColor: !isVolunteer ? colors.primary : colors.muted }]}>
-                      <Ionicons name="cash-outline" size={18} color={!isVolunteer ? "#FFF" : colors.mutedForeground} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.typeCardTitle, { color: !isVolunteer ? colors.primary : colors.foreground }]}>
-                        Paid Operator
-                      </Text>
-                      <Text style={[styles.typeCardSub, { color: colors.mutedForeground }]}>
-                        Hourly rates set per discipline
-                      </Text>
-                    </View>
-                    <View style={[styles.typeRadio, { borderColor: !isVolunteer ? colors.primary : colors.border,
-                      backgroundColor: !isVolunteer ? colors.primary : "transparent" }]}>
-                      {!isVolunteer && <Ionicons name="checkmark" size={13} color="#FFF" />}
-                    </View>
-                  </Pressable>
-
-                  {/* Volunteer */}
-                  <Pressable
-                    style={[
-                      styles.typeCard,
-                      { borderColor: isVolunteer ? colors.primary : colors.border,
-                        backgroundColor: isVolunteer ? "#EFF6FF" : colors.background },
-                    ]}
-                    onPress={() => setIsVolunteer(true)}
-                  >
-                    <View style={[styles.typeCardIcon, { backgroundColor: isVolunteer ? colors.primary : colors.muted }]}>
-                      <Ionicons name="heart-outline" size={18} color={isVolunteer ? "#FFF" : colors.mutedForeground} />
-                    </View>
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.typeCardTitle, { color: isVolunteer ? colors.primary : colors.foreground }]}>
-                        Volunteer
-                      </Text>
-                      <Text style={[styles.typeCardSub, { color: colors.mutedForeground }]}>
-                        Unpaid — no hourly rates needed
-                      </Text>
-                    </View>
-                    <View style={[styles.typeRadio, { borderColor: isVolunteer ? colors.primary : colors.border,
-                      backgroundColor: isVolunteer ? colors.primary : "transparent" }]}>
-                      {isVolunteer && <Ionicons name="checkmark" size={13} color="#FFF" />}
-                    </View>
-                  </Pressable>
-                </View>
-
-                {/* ── Volunteer Reimbursement / Donation (shown only for volunteers) ── */}
-                {isVolunteer && (
-                  <View style={{ marginTop: 16 }}>
-                    <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-                      borderWidth: 1, borderColor: colors.border, borderRadius: 10,
-                      padding: 14, backgroundColor: colors.card, marginBottom: 12 }}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={{ fontSize: 14, fontWeight: "700", color: colors.foreground }}>
-                          Reimbursement / Donation
-                        </Text>
-                        <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 2 }}>
-                          Register a recurring or one-off payment to this volunteer
-                        </Text>
-                      </View>
-                      <Switch
-                        value={volReimburse}
-                        onValueChange={v => { setVolReimburse(v); }}
-                        trackColor={{ false: "#CBD5E1", true: colors.secondary }}
-                        thumbColor={colors.primary}
-                      />
-                    </View>
-
-                    {volReimburse && (
-                      <View style={{ gap: 10 }}>
-                        {/* Amount */}
-                        <View>
-                          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>AMOUNT</Text>
-                          <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                            <Text style={{ color: colors.mutedForeground, fontSize: 15, fontWeight: "700" }}>{cur || "€"}</Text>
-                            <TextInput
-                              style={[styles.fieldInput, { flex: 1, borderColor: colors.border,
-                                backgroundColor: colors.muted, color: colors.foreground }]}
-                              value={volReimburseAmount}
-                              onChangeText={setVolReimburseAmount}
-                              placeholder="0.00"
-                              placeholderTextColor={colors.mutedForeground}
-                              keyboardType="decimal-pad"
-                            />
-                          </View>
-                        </View>
-
-                        {/* Reason */}
-                        <View>
-                          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>REASON / PURPOSE</Text>
-                          <TextInput
-                            style={[styles.fieldInput, { borderColor: colors.border,
-                              backgroundColor: colors.muted, color: colors.foreground }]}
-                            value={volReimburseReason}
-                            onChangeText={setVolReimburseReason}
-                            placeholder="e.g. Travel expenses, monthly donation…"
-                            placeholderTextColor={colors.mutedForeground}
-                          />
-                        </View>
-
-                        {/* Recurring toggle */}
-                        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between",
-                          borderWidth: 1, borderColor: colors.border, borderRadius: 10, padding: 12,
-                          backgroundColor: colors.card }}>
-                          <View style={{ flex: 1 }}>
-                            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>Recurring</Text>
-                            <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Repeat on a regular schedule</Text>
-                          </View>
-                          <Switch
-                            value={volReimburseRecurring}
-                            onValueChange={setVolReimburseRecurring}
-                            trackColor={{ false: "#CBD5E1", true: colors.secondary }}
-                            thumbColor={colors.primary}
-                          />
-                        </View>
-
-                        {volReimburseRecurring && (
-                          <View style={{ flexDirection: "row", gap: 6 }}>
-                            {(["weekly","monthly","annual"] as const).map(f => (
-                              <Pressable key={f}
-                                style={{ flex: 1, borderWidth: 1.5, borderRadius: 8, paddingVertical: 8,
-                                  alignItems: "center",
-                                  borderColor: volReimburseFreq === f ? colors.primary : colors.border,
-                                  backgroundColor: volReimburseFreq === f ? colors.primary : colors.card }}
-                                onPress={() => setVolReimburseFreq(f)}>
-                                <Text style={{ fontSize: 12, fontWeight: "700",
-                                  color: volReimburseFreq === f ? "#fff" : colors.foreground,
-                                  textTransform: "capitalize" }}>{f}</Text>
-                              </Pressable>
-                            ))}
-                          </View>
-                        )}
-
-                        {/* Bank details section */}
-                        <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 4 }]}>
-                          PAYMENT DETAILS
-                        </Text>
-                        <View>
-                          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>ACCOUNT HOLDER NAME</Text>
-                          <TextInput
-                            style={[styles.fieldInput, { borderColor: colors.border,
-                              backgroundColor: colors.muted, color: colors.foreground }]}
-                            value={volBankHolder}
-                            onChangeText={setVolBankHolder}
-                            placeholder="Full name on bank account"
-                            placeholderTextColor={colors.mutedForeground}
-                          />
-                        </View>
-                        <View>
-                          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>IBAN</Text>
-                          <TextInput
-                            style={[styles.fieldInput, { borderColor: colors.border,
-                              backgroundColor: colors.muted, color: colors.foreground }]}
-                            value={volBankIban}
-                            onChangeText={setVolBankIban}
-                            placeholder="e.g. GB29 NWBK 6016 1331 9268 19"
-                            placeholderTextColor={colors.mutedForeground}
-                            autoCapitalize="characters"
-                          />
-                        </View>
-                        <View>
-                          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>BIC / SWIFT</Text>
-                          <TextInput
-                            style={[styles.fieldInput, { borderColor: colors.border,
-                              backgroundColor: colors.muted, color: colors.foreground }]}
-                            value={volBankBic}
-                            onChangeText={setVolBankBic}
-                            placeholder="e.g. NWBKGB2L"
-                            placeholderTextColor={colors.mutedForeground}
-                            autoCapitalize="characters"
-                          />
-                        </View>
-                        <View>
-                          <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>
-                            STRIPE PAYMENT LINK (optional)
-                          </Text>
-                          <TextInput
-                            style={[styles.fieldInput, { borderColor: colors.border,
-                              backgroundColor: colors.muted, color: colors.foreground }]}
-                            value={volStripeLink}
-                            onChangeText={setVolStripeLink}
-                            placeholder="https://buy.stripe.com/…"
-                            placeholderTextColor={colors.mutedForeground}
-                            autoCapitalize="none"
-                            keyboardType="url"
-                          />
-                        </View>
-                      </View>
-                    )}
-                  </View>
-                )}
-
-                {/* ── Step 3: Discipline checkboxes ── */}
-                <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 16 }]}>
-                  Disciplines Taught
-                </Text>
-                <Text style={[styles.fieldHint, { color: colors.mutedForeground }]}>
-                  {isVolunteer
-                    ? "Select which disciplines this volunteer can teach."
-                    : "Select disciplines — you'll set an hourly rate for each."}
-                </Text>
-
-                {activeDiscs.length === 0 ? (
-                  <View style={[styles.noDiscsCard, { backgroundColor: colors.muted }]}>
-                    <Ionicons name="musical-notes-outline" size={18} color={colors.mutedForeground} />
-                    <Text style={[styles.noDiscsText, { color: colors.mutedForeground }]}>
-                      No active disciplines — add them in the Disciplines tab first.
-                    </Text>
-                  </View>
-                ) : (
-                  <View style={[styles.checkboxList, { borderColor: colors.border }]}>
-                    {activeDiscs.map(d => {
-                      const checked = selectedDiscs.has(d.id);
-                      return (
-                        <Pressable
-                          key={d.id}
-                          style={[
-                            styles.checkboxRow,
-                            checked && { backgroundColor: `colors.secondary30` },
-                          ]}
-                          onPress={() => toggleDiscSelection(d.id)}
-                        >
-                          <View style={[styles.checkbox, { borderColor: checked ? colors.primary : colors.border, backgroundColor: checked ? colors.primary : "transparent" }]}>
-                            {checked && <Ionicons name="checkmark" size={13} color="#FFF" />}
-                          </View>
-                          <Text style={[styles.checkboxLabel, { color: colors.foreground }]}>{d.name}</Text>
-                          {d.description ? (
-                            <Text style={[styles.checkboxDesc, { color: colors.mutedForeground }]} numberOfLines={1}>
-                              {d.description}
-                            </Text>
-                          ) : null}
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                )}
-
-                {/* ── Discipline badge preview ── */}
-                {selectedDiscs.size > 0 && (
-                  <View style={{ marginTop: 10, marginBottom: 2 }}>
-                    <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Badge Preview</Text>
-                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                      {activeDiscs.filter(d => selectedDiscs.has(d.id)).map(d => (
-                        <View key={d.id} style={[styles.rateChip, { backgroundColor: `colors.secondary40` }]}>
-                          <Text style={[styles.rateChipText, { color: colors.primary }]}>{d.name}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  </View>
-                )}
-
-                {/* ── Step 4: Hourly rates (Paid + selected disciplines only) ── */}
-                {!isVolunteer && selectedDiscs.size > 0 && (
-                  <>
-                    <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 16 }]}>
-                      Hourly Rates
-                    </Text>
-                    <Text style={[styles.fieldHint, { color: colors.mutedForeground }]}>
-                      Set the operator's pay rate for each selected discipline.
-                    </Text>
-                    <View style={[styles.ratesList, { borderColor: colors.border }]}>
-                      {activeDiscs.filter(d => selectedDiscs.has(d.id)).map((d, i, arr) => (
-                        <View
-                          key={d.id}
-                          style={[
-                            styles.rateRow,
-                            i < arr.length - 1 && { borderBottomWidth: 1, borderBottomColor: colors.border },
-                          ]}
-                        >
-                          <View style={{ flex: 1 }}>
-                            <Text style={[styles.rateDiscName, { color: colors.foreground }]}>{d.name}</Text>
-                            {!profileRates[d.id]?.trim() && (
-                              <Text style={styles.rateRequired}>Required *</Text>
-                            )}
-                          </View>
-                          <View style={[styles.rateInputWrap, { borderColor: profileRates[d.id]?.trim() ? colors.primary : colors.border, backgroundColor: colors.muted }]}>
-                            <Text style={[styles.rateCurrency, { color: colors.mutedForeground }]}>$</Text>
-                            <TextInput
-                              style={[styles.rateInput, { color: colors.foreground }]}
-                              value={profileRates[d.id] ?? ""}
-                              onChangeText={v => setProfileRates(prev => ({ ...prev, [d.id]: v }))}
-                              placeholder="0.00"
-                              placeholderTextColor={colors.mutedForeground}
-                              keyboardType="decimal-pad"
-                            />
-                            <Text style={[styles.rateCurrency, { color: colors.mutedForeground }]}>/hr</Text>
-                          </View>
-                        </View>
-                      ))}
-                    </View>
-                  </>
-                )}
-
-                {/* ── Step 5: Bio ── */}
-                <Text style={[styles.fieldLabel, { color: colors.mutedForeground, marginTop: 16 }]}>Bio</Text>
-                <TextInput
-                  style={[styles.textArea, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.muted }]}
-                  value={profileBio}
-                  onChangeText={setProfileBio}
-                  placeholder="Short bio shown to members when booking…"
-                  placeholderTextColor={colors.mutedForeground}
-                  multiline
-                  numberOfLines={3}
-                />
-
-                {/* ── Actions ── */}
-                {!isVolunteer && paidRatesMissing && (
-                  <View style={[styles.validationBanner, { backgroundColor: "#FEF3C7" }]}>
-                    <Ionicons name="warning-outline" size={14} color="#92400E" />
-                    <Text style={styles.validationText}>
-                      Enter a rate for every selected discipline before saving.
-                    </Text>
-                  </View>
-                )}
-
-                <View style={styles.modalActions}>
-                  <Pressable style={[styles.modalBtn, { backgroundColor: colors.muted }]} onPress={() => setShowProfileModal(false)}>
-                    <Text style={[styles.modalBtnText, { color: colors.mutedForeground }]}>Cancel</Text>
-                  </Pressable>
-                  <Pressable
-                    style={[styles.modalBtn, { backgroundColor: (!canSave || saving) ? colors.border : colors.primary }]}
-                    onPress={saveProfile}
-                    disabled={!canSave || saving}
-                  >
-                    {saving
-                      ? <ActivityIndicator size="small" color="#FFF" />
-                      : (
-                        <>
-                          <Ionicons name="checkmark-circle-outline" size={16} color="#FFF" />
-                          <Text style={styles.modalBtnText}>Save Profile</Text>
-                        </>
-                      )
-                    }
-                  </Pressable>
-                </View>
-              </View>
-            </View>
-          </ScrollView>
-        </View>
-      </Modal>
 
       {/* ══ ADD DISCIPLINE MODAL ══ */}
       <Modal visible={showDiscModal} transparent animationType="slide" onRequestClose={() => setShowDiscModal(false)}>
