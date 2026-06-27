@@ -91,6 +91,14 @@ export default function OperationsHub() {
           onPress={() => router.push("/(admin)/qr-gate" as never)}
         />
         <HubCard
+          icon="tablet-landscape-outline"
+          title="Terminal Kiosks"
+          description="Provision and revoke check-in tablets"
+          iconBg={colors.primary}
+          iconColor={colors.secondary}
+          onPress={() => router.push("/(admin)/settings/terminals" as never)}
+        />
+        <HubCard
           icon="calendar-number-outline"
           title="Lesson Calendar"
           description="Events, workshops, AI roster, reminders and bi-weekly scheduling"

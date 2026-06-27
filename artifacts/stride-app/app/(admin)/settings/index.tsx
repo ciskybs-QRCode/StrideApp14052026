@@ -165,7 +165,18 @@ export default function SettingsIndex() {
         />
 
         {/* ── SECTION LABEL ── */}
-        <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>ORGANISATION</Text>
+        <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>CONFIGURATION</Text>
+
+        {/* ── CONFIG ROWS (Organisation Info, App Configuration) ── */}
+        {NAV_ROWS.filter(item => item.key !== "legal-privacy").map((item) => (
+          <HubCard
+            key={item.key}
+            icon={item.icon}
+            title={item.title}
+            description={item.description}
+            onPress={() => navigate(item.key)}
+          />
+        ))}
 
         {/* ── BRANDING, SETUP & QR ── */}
         <HubCard
@@ -178,25 +189,14 @@ export default function SettingsIndex() {
           }}
         />
 
-        {/* ── TERMINAL KIOSKS ── */}
-        <HubCard
-          icon="tablet-landscape-outline"
-          title="Terminal Kiosks"
-          description="Provision and revoke check-in tablets"
-          onPress={() => navigate("terminals")}
-        />
-
-        {/* ── SECTION LABEL ── */}
-        <Text style={[styles.groupLabel, { color: colors.mutedForeground }]}>CONFIGURATION</Text>
-
-        {/* ── CONFIG ROWS ── */}
-        {NAV_ROWS.map((item) => (
+        {/* ── LEGAL & PRIVACY ── */}
+        {NAV_ROWS.filter(item => item.key === "legal-privacy").map((item) => (
           <HubCard
             key={item.key}
             icon={item.icon}
             title={item.title}
             description={item.description}
-            badge={item.key === "legal-privacy" && unsignedCount > 0 ? unsignedCount : undefined}
+            badge={unsignedCount > 0 ? unsignedCount : undefined}
             onPress={() => navigate(item.key)}
           />
         ))}
