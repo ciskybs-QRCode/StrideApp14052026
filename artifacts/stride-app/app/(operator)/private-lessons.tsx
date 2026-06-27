@@ -9,9 +9,10 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { api, type ApiAvailabilitySlot, type ApiCourseAvailTemplate, type ApiDiscipline, type ApiLocation, type ApiPrivateBooking, type ApiPrivateNotification } from "@/lib/api";
+import { api, getMyOperatorSkills, type ApiAvailabilitySlot, type ApiCourseAvailTemplate, type ApiDiscipline, type ApiLocation, type ApiOperatorSkill, type ApiPrivateBooking, type ApiPrivateNotification } from "@/lib/api";
 
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { TimePickerSheet } from "@/components/WizardPickers";
 
 // ── Date / time helpers ───────────────────────────────────────────────────────
 
@@ -174,11 +175,15 @@ export default function OperatorPrivateLessonsScreen() {
   const [plExpanded, setPlExpanded] = useState<number | null>(null);
 
   // Mode B — Regular Courses availability
-  const [availMode, setAvailMode] = useState<"private" | "courses">("private");
+  const [availMode, setAvailMode] = useState<"private" | "courses">("courses");
   const [courseAvailTemplates, setCourseAvailTemplates] = useState<ApiCourseAvailTemplate[]>([]);
   // Draft: disciplineId → daySlots (dayOfWeek → { start, end })
   const [courseAvailDraft, setCourseAvailDraft] = useState<Record<number, { daySlots: Record<number, { start: string; end: string }> }>>({});
   const [courseAvailSaving, setCourseAvailSaving] = useState(false);
+  const [courseTimePicker, setCourseTimePicker] = useState<{ discId: number; dow: number; field: "start" | "end" } | null>(null);
+
+  // My operator skills (for discipline filtering)
+  const [mySkills, setMySkills] = useState<ApiOperatorSkill[]>([]);
 
   // Activity-type availability (new form — works offline)
   const [slotActivityTypes, setSlotActivityTypes] = useState<string[]>([]);
@@ -203,19 +208,21 @@ export default function OperatorPrivateLessonsScreen() {
   }, []);
 
   const load = useCallback(async () => {
-    const [disc, locs, avail, bk, notifs, courseAvail] = await Promise.allSettled([
+    const [disc, locs, avail, bk, notifs, courseAvail, skills] = await Promise.allSettled([
       api.getDisciplines(),
       api.getLocations(),
       api.getAvailability(),
       api.getPrivateBookings(),
       api.getPrivateNotifications(),
       api.getCourseAvailability(),
+      getMyOperatorSkills(),
     ]);
     if (disc.status      === "fulfilled") setDisciplines(disc.value);
     if (locs.status      === "fulfilled") setLocations(locs.value);
     if (avail.status     === "fulfilled") setSlots(avail.value);
     if (bk.status        === "fulfilled") setBookings(bk.value);
     if (notifs.status    === "fulfilled") setNotifications(notifs.value);
+    if (skills.status    === "fulfilled") setMySkills(skills.value.skills);
     if (courseAvail.status === "fulfilled") {
       const templates = courseAvail.value;
       setCourseAvailTemplates(templates);
@@ -1170,18 +1177,28 @@ export default function OperatorPrivateLessonsScreen() {
                 <View style={{ backgroundColor: `colors.primary10`, borderRadius: 14, padding: 14, marginBottom: 16, flexDirection: "row", gap: 10 }}>
                   <Ionicons name="information-circle-outline" size={20} color={colors.primary} style={{ marginTop: 1 }} />
                   <Text style={{ flex: 1, fontSize: 13, color: colors.primary, lineHeight: 18 }}>
-                    Select the disciplines you can teach as a regular weekly course and which days work for you. Admins will use this data to schedule courses.
+                    Set the days and times you can teach each of your disciplines. The AI will use this to schedule courses automatically.
                   </Text>
                 </View>
 
-                {disciplines.length === 0 ? (
-                  <View style={styles.emptyCard}>
-                    <Ionicons name="barbell-outline" size={40} color={colors.mutedForeground} />
-                    <Text style={[styles.emptyTitle, { color: colors.primary }]}>No disciplines</Text>
-                    <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>No disciplines are configured yet. Contact the admin.</Text>
-                  </View>
-                ) : (
-                  disciplines.map(disc => {
+                {(() => {
+                  const skillLabels = new Set(mySkills.map(s => s.label.toLowerCase()));
+                  const teachable = mySkills.length > 0
+                    ? disciplines.filter(d => skillLabels.has(d.name.toLowerCase()))
+                    : disciplines;
+                  return teachable.length === 0 ? (
+                    <View style={styles.emptyCard}>
+                      <Ionicons name="barbell-outline" size={40} color={colors.mutedForeground} />
+                      <Text style={[styles.emptyTitle, { color: colors.primary }]}>
+                        {mySkills.length === 0 ? "No skills set up" : "No matching disciplines"}
+                      </Text>
+                      <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
+                        {mySkills.length === 0
+                          ? "Complete your skills setup first so we know which courses you can teach."
+                          : "Ask the admin to create disciplines matching your skills."}
+                      </Text>
+                    </View>
+                  ) : teachable.map(disc => {
                     const draft = courseAvailDraft[disc.id] ?? { daySlots: {} };
                     const activeDays = Object.keys(draft.daySlots).map(Number).sort((a, b) => a - b);
                     const hasAnyDay  = activeDays.length > 0;
@@ -1241,46 +1258,32 @@ export default function OperatorPrivateLessonsScreen() {
                                 <Text style={{ fontSize: 13, fontWeight: "800", color: colors.primary }}>{DOW_FULL[dow]}</Text>
                               </View>
 
-                              {/* Start time */}
-                              <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 10, fontWeight: "600", color: colors.mutedForeground, marginBottom: 3, textAlign: "center" }}>FROM</Text>
-                                <TextInput
-                                  style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 9, paddingHorizontal: 8, paddingVertical: 8, fontSize: 15, fontWeight: "700", color: colors.foreground, backgroundColor: colors.background, textAlign: "center" }}
-                                  value={slot.start}
-                                  onChangeText={v => setCourseAvailDraft(prev => {
-                                    const d = prev[disc.id] ?? { daySlots: {} };
-                                    return { ...prev, [disc.id]: { daySlots: { ...d.daySlots, [dow]: { ...(d.daySlots[dow] ?? { start: "09:00", end: "10:00" }), start: v } } } };
-                                  })}
-                                  placeholder="09:00"
-                                  placeholderTextColor={colors.mutedForeground}
-                                  keyboardType="numbers-and-punctuation"
-                                />
-                              </View>
+                              {/* Start time — drumroll picker */}
+                              <Pressable
+                                style={{ flex: 1, alignItems: "center", borderWidth: 1.5, borderColor: colors.primary, borderRadius: 10, paddingVertical: 9, backgroundColor: colors.background }}
+                                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCourseTimePicker({ discId: disc.id, dow, field: "start" }); }}
+                              >
+                                <Text style={{ fontSize: 9, fontWeight: "600", color: colors.mutedForeground, textTransform: "uppercase", marginBottom: 2 }}>FROM</Text>
+                                <Text style={{ fontSize: 16, fontWeight: "800", color: colors.primary }}>{slot.start}</Text>
+                              </Pressable>
 
                               <Text style={{ fontSize: 16, color: colors.mutedForeground, fontWeight: "300" }}>–</Text>
 
-                              {/* End time */}
-                              <View style={{ flex: 1 }}>
-                                <Text style={{ fontSize: 10, fontWeight: "600", color: colors.mutedForeground, marginBottom: 3, textAlign: "center" }}>TO</Text>
-                                <TextInput
-                                  style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 9, paddingHorizontal: 8, paddingVertical: 8, fontSize: 15, fontWeight: "700", color: colors.foreground, backgroundColor: colors.background, textAlign: "center" }}
-                                  value={slot.end}
-                                  onChangeText={v => setCourseAvailDraft(prev => {
-                                    const d = prev[disc.id] ?? { daySlots: {} };
-                                    return { ...prev, [disc.id]: { daySlots: { ...d.daySlots, [dow]: { ...(d.daySlots[dow] ?? { start: "09:00", end: "10:00" }), end: v } } } };
-                                  })}
-                                  placeholder="10:00"
-                                  placeholderTextColor={colors.mutedForeground}
-                                  keyboardType="numbers-and-punctuation"
-                                />
-                              </View>
+                              {/* End time — drumroll picker */}
+                              <Pressable
+                                style={{ flex: 1, alignItems: "center", borderWidth: 1.5, borderColor: colors.primary, borderRadius: 10, paddingVertical: 9, backgroundColor: colors.background }}
+                                onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setCourseTimePicker({ discId: disc.id, dow, field: "end" }); }}
+                              >
+                                <Text style={{ fontSize: 9, fontWeight: "600", color: colors.mutedForeground, textTransform: "uppercase", marginBottom: 2 }}>TO</Text>
+                                <Text style={{ fontSize: 16, fontWeight: "800", color: colors.primary }}>{slot.end}</Text>
+                              </Pressable>
                             </View>
                           );
                         })}
                       </View>
                     );
-                  })
-                )}
+                  });
+                })()}
 
                 <Pressable
                   style={{ backgroundColor: colors.primary, borderRadius: 14, padding: 16, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 8, opacity: courseAvailSaving ? 0.7 : 1, marginTop: 8, marginBottom: 8 }}
@@ -1707,6 +1710,34 @@ export default function OperatorPrivateLessonsScreen() {
             </Pressable>
           </View>
         </View>
+      </Modal>
+
+      {/* ── Course availability time picker modal ── */}
+      <Modal visible={!!courseTimePicker} transparent animationType="slide">
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}
+          onPress={() => setCourseTimePicker(null)}
+        >
+          <Pressable onPress={() => {}}>
+            {courseTimePicker && (
+              <TimePickerSheet
+                value={(() => {
+                  const slot = courseAvailDraft[courseTimePicker.discId]?.daySlots[courseTimePicker.dow];
+                  return courseTimePicker.field === "start" ? (slot?.start ?? "09:00") : (slot?.end ?? "10:00");
+                })()}
+                onConfirm={v => {
+                  const { discId, dow, field } = courseTimePicker;
+                  setCourseAvailDraft(prev => {
+                    const d = prev[discId] ?? { daySlots: {} };
+                    const old = d.daySlots[dow] ?? { start: "09:00", end: "10:00" };
+                    return { ...prev, [discId]: { daySlots: { ...d.daySlots, [dow]: { ...old, [field]: v } } } };
+                  });
+                  setCourseTimePicker(null);
+                }}
+              />
+            )}
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );
