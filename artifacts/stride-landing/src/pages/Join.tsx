@@ -240,6 +240,19 @@ export default function Join() {
     if (!signinPassword)     { setSigninError("Password is required."); return; }
     setSigninLoading(true);
     try {
+      // No org slug → plain login, redirect to app
+      if (!slug) {
+        const res = await fetch("/api/auth/login", {
+          method:  "POST",
+          headers: { "Content-Type": "application/json" },
+          body:    JSON.stringify({ email: signinEmail.trim().toLowerCase(), password: signinPassword }),
+        });
+        const data = await res.json() as { token?: string; error?: string };
+        if (!res.ok) { setSigninError(data.error ?? "Sign-in failed. Please check your credentials."); return; }
+        window.location.href = "/app/";
+        return;
+      }
+
       const res  = await fetch(`/api/public/join/${slug}/link-account`, {
         method:  "POST",
         headers: { "Content-Type": "application/json" },
