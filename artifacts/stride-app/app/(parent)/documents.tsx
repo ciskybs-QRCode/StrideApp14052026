@@ -130,6 +130,8 @@ export default function DocumentsScreen() {
   const handlePreview = async (doc: typeof documents[0]) => {
     if (doc.fileUrl) {
       await WebBrowser.openBrowserAsync(doc.fileUrl);
+    } else {
+      router.push({ pathname: "/(parent)/doc-view", params: { docId: String(doc.id) } });
     }
   };
 
@@ -378,8 +380,8 @@ export default function DocumentsScreen() {
                         From {doc.sentBy === "admin" ? "Administration" : "Association"} · {doc.sentAt}
                       </Text>
                     </View>
-                    <Pressable style={[styles.downloadBtn, { backgroundColor: doc.fileUrl ? colors.primary + "18" : colors.muted }]} onPress={() => handlePreview(doc)} disabled={!doc.fileUrl}>
-                      <Ionicons name={doc.fileUrl ? "eye-outline" : "document-outline"} size={16} color={doc.fileUrl ? colors.primary : colors.mutedForeground} />
+                    <Pressable style={[styles.downloadBtn, { backgroundColor: colors.primary + "18" }]} onPress={() => handlePreview(doc)}>
+                      <Ionicons name="eye-outline" size={16} color={colors.primary} />
                     </Pressable>
                   </Pressable>
                 ))}
