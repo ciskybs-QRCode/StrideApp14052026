@@ -821,7 +821,7 @@ export default function ActivityWizard() {
         {/* ── Scrollable content */}
         <ScrollView
           style={{ flex: 1 }}
-          contentContainerStyle={{ padding: 20, paddingBottom: 120 + insets.bottom }}
+          contentContainerStyle={{ padding: 20, paddingBottom: 160 + insets.bottom }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}
         >
@@ -829,7 +829,7 @@ export default function ActivityWizard() {
         </ScrollView>
 
         {/* ── Nav buttons */}
-        <View style={[st.navBar, { borderTopColor: colors.border, paddingBottom: 16 + insets.bottom, backgroundColor: colors.background }]}>
+        <View style={[st.navBar, { borderTopColor: colors.border, paddingBottom: insets.bottom + 68, backgroundColor: colors.background }]}>
         {step > 1 && (
           <Pressable style={[st.navBack, { flex: 1, borderColor: colors.border }]} onPress={handleBack}>
             <Ionicons name="chevron-back" size={18} color={colors.primary} />
