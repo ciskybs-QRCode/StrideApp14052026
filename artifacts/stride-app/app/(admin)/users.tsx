@@ -153,8 +153,10 @@ export default function AdminUsers() {
     /** Whether the toggle is enabling (true) or disabling (false) a role. */
     enabling?: boolean;
   } | null>(null);
-  const [operatorProfile, setOperatorProfile] = useState<ApiOperatorProfile | null>(null);
-  const [fullProfile,    setFullProfile]    = useState<FullProfileData | null>(null);
+  const [operatorProfile,    setOperatorProfile]    = useState<ApiOperatorProfile | null>(null);
+  const [opProfileType,      setOpProfileType]      = useState<"paid" | "volunteer">("paid");
+  const [opProfileTypeSaving,setOpProfileTypeSaving]= useState(false);
+  const [fullProfile,        setFullProfile]        = useState<FullProfileData | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
 
   // ── Employment / Wages-Contractor state ──────────────────────────────────────
@@ -231,6 +233,7 @@ export default function AdminUsers() {
       api.getOperatorProfiles().then(profiles => {
         const profile = profiles.find(p => String(p.user_id) === selected.id);
         setOperatorProfile(profile ?? null);
+        setOpProfileType(profile?.profile_type ?? "paid");
       }).catch(() => {});
     }
   }, [selected?.id, selected?.role]);
@@ -325,6 +328,18 @@ export default function AdminUsers() {
   const handleApprove    = (user: UserRecord) => setConfirmAction({ type: "approve",    user });
 
   // ── Employment handlers ───────────────────────────────────────────────────────
+  const handleOpProfileTypeChange = async (newType: "paid" | "volunteer") => {
+    if (!operatorProfile || opProfileTypeSaving) return;
+    setOpProfileType(newType);
+    setOpProfileTypeSaving(true);
+    try {
+      await api.updateOperatorProfile(operatorProfile.id, { profileType: newType });
+      setOperatorProfile(prev => prev ? { ...prev, profile_type: newType } : prev);
+    } catch {
+      setOpProfileType(operatorProfile.profile_type);
+    } finally { setOpProfileTypeSaving(false); }
+  };
+
   const handleSaveEmployment = async () => {
     if (!operatorProfile) return;
     setEmpSaving(true);
@@ -881,11 +896,26 @@ export default function AdminUsers() {
                   {user.role === "operator" && (
                     <View style={[styles.disciplinesSection, { borderColor: colors.border }]}>
                       {operatorProfile && (
-                        <View style={[styles.profileTypePill, { backgroundColor: operatorProfile.profile_type === "paid" ? "#FEF9C3" : "#EFF6FF" }]}>
-                          <Ionicons name={operatorProfile.profile_type === "paid" ? "cash-outline" : "heart-outline"} size={12} color={operatorProfile.profile_type === "paid" ? "#92400E" : colors.primary} />
-                          <Text style={[styles.profileTypePillText, { color: operatorProfile.profile_type === "paid" ? "#92400E" : colors.primary }]}>
-                            {operatorProfile.profile_type === "paid" ? "Paid Operator" : "Volunteer"}
-                          </Text>
+                        <View style={{ gap: 6 }}>
+                          <Text style={[styles.disciplinesSectionTitle, { color: colors.primary, marginBottom: 2 }]}>Staff Type</Text>
+                          <View style={{ flexDirection: "row", gap: 8 }}>
+                            {(["paid", "volunteer"] as const).map(t => (
+                              <Pressable key={t}
+                                onPress={() => { void handleOpProfileTypeChange(t); void Haptics.selectionAsync(); }}
+                                disabled={opProfileTypeSaving}
+                                style={{ flex: 1, paddingVertical: 9, borderRadius: 10, alignItems: "center", borderWidth: 2,
+                                  borderColor: opProfileType === t ? (t === "paid" ? "#B45309" : colors.primary) : colors.border,
+                                  backgroundColor: opProfileType === t ? (t === "paid" ? "#FEF9C3" : "#EFF6FF") : "transparent",
+                                  opacity: opProfileTypeSaving ? 0.6 : 1 }}>
+                                <Ionicons name={t === "paid" ? "cash-outline" : "heart-outline"} size={14}
+                                  color={opProfileType === t ? (t === "paid" ? "#92400E" : colors.primary) : colors.mutedForeground} />
+                                <Text style={{ fontSize: 11, fontWeight: "800", marginTop: 3,
+                                  color: opProfileType === t ? (t === "paid" ? "#92400E" : colors.primary) : colors.mutedForeground }}>
+                                  {t === "paid" ? "Paid" : "Volunteer"}
+                                </Text>
+                              </Pressable>
+                            ))}
+                          </View>
                         </View>
                       )}
 
@@ -923,22 +953,20 @@ export default function AdminUsers() {
                                   keyboardType="decimal-pad"
                                 />
                               </View>
-                              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginHorizontal: -2 }}>
-                                <View style={{ flexDirection: "row", gap: 6, paddingHorizontal: 2 }}>
-                                  {(["hourly", "per_lesson", "daily", "weekly", "monthly"] as const).map(u => {
-                                    const lbl = u === "hourly" ? "/ hr" : u === "per_lesson" ? "/ lesson" : u === "daily" ? "/ day" : u === "weekly" ? "/ week" : "/ month";
-                                    return (
-                                      <Pressable key={u}
-                                        onPress={() => { setContractorBilling(u); void Haptics.selectionAsync(); }}
-                                        style={{ paddingHorizontal: 10, paddingVertical: 7, borderRadius: 8, borderWidth: 1,
-                                          backgroundColor: contractorBilling === u ? colors.primary : "transparent",
-                                          borderColor: contractorBilling === u ? colors.primary : colors.border }}>
-                                        <Text style={{ fontSize: 11, fontWeight: "700", color: contractorBilling === u ? "#FFF" : colors.foreground }}>{lbl}</Text>
-                                      </Pressable>
-                                    );
-                                  })}
-                                </View>
-                              </ScrollView>
+                              <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                                {(["hourly", "per_lesson", "daily", "weekly", "monthly"] as const).map(u => {
+                                  const lbl = u === "hourly" ? "/ hr" : u === "per_lesson" ? "/ lesson" : u === "daily" ? "/ day" : u === "weekly" ? "/ week" : "/ month";
+                                  return (
+                                    <Pressable key={u}
+                                      onPress={() => { setContractorBilling(u); void Haptics.selectionAsync(); }}
+                                      style={{ paddingHorizontal: 12, paddingVertical: 7, borderRadius: 8, borderWidth: 1,
+                                        backgroundColor: contractorBilling === u ? colors.primary : "transparent",
+                                        borderColor: contractorBilling === u ? colors.primary : colors.border }}>
+                                      <Text style={{ fontSize: 11, fontWeight: "700", color: contractorBilling === u ? "#FFF" : colors.foreground }}>{lbl}</Text>
+                                    </Pressable>
+                                  );
+                                })}
+                              </View>
                               {empConfig?.contractor_extra_chips && empConfig.contractor_extra_chips.length > 0 && (
                                 <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
                                   {empConfig.contractor_extra_chips.map((chip, i) => (
@@ -1151,16 +1179,16 @@ export default function AdminUsers() {
                           )}
 
                           {/* Country / City */}
-                          <View style={{ flexDirection: "row", gap: 6 }}>
+                          <View style={{ gap: 6 }}>
                             <TextInput
-                              style={{ flex: 2, borderWidth: 1, borderColor: colors.border, borderRadius: 8,
+                              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8,
                                 paddingHorizontal: 10, paddingVertical: 7, fontSize: 12, color: colors.foreground }}
                               placeholder="Residence country"
                               value={empCountry}
                               onChangeText={setEmpCountry}
                             />
                             <TextInput
-                              style={{ flex: 1, borderWidth: 1, borderColor: colors.border, borderRadius: 8,
+                              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 8,
                                 paddingHorizontal: 10, paddingVertical: 7, fontSize: 12, color: colors.foreground }}
                               placeholder="City"
                               value={empCity}
