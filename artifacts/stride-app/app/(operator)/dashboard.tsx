@@ -1689,7 +1689,7 @@ export default function OperatorDashboard() {
             style={({ pressed }) => [styles.featureBanner, { backgroundColor: colors.card, borderColor: colors.border, opacity: pressed ? 0.85 : 1 }]}
             onPress={() => { router.push("/(parent)/marketplace" as Parameters<typeof router.push>[0]); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
           >
-            <View style={[styles.featureBannerIcon, { backgroundColor: "rgba(251,191,36,0.12)" }]}>
+            <View style={[styles.featureBannerIcon, { backgroundColor: colors.muted }]}>
               <Ionicons name="storefront" size={22} color={colors.primary} />
             </View>
             <View style={{ flex: 1 }}>
