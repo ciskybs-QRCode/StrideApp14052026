@@ -65,6 +65,22 @@ export default function OperationsHub() {
           />
         )}
 
+        <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>STAFF</Text>
+        <HubCard
+          icon="people-outline"
+          title="Staff Hub"
+          description="All collaborators — profiles, certificates, employment type"
+          iconBg={colors.primary}
+          iconColor={colors.secondary}
+          onPress={() => router.push("/(admin)/staff-hub" as never)}
+        />
+        <HubCard
+          icon="shield-checkmark-outline"
+          title="Certificate Overview"
+          description="Medical and first-aid cert status across all operators"
+          onPress={() => router.push("/(admin)/cert-overview" as never)}
+        />
+
         <Text style={[styles.sectionLabel, { color: colors.mutedForeground }]}>OPERATIONS</Text>
         <HubCard
           icon="scan-outline"
