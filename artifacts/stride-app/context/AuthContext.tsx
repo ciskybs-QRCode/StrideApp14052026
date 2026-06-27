@@ -38,6 +38,7 @@ export interface User {
   secondaryColor?: string;
   logoUri?: string;
   profilePhotoUri?: string;
+  preferredName?: string;
   phone?: string;
   onboardingComplete?: boolean;
   activationStatus?: "active" | "pending_activation";
@@ -217,6 +218,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       orgId:          apiUser.orgId ?? (apiUser.organization_id as number | undefined),
       is_owner:       apiUser.is_owner ?? false,
       profilePhotoUri: ((apiUser as unknown) as Record<string, unknown>).profilePhotoUri as string | undefined ?? undefined,
+      preferredName:  ((apiUser as unknown) as Record<string, unknown>).preferredName as string | undefined ?? undefined,
     };
 
     const finalAllRoles = dbRoles ?? derivedRoles.map(r => ({ role: r, orgId: mapped.orgId ?? 0 }));
@@ -334,9 +336,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(updated);
 
     // Persist profile fields to backend so they sync across devices on login.
-    const backendPayload: { profilePhotoUri?: string | null; name?: string } = {};
+    const backendPayload: { profilePhotoUri?: string | null; name?: string; preferred_name?: string } = {};
     if ("profilePhotoUri" in resolvedUpdates) backendPayload.profilePhotoUri = resolvedUpdates.profilePhotoUri ?? null;
     if ("name" in resolvedUpdates && resolvedUpdates.name) backendPayload.name = resolvedUpdates.name;
+    if ("preferredName" in resolvedUpdates) backendPayload.preferred_name = resolvedUpdates.preferredName ?? undefined;
     if (Object.keys(backendPayload).length > 0) {
       api.updateMyProfile(backendPayload).catch(() => {
         // Fire-and-forget — local state is already updated; backend sync best-effort.

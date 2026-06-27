@@ -194,7 +194,6 @@ export default function AdminHome() {
   const [orgName, setOrgName]               = useState<string>("");
   const [orgLoadError, setOrgLoadError]     = useState(false);
   const [orgLogoUri, setOrgLogoUri]         = useState<string | null>(null);
-  const [preferredName, setPreferredName]   = useState("");
   const [orgContactPhone, setOrgContactPhone] = useState("");
   const [orgContactEmail, setOrgContactEmail] = useState("");
 
@@ -219,9 +218,6 @@ export default function AdminHome() {
     AsyncStorage.getItem("stride_campus_address").catch(() => null).then(addr => {
       if (addr) setCampusAddress(addr);
     });
-    AsyncStorage.getItem("stride_profile_extra_v1").then(raw => {
-      if (raw) { try { const p = JSON.parse(raw); if (p.preferredName) setPreferredName(p.preferredName); } catch {} }
-    }).catch(() => {});
     api.getOrg().then(org => {
       if (org?.name) setOrgName(org.name);
       if (org?.contact_phone)  setOrgContactPhone(org.contact_phone);
@@ -501,7 +497,7 @@ export default function AdminHome() {
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.pageTitle, { color: colors.primary }]}>
-              {(() => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; })()}, {preferredName || "Admin"} 👋
+              {(() => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; })()}, {user?.preferredName || user?.name?.split(" ")[0] || "Admin"} 👋
             </Text>
             {!!(orgName || user?.schoolName) && (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginTop: 1 }}>

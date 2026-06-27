@@ -52,7 +52,7 @@ router.post("/auth/login", authLimiter, async (req, res) => {
 
   const { data: users, error } = await supabase
     .from("users")
-    .select("id, name, email, password_hash, role, roles, organization_id, blocked, profile_photo_url")
+    .select("id, name, email, password_hash, role, roles, organization_id, blocked, profile_photo_url, preferred_name")
     .ilike("email", email.trim())
     .limit(1);
 
@@ -116,6 +116,7 @@ router.post("/auth/login", authLimiter, async (req, res) => {
   // Lazily ensure owner_email is seeded on first login
   await initOwnerEmail().catch(() => {});
 
+  const u = user as Record<string, unknown>;
   res.json({
     token,
     user: {
@@ -125,7 +126,8 @@ router.post("/auth/login", authLimiter, async (req, res) => {
       role: effectiveRole,
       orgId: resolvedOrgId,
       is_owner: user.email?.toLowerCase() === getOwnerEmail().toLowerCase(),
-      profilePhotoUri: (user as Record<string, unknown>).profile_photo_url ?? null,
+      profilePhotoUri: u.profile_photo_url ?? null,
+      preferredName: u.preferred_name ?? null,
       ...(globalUserId !== null ? { globalUserId } : {}),
     },
   });

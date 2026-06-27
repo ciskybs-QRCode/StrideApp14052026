@@ -115,24 +115,6 @@ export default function ParentHome() {
     }
   }, [orgId]);
 
-  useEffect(() => {
-    // Load preferred name: server is authoritative, AsyncStorage is the fallback
-    api.getProfileExtra()
-      .then(data => {
-        if (data?.preferred_name) {
-          setPreferredName(data.preferred_name);
-        } else {
-          AsyncStorage.getItem("stride_profile_extra_v1").then(raw => {
-            if (raw) { try { const p = JSON.parse(raw); if (p.preferredName) setPreferredName(p.preferredName); } catch {} }
-          }).catch(() => {});
-        }
-      })
-      .catch(() => {
-        AsyncStorage.getItem("stride_profile_extra_v1").then(raw => {
-          if (raw) { try { const p = JSON.parse(raw); if (p.preferredName) setPreferredName(p.preferredName); } catch {} }
-        }).catch(() => {});
-      });
-  }, []);
 
   // Future absence state
   const [absMode, setAbsMode] = useState<"today" | "future">("today");
@@ -150,7 +132,6 @@ export default function ParentHome() {
   const [orgContactPhone, setOrgContactPhone] = useState("");
   const [orgContactEmail, setOrgContactEmail] = useState("");
   const [social, setSocial] = useState<Record<string, string>>({});
-  const [preferredName, setPreferredName] = useState("");
 
   // ── Emergency Pulse ────────────────────────────────────────────────────────
   const [activePulse,    setActivePulse]    = useState<import("@/lib/api").EmergencyPulse | null>(null);
@@ -351,7 +332,7 @@ export default function ParentHome() {
     setShowSOSModal(true);
   };
 
-  const firstName = preferredName || user?.name?.split(" ")[0] || "User";
+  const firstName = user?.preferredName || user?.name?.split(" ")[0] || "User";
 
   // ── Emergency Pulse dynamic content ───────────────────────────────────────
   const pulseType       = activePulse?.type ?? "emergency_pulse";
@@ -399,7 +380,7 @@ export default function ParentHome() {
         {/* Header */}
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.pageTitle, { color: colors.primary }]}>{(() => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; })()}, {preferredName || user?.name || "Welcome"} 👋</Text>
+            <Text style={[styles.pageTitle, { color: colors.primary }]}>{(() => { const h = new Date().getHours(); return h < 12 ? "Good morning" : h < 18 ? "Good afternoon" : "Good evening"; })()}, {firstName} 👋</Text>
             {!!user?.schoolName && (
               <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
                 {user.schoolName}
