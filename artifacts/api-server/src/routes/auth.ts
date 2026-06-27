@@ -52,7 +52,7 @@ router.post("/auth/login", authLimiter, async (req, res) => {
 
   const { data: users, error } = await supabase
     .from("users")
-    .select("id, name, email, password_hash, role, roles, organization_id, blocked, profile_photo_url")
+    .select("id, name, email, password_hash, role, roles, organization_id, blocked, profile_photo_url, preferred_name")
     .ilike("email", email.trim())
     .limit(1);
 
