@@ -1,5 +1,6 @@
 import app from "./app";
 import { logger } from "./lib/logger";
+import { verifySupabaseSchema } from "./lib/supabase-schema-check.js";
 import { startReminderScheduler, startCertReminderScheduler } from "./lib/reminder-scheduler.js";
 import { startMembershipScheduler } from "./lib/membership-scheduler.js";
 import { startTrialBillingScheduler } from "./lib/trial-billing-scheduler.js";
@@ -23,24 +24,31 @@ if (Number.isNaN(port) || port <= 0) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-app.listen(port, (err) => {
-  if (err) {
-    logger.error({ err }, "Error listening on port");
-    process.exit(1);
-  }
+// Verify Supabase schema before accepting any requests.
+// If any required column is missing the process exits with a clear error.
+verifySupabaseSchema().then(() => {
+  app.listen(port, (err) => {
+    if (err) {
+      logger.error({ err }, "Error listening on port");
+      process.exit(1);
+    }
 
-  logger.info({ port }, "Server listening");
-  startReminderScheduler();
-  startCertReminderScheduler();
-  startMembershipScheduler();
-  startTrialBillingScheduler();
-  startSeatSyncScheduler();
-  startDataDeletionScheduler();
-  startReportScheduler();
-  RescueCascadeService.ensureMigration().catch(err =>
-    logger.error(err, "RescueCascadeService: migration failed"),
-  );
-  EmergencyPushService.ensureMigration()
-    .then(() => EmergencyPushService.startAckWatchdog())
-    .catch(err => logger.error(err, "EmergencyPushService: boot failed"));
+    logger.info({ port }, "Server listening");
+    startReminderScheduler();
+    startCertReminderScheduler();
+    startMembershipScheduler();
+    startTrialBillingScheduler();
+    startSeatSyncScheduler();
+    startDataDeletionScheduler();
+    startReportScheduler();
+    RescueCascadeService.ensureMigration().catch(err =>
+      logger.error(err, "RescueCascadeService: migration failed"),
+    );
+    EmergencyPushService.ensureMigration()
+      .then(() => EmergencyPushService.startAckWatchdog())
+      .catch(err => logger.error(err, "EmergencyPushService: boot failed"));
+  });
+}).catch(err => {
+  logger.fatal({ err }, "Supabase schema check failed — aborting startup");
+  process.exit(1);
 });
