@@ -21,6 +21,7 @@ import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { api, type ApiDiscipline } from "@/lib/api";
+import { CalendarPicker, TimePickerSheet } from "@/components/WizardPickers";
 
 const DAYS      = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const DAY_HEADS = ["M", "T", "W", "T", "F", "S", "S"];
@@ -214,6 +215,10 @@ export default function OperatorCalendar() {
   const [wSingleDay,        setWSingleDay]       = useState(false);
   const [wStartDateDisplay, setWStartDateDisplay]= useState(isoToDisplay(todayIso()));
   const [wEndDateDisplay,   setWEndDateDisplay]  = useState(isoToDisplay(todayIso()));
+  const [showStartCal,      setShowStartCal]     = useState(false);
+  const [showEndCal,        setShowEndCal]       = useState(false);
+  const [showFromTime,      setShowFromTime]     = useState(false);
+  const [showToTime,        setShowToTime]       = useState(false);
   const [savedInstructors,  setSavedInstructors] = useState<string[]>([]);
   const [savedVenues,       setSavedVenues]      = useState<string[]>([]);
 
@@ -986,41 +991,34 @@ export default function OperatorCalendar() {
                 </Pressable>
               </View>
 
-              {/* Date inputs */}
+              {/* Date inputs — calendar picker chips */}
               <View style={wSingleDay ? {} : styles.twoCol}>
                 <View style={wSingleDay ? {} : { flex: 1 }}>
-                  <Text style={styles.subLabel}>{wSingleDay ? "Date (DD/MM/YYYY)" : "Start (DD/MM/YYYY)"}</Text>
-                  <TextInput
-                    style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
-                    placeholder={isoToDisplay(todayIso())}
-                    placeholderTextColor={colors.mutedForeground}
-                    value={wStartDateDisplay}
-                    onChangeText={t => {
-                      setWStartDateDisplay(t);
-                      setValidationMsg("");
-                      const iso = displayToIso(t);
-                      if (iso.length === 10) {
-                        setWStartDate(iso);
-                        if (wSingleDay) { setWEndDate(iso); setWEndDateDisplay(t); }
-                      }
-                    }}
-                  />
+                  <Text style={styles.subLabel}>{wSingleDay ? "Date" : "Start date"}</Text>
+                  <Pressable
+                    style={[styles.input, { borderColor: colors.primary, flexDirection: "row", alignItems: "center", gap: 8 }]}
+                    onPress={() => setShowStartCal(true)}
+                  >
+                    <Ionicons name="calendar-outline" size={16} color={colors.primary} />
+                    <Text style={{ flex: 1, color: wStartDateDisplay ? colors.foreground : colors.mutedForeground, fontSize: 14, fontWeight: "600" }}>
+                      {wStartDateDisplay || isoToDisplay(todayIso())}
+                    </Text>
+                    <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} />
+                  </Pressable>
                 </View>
                 {!wSingleDay && (
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.subLabel}>End (Max +7 days)</Text>
-                    <TextInput
-                      style={[styles.input, { borderColor: durationDays > 6 ? "#EF4444" : colors.primary, color: colors.foreground }]}
-                      placeholder={isoToDisplay(todayIso())}
-                      placeholderTextColor={colors.mutedForeground}
-                      value={wEndDateDisplay}
-                      onChangeText={t => {
-                        setWEndDateDisplay(t);
-                        setValidationMsg("");
-                        const iso = displayToIso(t);
-                        if (iso.length === 10) setWEndDate(iso);
-                      }}
-                    />
+                    <Text style={styles.subLabel}>End date (max +7 days)</Text>
+                    <Pressable
+                      style={[styles.input, { borderColor: durationDays > 6 ? "#EF4444" : colors.primary, flexDirection: "row", alignItems: "center", gap: 8 }]}
+                      onPress={() => setShowEndCal(true)}
+                    >
+                      <Ionicons name="calendar-outline" size={16} color={durationDays > 6 ? "#EF4444" : colors.primary} />
+                      <Text style={{ flex: 1, color: wEndDateDisplay ? colors.foreground : colors.mutedForeground, fontSize: 14, fontWeight: "600" }}>
+                        {wEndDateDisplay || isoToDisplay(todayIso())}
+                      </Text>
+                      <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} />
+                    </Pressable>
                   </View>
                 )}
               </View>
@@ -1044,28 +1042,30 @@ export default function OperatorCalendar() {
                 ) : null
               )}
 
-              {/* ─ Times ─ */}
+              {/* ─ Times — drum picker chips ─ */}
               <Text style={[styles.fieldLabel, { color: colors.primary }]}>Time</Text>
               <View style={styles.twoCol}>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.subLabel}>Start</Text>
-                  <TextInput
-                    style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
-                    placeholder="10:00"
-                    placeholderTextColor={colors.mutedForeground}
-                    value={wStartTime}
-                    onChangeText={setWStartTime}
-                  />
+                  <Text style={styles.subLabel}>From</Text>
+                  <Pressable
+                    style={[styles.input, { borderColor: colors.primary, flexDirection: "row", alignItems: "center", gap: 8 }]}
+                    onPress={() => setShowFromTime(true)}
+                  >
+                    <Ionicons name="time-outline" size={16} color={colors.primary} />
+                    <Text style={{ flex: 1, color: colors.foreground, fontSize: 14, fontWeight: "600" }}>{wStartTime}</Text>
+                    <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} />
+                  </Pressable>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.subLabel}>End</Text>
-                  <TextInput
-                    style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
-                    placeholder="13:00"
-                    placeholderTextColor={colors.mutedForeground}
-                    value={wEndTime}
-                    onChangeText={setWEndTime}
-                  />
+                  <Text style={styles.subLabel}>To</Text>
+                  <Pressable
+                    style={[styles.input, { borderColor: colors.primary, flexDirection: "row", alignItems: "center", gap: 8 }]}
+                    onPress={() => setShowToTime(true)}
+                  >
+                    <Ionicons name="time-outline" size={16} color={colors.primary} />
+                    <Text style={{ flex: 1, color: colors.foreground, fontSize: 14, fontWeight: "600" }}>{wEndTime}</Text>
+                    <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} />
+                  </Pressable>
                 </View>
               </View>
 
@@ -1540,6 +1540,82 @@ export default function OperatorCalendar() {
           </View>
         </Pressable>
       </Modal>
+
+      {/* ══ Start Date Calendar Picker ══════════════════════════════════════════ */}
+      <Modal visible={showStartCal} transparent animationType="fade" onRequestClose={() => setShowStartCal(false)}>
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center", padding: 24 }}
+          onPress={() => setShowStartCal(false)}
+        >
+          <Pressable onPress={e => e.stopPropagation()}>
+            <CalendarPicker
+              value={wStartDateDisplay}
+              onConfirm={v => {
+                setWStartDateDisplay(v);
+                setValidationMsg("");
+                const iso = displayToIso(v);
+                if (iso.length === 10) {
+                  setWStartDate(iso);
+                  if (wSingleDay) { setWEndDate(iso); setWEndDateDisplay(v); }
+                }
+                setShowStartCal(false);
+              }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ══ End Date Calendar Picker ════════════════════════════════════════════ */}
+      <Modal visible={showEndCal} transparent animationType="fade" onRequestClose={() => setShowEndCal(false)}>
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center", padding: 24 }}
+          onPress={() => setShowEndCal(false)}
+        >
+          <Pressable onPress={e => e.stopPropagation()}>
+            <CalendarPicker
+              value={wEndDateDisplay}
+              onConfirm={v => {
+                setWEndDateDisplay(v);
+                setValidationMsg("");
+                const iso = displayToIso(v);
+                if (iso.length === 10) setWEndDate(iso);
+                setShowEndCal(false);
+              }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ══ From Time Drum Picker ════════════════════════════════════════════════ */}
+      <Modal visible={showFromTime} transparent animationType="slide" onRequestClose={() => setShowFromTime(false)}>
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}
+          onPress={() => setShowFromTime(false)}
+        >
+          <Pressable onPress={e => e.stopPropagation()}>
+            <TimePickerSheet
+              value={wStartTime}
+              onConfirm={v => { setWStartTime(v); setShowFromTime(false); }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ══ To Time Drum Picker ══════════════════════════════════════════════════ */}
+      <Modal visible={showToTime} transparent animationType="slide" onRequestClose={() => setShowToTime(false)}>
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}
+          onPress={() => setShowToTime(false)}
+        >
+          <Pressable onPress={e => e.stopPropagation()}>
+            <TimePickerSheet
+              value={wEndTime}
+              onConfirm={v => { setWEndTime(v); setShowToTime(false); }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
     </View>
   );
 }
