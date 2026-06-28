@@ -497,7 +497,7 @@ export default function AdminHome() {
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
             <Text style={[styles.pageTitle, { color: colors.primary }]}>
-              Hi! {user?.preferredName || user?.name?.split(" ")[0] || "Admin"}
+              Hi {user?.preferredName || user?.name?.split(" ")[0] || "Admin"}
             </Text>
             {!!(orgName || user?.schoolName) && (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginTop: 1 }}>
