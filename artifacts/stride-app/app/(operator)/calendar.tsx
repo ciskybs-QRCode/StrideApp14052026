@@ -25,6 +25,7 @@ import { CalendarPicker, TimePickerSheet } from "@/components/WizardPickers";
 
 const DAYS      = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const DAY_HEADS = ["M", "T", "W", "T", "F", "S", "S"];
+const slotDow   = (slot_date: string) => { const d = new Date(slot_date + "T00:00:00"); return (d.getDay() + 6) % 7; };
 
 // ── Monthly calendar helpers ───────────────────────────────────────────────────
 
@@ -279,7 +280,7 @@ export default function OperatorCalendar() {
         }
       })
       .catch(() => {});
-    api.getMyAvailabilitySlots()
+    api.getAvailability()
       .then(slots => setAvailabilitySlots(slots))
       .catch(() => {})
       .finally(() => setAvailLoading(false));
@@ -541,8 +542,8 @@ export default function OperatorCalendar() {
           const todayDow = (() => { const d = new Date().getDay(); return d === 0 ? 6 : d - 1; })();
           const slotsByDay: Record<number, ApiAvailabilitySlot[]> = {};
           availabilitySlots.forEach(s => {
-            if (s.is_recurring && s.day_of_week != null) {
-              const d = Number(s.day_of_week);
+            if (s.slot_date) {
+              const d = slotDow(s.slot_date);
               if (!slotsByDay[d]) slotsByDay[d] = [];
               slotsByDay[d].push(s);
             }
