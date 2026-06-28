@@ -20,7 +20,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 import { useOrgCurrency } from "@/hooks/useOrgCurrency";
-import { api, type ApiDiscipline } from "@/lib/api";
+import { api, type ApiAvailabilitySlot, type ApiDiscipline } from "@/lib/api";
 import { CalendarPicker, TimePickerSheet } from "@/components/WizardPickers";
 
 const DAYS      = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
@@ -177,7 +177,7 @@ export default function OperatorCalendar() {
   const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
   const [selectedDay, setSelectedDay]   = useState(() => { const d = new Date().getDay(); return d === 0 ? 6 : d - 1; });
-  const [view, setView]                 = useState<"week" | "list" | "month">("month");
+  const [view, setView]                 = useState<"month" | "list">("month");
   const [schedule, setSchedule]         = useState<LessonItem[][]>(INITIAL_SCHEDULE);
   const [showOptions, setShowOptions]   = useState<{ dayIdx: number; lessonIdx: number } | null>(null);
   const [showModal, setShowModal]       = useState(false);
@@ -219,6 +219,8 @@ export default function OperatorCalendar() {
   const [showEndCal,        setShowEndCal]       = useState(false);
   const [showFromTime,      setShowFromTime]     = useState(false);
   const [showToTime,        setShowToTime]       = useState(false);
+  const [availabilitySlots, setAvailabilitySlots] = useState<ApiAvailabilitySlot[]>([]);
+  const [availLoading,      setAvailLoading]     = useState(true);
   const [savedInstructors,  setSavedInstructors] = useState<string[]>([]);
   const [savedVenues,       setSavedVenues]      = useState<string[]>([]);
 
@@ -277,6 +279,10 @@ export default function OperatorCalendar() {
         }
       })
       .catch(() => {});
+    api.getMyAvailabilitySlots()
+      .then(slots => setAvailabilitySlots(slots))
+      .catch(() => {})
+      .finally(() => setAvailLoading(false));
   }, []);
 
   const toggleAttendance = (eventId: string, status: "attended" | "missed") => {
@@ -397,7 +403,6 @@ export default function OperatorCalendar() {
   };
 
   // ── derived ──────────────────────────────────────────────────────────────────
-  const todayLessons      = schedule[selectedDay] ?? [];
   const selectedLesson    = showOptions ? schedule[showOptions.dayIdx]?.[showOptions.lessonIdx] : null;
   const upcomingWorkshops = workshops.filter(w => w.status === "upcoming");
   const durationDays      = daysBetween(wStartDate, wEndDate);
@@ -412,10 +417,7 @@ export default function OperatorCalendar() {
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ScrollView
-        contentContainerStyle={[
-          styles.scroll,
-          { paddingTop: 16, paddingBottom: insets.bottom + 120 },
-        ]}
+        contentContainerStyle={[styles.scroll, { paddingTop: 16, paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}
       >
         {/* ── Header ── */}
@@ -423,304 +425,252 @@ export default function OperatorCalendar() {
           <Text style={[styles.pageTitle, { color: colors.primary }]}>Calendar</Text>
           <View style={[styles.viewToggle, { backgroundColor: colors.muted }]}>
             <Pressable
-              style={[styles.toggleBtn, view === "list" && { backgroundColor: colors.primary }]}
-              onPress={() => setView("list")}
-            >
-              <Ionicons name="list" size={16} color={view === "list" ? "#FFF" : colors.mutedForeground} />
-            </Pressable>
-            <Pressable
-              style={[styles.toggleBtn, view === "week" && { backgroundColor: colors.primary }]}
-              onPress={() => setView("week")}
-            >
-              <Ionicons name="grid-outline" size={16} color={view === "week" ? "#FFF" : colors.mutedForeground} />
-            </Pressable>
-            <Pressable
               style={[styles.toggleBtn, view === "month" && { backgroundColor: colors.primary }]}
               onPress={() => setView("month")}
             >
               <Ionicons name="calendar-outline" size={16} color={view === "month" ? "#FFF" : colors.mutedForeground} />
             </Pressable>
+            <Pressable
+              style={[styles.toggleBtn, view === "list" && { backgroundColor: colors.primary }]}
+              onPress={() => setView("list")}
+            >
+              <Ionicons name="list" size={16} color={view === "list" ? "#FFF" : colors.mutedForeground} />
+            </Pressable>
           </View>
         </View>
 
+        {/* ── Month calendar header (always visible) ── */}
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <Pressable onPress={() => setViewDate(new Date(yr, mo - 1, 1))} style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}>
+            <Ionicons name="chevron-back" size={20} color={colors.primary} />
+          </Pressable>
+          <Text style={{ fontSize: 17, fontWeight: "800", color: colors.primary }}>{MONTH_NAMES[mo]} {yr}</Text>
+          <Pressable onPress={() => setViewDate(new Date(yr, mo + 1, 1))} style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}>
+            <Ionicons name="chevron-forward" size={20} color={colors.primary} />
+          </Pressable>
+        </View>
 
-        {/* ── Lessons: list vs grid ── */}
-        {view === "list" ? (
+        {/* ── Month grid (month view only) ── */}
+        {view === "month" && (
           <>
-            <Text style={[styles.sectionTitle, { color: colors.primary }]}>
-              {DAYS[selectedDay]} — {todayLessons.length} {todayLessons.length === 1 ? "lesson" : "lessons"}
-            </Text>
+            <View style={{ flexDirection: "row", marginBottom: 4 }}>
+              {DAY_HEADS.map((h, hi) => (
+                <View key={hi} style={{ flex: 1, alignItems: "center" }}>
+                  <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground }}>{h}</Text>
+                </View>
+              ))}
+            </View>
+            <View style={[styles.monthGrid, { backgroundColor: colors.card }]}>
+              {matrix.map((week, wi) => (
+                <View key={wi} style={{ flexDirection: "row" }}>
+                  {week.map((date, di) => {
+                    if (!date) return <View key={di} style={styles.monthCell} />;
+                    const dow        = (date.getDay() + 6) % 7;
+                    const dayLessons = (schedule[dow] ?? []).filter(l => !l.cancelled);
+                    const iso        = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+                    const dayEvents  = calEvents.filter(ev => ev.date === iso);
+                    const isToday    = date.getDate() === todayD.getDate() && date.getMonth() === todayD.getMonth() && date.getFullYear() === todayD.getFullYear();
+                    return (
+                      <Pressable
+                        key={di}
+                        style={[styles.monthCell, isToday && { backgroundColor: colors.primary + "18", borderRadius: 10 }]}
+                        onPress={() => {
+                          if (dayLessons.length > 0 || dayEvents.length > 0) {
+                            setDayDetail({ date, lessons: dayLessons });
+                            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                          }
+                        }}
+                      >
+                        <Text style={[styles.monthDayNum, { color: isToday ? colors.primary : colors.foreground }, isToday && { fontWeight: "800" }]}>
+                          {date.getDate()}
+                        </Text>
+                        <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 2, marginTop: 3 }}>
+                          {dayLessons.slice(0, 2).map((l, li) => (
+                            <View key={`l${li}`} style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: lessonColor(l.course, colors.primary, colors.secondary) }} />
+                          ))}
+                          {dayEvents.map(ev => (
+                            <View key={ev.id} style={{ width: 6, height: 6, borderRadius: 1.5, backgroundColor: ev.type === "event" ? colors.secondary : colors.primary }} />
+                          ))}
+                        </View>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ))}
+            </View>
+            {/* Legend */}
+            <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 12, marginBottom: 4 }}>
+              {orgDisciplines.map(d => (
+                <View key={d.id} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                  <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: lessonColor(d.name, colors.primary, colors.secondary) }} />
+                  <Text style={{ fontSize: 11, color: colors.mutedForeground }}>{d.name}</Text>
+                </View>
+              ))}
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                <View style={{ width: 8, height: 8, borderRadius: 1.5, backgroundColor: colors.secondary }} />
+                <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Event</Text>
+              </View>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
+                <View style={{ width: 8, height: 8, borderRadius: 1.5, backgroundColor: colors.primary }} />
+                <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Meeting</Text>
+              </View>
+            </View>
+          </>
+        )}
 
-            {todayLessons.length === 0 ? (
-              <View style={[styles.noSessionCard, { backgroundColor: colors.card, borderColor: "#D4AF37" }]}>
-                <View style={styles.noSessionIconWrap}>
-                  <Ionicons name="calendar-clear-outline" size={30} color="#D4AF37" />
+        {/* ── My Availability ─────────────────────────────────────────────────── */}
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 28, marginBottom: 12 }}>
+          <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>My Availability</Text>
+          <Pressable
+            style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: colors.primary + "12", borderWidth: 1, borderColor: colors.primary + "30" }}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.navigate({ pathname: "/(operator)/private-lessons", params: { openTab: "availability" } } as never);
+            }}
+          >
+            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>Manage</Text>
+            <Ionicons name="chevron-forward" size={12} color={colors.primary} />
+          </Pressable>
+        </View>
+
+        {availLoading ? (
+          <View style={{ borderRadius: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, padding: 20, alignItems: "center" }}>
+            <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Loading...</Text>
+          </View>
+        ) : (() => {
+          const todayDow = (() => { const d = new Date().getDay(); return d === 0 ? 6 : d - 1; })();
+          const slotsByDay: Record<number, ApiAvailabilitySlot[]> = {};
+          availabilitySlots.forEach(s => {
+            if (s.is_recurring && s.day_of_week != null) {
+              const d = Number(s.day_of_week);
+              if (!slotsByDay[d]) slotsByDay[d] = [];
+              slotsByDay[d].push(s);
+            }
+          });
+          const hasAny = Object.keys(slotsByDay).length > 0;
+
+          if (!hasAny) {
+            return (
+              <Pressable
+                style={{ borderRadius: 16, borderWidth: 1.5, borderColor: colors.border, padding: 28, alignItems: "center", gap: 10, backgroundColor: colors.card }}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.navigate({ pathname: "/(operator)/private-lessons", params: { openTab: "availability" } } as never);
+                }}
+              >
+                <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: colors.primary + "12", alignItems: "center", justifyContent: "center" }}>
+                  <Ionicons name="time-outline" size={24} color={colors.primary} />
                 </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={[styles.noSessionTitle, { color: colors.primary }]}>No Sessions Today</Text>
-                  <Text style={[styles.noSessionSub, { color: colors.mutedForeground }]}>
-                    There are no scheduled classes for {DAYS[selectedDay]}.
-                  </Text>
+                <Text style={{ fontSize: 15, fontWeight: "700", color: colors.primary }}>No availability set yet</Text>
+                <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center", lineHeight: 19 }}>
+                  Tap to set your weekly schedule and start receiving private lesson bookings
+                </Text>
+              </Pressable>
+            );
+          }
+
+          return (
+            <View style={{ borderRadius: 16, overflow: "hidden", backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
+              {DAYS.map((day, idx) => {
+                const slots   = slotsByDay[idx] ?? [];
+                const isTodayRow = idx === todayDow;
+                return (
+                  <View
+                    key={idx}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      paddingHorizontal: 14,
+                      paddingVertical: 11,
+                      borderBottomWidth: idx < 6 ? StyleSheet.hairlineWidth : 0,
+                      borderBottomColor: colors.border,
+                      backgroundColor: isTodayRow ? colors.primary + "08" : "transparent",
+                    }}
+                  >
+                    <View style={{
+                      width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center",
+                      backgroundColor: isTodayRow ? colors.primary : colors.muted, marginRight: 12,
+                    }}>
+                      <Text style={{ fontSize: 11, fontWeight: "800", color: isTodayRow ? "#FFF" : colors.mutedForeground }}>{day}</Text>
+                    </View>
+                    {slots.length === 0 ? (
+                      <Text style={{ fontSize: 13, color: colors.mutedForeground, fontStyle: "italic" }}>Unavailable</Text>
+                    ) : (
+                      <View style={{ flex: 1, flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                        {slots.map((s, si) => (
+                          <View key={si} style={{
+                            flexDirection: "row", alignItems: "center", gap: 4,
+                            backgroundColor: isTodayRow ? colors.primary + "18" : colors.muted,
+                            paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,
+                          }}>
+                            <Ionicons name="time-outline" size={12} color={isTodayRow ? colors.primary : colors.mutedForeground} />
+                            <Text style={{ fontSize: 12, fontWeight: "700", color: isTodayRow ? colors.primary : colors.foreground }}>
+                              {s.start_time}–{s.end_time}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          );
+        })()}
+
+        {/* ── Upcoming Workshops (agenda view) ─────────────────────────────────── */}
+        {view === "list" && (
+          <>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 28, marginBottom: 12 }}>
+              <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>Upcoming Workshops</Text>
+              {upcomingWorkshops.length > 0 && (
+                <View style={{ backgroundColor: colors.secondary, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 }}>
+                  <Text style={{ fontSize: 12, fontWeight: "800", color: colors.primary }}>{upcomingWorkshops.length}</Text>
                 </View>
+              )}
+            </View>
+            {upcomingWorkshops.length === 0 ? (
+              <View style={{ borderRadius: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, padding: 24, alignItems: "center", gap: 8 }}>
+                <Ionicons name="school-outline" size={28} color={colors.primary} />
+                <Text style={{ fontSize: 14, fontWeight: "700", color: colors.primary }}>No upcoming workshops</Text>
+                <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Tap + to create one</Text>
               </View>
             ) : (
-              todayLessons.map((lesson, i) => (
-                <View
-                  key={i}
-                  style={[styles.lessonCard, { backgroundColor: colors.card, opacity: lesson.cancelled ? 0.5 : 1 }]}
-                >
-                  <View style={[styles.lessonBar, { backgroundColor: lesson.cancelled ? "#9CA3AF" : colors.secondary }]} />
-                  <View style={styles.lessonContent}>
-                    <View style={styles.lessonTopRow}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={[styles.lessonName, { color: colors.primary }]}>{lesson.course}</Text>
-                        {lesson.cancelled && <Text style={styles.cancelledBadge}>CANCELLED</Text>}
-                      </View>
-                      <View style={styles.lessonTopRight}>
-                        <View style={[styles.studentsBadge, { backgroundColor: colors.muted }]}>
-                          <Ionicons name="people" size={12} color={colors.primary} />
-                          <Text style={[styles.studentsCount, { color: colors.primary }]}>{lesson.students}</Text>
-                        </View>
-                        {!lesson.cancelled && (
-                          <Pressable
-                            onPress={() => {
-                              setShowOptions({ dayIdx: selectedDay, lessonIdx: i });
-                              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                            }}
-                            style={styles.optionsBtn}
-                          >
-                            <Ionicons name="ellipsis-vertical" size={18} color={colors.mutedForeground} />
-                          </Pressable>
-                        )}
-                      </View>
-                    </View>
-                    <Text style={[styles.lessonMeta, { color: colors.mutedForeground }]}>
-                      <Ionicons name="time-outline" size={13} /> {lesson.start} – {lesson.end}
-                    </Text>
-                    <Text style={[styles.lessonMeta, { color: colors.mutedForeground }]}>
-                      <Ionicons name="location-outline" size={13} /> {lesson.room}
+              upcomingWorkshops.map(w => (
+                <View key={w.id} style={[styles.workshopCard, { backgroundColor: colors.card }]}>
+                  <View style={[styles.workshopAccent, { backgroundColor: colors.primary }]}>
+                    <Text style={{ fontSize: 10, fontWeight: "800", color: colors.secondary, textAlign: "center", paddingHorizontal: 4 }}>
+                      {w.style.toUpperCase().slice(0, 4)}
                     </Text>
                   </View>
+                  <View style={styles.workshopBody}>
+                    <Text style={[styles.workshopTitle, { color: colors.primary }]}>{w.title}</Text>
+                    <View style={styles.workshopMetaRow}>
+                      <Ionicons name="calendar-outline" size={13} color={colors.mutedForeground} />
+                      <Text style={[styles.workshopMetaText, { color: colors.mutedForeground }]}>
+                        {formatDateDisplay(w.startDate)}{w.startDate !== w.endDate ? ` – ${formatDateDisplay(w.endDate)}` : ""}
+                      </Text>
+                    </View>
+                    <View style={styles.workshopMetaRow}>
+                      <Ionicons name="time-outline" size={13} color={colors.mutedForeground} />
+                      <Text style={[styles.workshopMetaText, { color: colors.mutedForeground }]}>{w.startTime} – {w.endTime}</Text>
+                      <Ionicons name="location-outline" size={13} color={colors.mutedForeground} style={{ marginLeft: 8 }} />
+                      <Text style={[styles.workshopMetaText, { color: colors.mutedForeground }]} numberOfLines={1}>{w.location}</Text>
+                    </View>
+                    {!!w.description && (
+                      <Text style={[styles.workshopDesc, { color: colors.mutedForeground }]} numberOfLines={2}>{w.description}</Text>
+                    )}
+                  </View>
+                  <Pressable style={styles.workshopCancelBtn} onPress={() => cancelWorkshop(w.id)}>
+                    <Ionicons name="close-circle-outline" size={22} color="#EF4444" />
+                  </Pressable>
                 </View>
               ))
             )}
           </>
-        ) : view === "week" ? (
-          /* ── GRID VIEW ── */
-          <>
-            <Text style={[styles.sectionTitle, { color: colors.primary }]}>Week at a Glance</Text>
-            <View style={[styles.gridCard, { backgroundColor: colors.card }]}>
-              {DAYS.map((day, idx) => {
-                const dayLessons = schedule[idx] ?? [];
-                const isSelected = selectedDay === idx;
-                const hasLessons = dayLessons.length > 0;
-                const visible = dayLessons.slice(0, 2);
-                const overflow = dayLessons.length - 2;
-                return (
-                  <Pressable
-                    key={day}
-                    onPress={() => { setSelectedDay(idx); setView("list"); }}
-                    style={[
-                      styles.gridCol,
-                      isSelected && { backgroundColor: `colors.primary12`, borderRadius: 12 },
-                    ]}
-                  >
-                    {/* Day header */}
-                    <View style={[
-                      styles.gridDayHeader,
-                      { backgroundColor: isSelected ? colors.primary : colors.muted },
-                    ]}>
-                      <Text style={[
-                        styles.gridDayLabel,
-                        { color: isSelected ? "#FFF" : colors.mutedForeground },
-                      ]}>
-                        {day}
-                      </Text>
-                      {hasLessons && (
-                        <View style={[
-                          styles.gridDot,
-                          { backgroundColor: isSelected ? colors.secondary : colors.primary },
-                        ]} />
-                      )}
-                    </View>
-
-                    {/* Lesson chips */}
-                    <View style={styles.gridChips}>
-                      {visible.map((lesson, li) => (
-                        <View
-                          key={li}
-                          style={[
-                            styles.gridChip,
-                            {
-                              backgroundColor: lesson.cancelled
-                                ? "#F3F4F6"
-                                : isSelected
-                                ? `colors.primary20`
-                                : `colors.primary10`,
-                            },
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.gridChipTime,
-                              { color: lesson.cancelled ? "#9CA3AF" : colors.primary },
-                            ]}
-                            numberOfLines={1}
-                          >
-                            {lesson.start}
-                          </Text>
-                          <Text
-                            style={[
-                              styles.gridChipName,
-                              { color: lesson.cancelled ? "#9CA3AF" : colors.primary },
-                            ]}
-                            numberOfLines={2}
-                          >
-                            {lesson.course.split(" ")[0]}
-                          </Text>
-                        </View>
-                      ))}
-                      {overflow > 0 && (
-                        <View style={[styles.gridOverflow, { backgroundColor: colors.secondary }]}>
-                          <Text style={[styles.gridOverflowText, { color: colors.primary }]}>+{overflow}</Text>
-                        </View>
-                      )}
-                      {!hasLessons && (
-                        <View style={styles.gridEmpty}>
-                          <Text style={[styles.gridEmptyText, { color: colors.mutedForeground }]}>—</Text>
-                        </View>
-                      )}
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </>
-        ) : (
-          /* ── MONTH VIEW ── */
-          <>
-                {/* Month navigation */}
-                <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-                  <Pressable
-                    onPress={() => setViewDate(new Date(yr, mo - 1, 1))}
-                    style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}
-                  >
-                    <Ionicons name="chevron-back" size={20} color={colors.primary} />
-                  </Pressable>
-                  <Text style={{ fontSize: 17, fontWeight: "800", color: colors.primary }}>
-                    {MONTH_NAMES[mo]} {yr}
-                  </Text>
-                  <Pressable
-                    onPress={() => setViewDate(new Date(yr, mo + 1, 1))}
-                    style={{ padding: 8, borderRadius: 10, backgroundColor: colors.muted }}
-                  >
-                    <Ionicons name="chevron-forward" size={20} color={colors.primary} />
-                  </Pressable>
-                </View>
-
-                {/* Day-of-week headers */}
-                <View style={{ flexDirection: "row", marginBottom: 4 }}>
-                  {DAY_HEADS.map((h, hi) => (
-                    <View key={hi} style={{ flex: 1, alignItems: "center" }}>
-                      <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground }}>{h}</Text>
-                    </View>
-                  ))}
-                </View>
-
-                {/* Calendar grid */}
-                <View style={[styles.monthGrid, { backgroundColor: colors.card }]}>
-                  {matrix.map((week, wi) => (
-                    <View key={wi} style={{ flexDirection: "row" }}>
-                      {week.map((date, di) => {
-                        if (!date) {
-                          return <View key={di} style={styles.monthCell} />;
-                        }
-                        const dow        = (date.getDay() + 6) % 7;
-                        const dayLessons = (schedule[dow] ?? []).filter(l => !l.cancelled);
-                        const iso        = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-                        const dayEvents  = calEvents.filter(ev => ev.date === iso);
-                        const isToday    = date.getDate() === todayD.getDate() && date.getMonth() === todayD.getMonth() && date.getFullYear() === todayD.getFullYear();
-                        return (
-                          <Pressable
-                            key={di}
-                            style={[styles.monthCell, isToday && { backgroundColor: `colors.primary12`, borderRadius: 10 }]}
-                            onPress={() => {
-                              if (dayLessons.length > 0 || dayEvents.length > 0) {
-                                setDayDetail({ date, lessons: dayLessons });
-                                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                              }
-                            }}
-                          >
-                            <Text style={[
-                              styles.monthDayNum,
-                              { color: isToday ? colors.primary : colors.foreground },
-                              isToday && { fontWeight: "800" },
-                            ]}>
-                              {date.getDate()}
-                            </Text>
-                            {/* Colored discipline dots + event markers */}
-                            <View style={{ flexDirection: "row", flexWrap: "wrap", justifyContent: "center", gap: 2, marginTop: 3 }}>
-                              {dayLessons.slice(0, 2).map((l, li) => (
-                                <View
-                                  key={`l${li}`}
-                                  style={{ width: 6, height: 6, borderRadius: 3, backgroundColor: lessonColor(l.course, colors.primary, colors.secondary) }}
-                                />
-                              ))}
-                              {dayEvents.map(ev => (
-                                <View
-                                  key={ev.id}
-                                  style={{
-                                    width: 6, height: 6, borderRadius: 1.5,
-                                    backgroundColor: ev.type === "event" ? "#F59E0B" : colors.primary,
-                                  }}
-                                />
-                              ))}
-                            </View>
-                          </Pressable>
-                        );
-                      })}
-                    </View>
-                  ))}
-                </View>
-
-                {/* Legend — real courses from DB */}
-                <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 14 }}>
-                  {orgDisciplines.map(d => (
-                    <View key={d.id} style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-                      <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: lessonColor(d.name, colors.primary, colors.secondary) }} />
-                      <Text style={{ fontSize: 11, color: colors.mutedForeground }}>{d.name}</Text>
-                    </View>
-                  ))}
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-                    <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: "#F59E0B" }} />
-                    <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Event</Text>
-                  </View>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 5 }}>
-                    <View style={{ width: 8, height: 8, borderRadius: 2, backgroundColor: colors.primary }} />
-                    <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Meeting</Text>
-                  </View>
-                </View>
-          </>
         )}
 
-        {/* ── Week overview ── */}
-        <Text style={[styles.sectionTitle, { color: colors.primary }]}>This Week</Text>
-        <View style={[styles.weekOverview, { backgroundColor: colors.card }]}>
-          {schedule.map((day, i) => (
-            <View key={i} style={styles.weekDay}>
-              <Text style={[styles.weekDayLabel, { color: colors.mutedForeground }]}>{DAYS[i]}</Text>
-              <View style={[styles.weekDayBar, {
-                height: day.length > 0 ? 40 + day.length * 15 : 8,
-                backgroundColor: day.length > 0 ? colors.primary : colors.muted,
-                opacity: selectedDay === i ? 1 : 0.65,
-              }]} />
-              <Text style={[styles.weekDayCount, { color: colors.primary }]}>{day.length}</Text>
-            </View>
-          ))}
-        </View>
-
-
-        {/* ── Meeting Invites (from admin) ── */}
+        {/* ── Meeting Invites ───────────────────────────────────────────────────── */}
         {(() => {
           const pending = meetingInvites.filter(r =>
             r.recipientType === "operator" && (r.status === "pending" || r.status === "read")
@@ -728,43 +678,33 @@ export default function OperatorCalendar() {
           if (pending.length === 0) return null;
           return (
             <>
-              <Text style={[styles.sectionTitle, { color: "#D97706", marginTop: 4 }]}>
-                Meeting Invites  ({pending.length})
-              </Text>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginTop: 28, marginBottom: 12 }}>
+                <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>Meeting Invites</Text>
+                <View style={{ backgroundColor: colors.secondary, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 }}>
+                  <Text style={{ fontSize: 12, fontWeight: "800", color: colors.primary }}>{pending.length}</Text>
+                </View>
+              </View>
               {pending.map(invite => (
-                <View
-                  key={invite.id}
-                  style={{ backgroundColor: "#FFFBEB", borderRadius: 16, borderWidth: 1.5,
-                    borderColor: "#FDE68A", marginBottom: 12, overflow: "hidden" }}
-                >
-                  {/* Header bar */}
-                  <View style={{ backgroundColor: "#FEF3C7", paddingHorizontal: 14, paddingVertical: 10,
-                    flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <Ionicons name="mail-unread-outline" size={16} color="#D97706" />
-                    <Text style={{ fontSize: 12, fontWeight: "700", color: "#D97706", flex: 1 }}>
-                      {invite.status === "read" ? "Opened — awaiting response" : "New invite"}
+                <View key={invite.id} style={{ backgroundColor: colors.card, borderRadius: 16, borderWidth: 1.5, borderColor: colors.secondary, marginBottom: 12, overflow: "hidden" }}>
+                  <View style={{ backgroundColor: colors.secondary, paddingHorizontal: 14, paddingVertical: 10, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <Ionicons name="mail-unread-outline" size={16} color={colors.primary} />
+                    <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary, flex: 1 }}>
+                      {invite.status === "read" ? "Opened · awaiting response" : "New invite"}
                     </Text>
-                    <View style={{ backgroundColor: "#D97706", borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
-                      <Text style={{ fontSize: 10, color: "#FFF", fontWeight: "700" }}>ACTION NEEDED</Text>
+                    <View style={{ backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
+                      <Text style={{ fontSize: 10, color: colors.secondary, fontWeight: "700" }}>ACTION NEEDED</Text>
                     </View>
                   </View>
-
                   <View style={{ padding: 14, gap: 6 }}>
-                    <Text style={{ fontSize: 16, fontWeight: "800", color: "#1C1C1E" }}>
-                      {invite.meetingTitle}
-                    </Text>
-                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 10, marginTop: 2 }}>
+                    <Text style={{ fontSize: 16, fontWeight: "800", color: colors.primary }}>{invite.meetingTitle}</Text>
+                    <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 12, marginTop: 2 }}>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                        <Ionicons name="calendar-outline" size={13} color="#D97706" />
-                        <Text style={{ fontSize: 13, color: "#92400E", fontWeight: "600" }}>
-                          {invite.meetingDate}
-                        </Text>
+                        <Ionicons name="calendar-outline" size={13} color={colors.primary} />
+                        <Text style={{ fontSize: 13, color: colors.foreground, fontWeight: "600" }}>{invite.meetingDate}</Text>
                       </View>
                       <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
-                        <Ionicons name="time-outline" size={13} color="#D97706" />
-                        <Text style={{ fontSize: 13, color: "#92400E", fontWeight: "600" }}>
-                          {invite.meetingTime}
-                        </Text>
+                        <Ionicons name="time-outline" size={13} color={colors.primary} />
+                        <Text style={{ fontSize: 13, color: colors.foreground, fontWeight: "600" }}>{invite.meetingTime}</Text>
                       </View>
                       {invite.isPaid && (
                         <View style={{ flexDirection: "row", alignItems: "center", gap: 4 }}>
@@ -775,8 +715,6 @@ export default function OperatorCalendar() {
                         </View>
                       )}
                     </View>
-
-                    {/* Accept / Decline buttons */}
                     <View style={{ flexDirection: "row", gap: 10, marginTop: 8 }}>
                       <Pressable
                         onPress={() => respondToInvite(invite, "accepted")}
@@ -787,7 +725,7 @@ export default function OperatorCalendar() {
                       </Pressable>
                       <Pressable
                         onPress={() => respondToInvite(invite, "declined")}
-                        style={{ flex: 1, backgroundColor: "#FFF", borderRadius: 12, paddingVertical: 11, alignItems: "center", borderWidth: 1.5, borderColor: "#EF4444", flexDirection: "row", justifyContent: "center", gap: 6 }}
+                        style={{ flex: 1, backgroundColor: colors.card, borderRadius: 12, paddingVertical: 11, alignItems: "center", borderWidth: 1.5, borderColor: "#EF4444", flexDirection: "row", justifyContent: "center", gap: 6 }}
                       >
                         <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
                         <Text style={{ color: "#EF4444", fontWeight: "700", fontSize: 14 }}>Decline</Text>
@@ -800,8 +738,10 @@ export default function OperatorCalendar() {
           );
         })()}
 
-        {/* ── Events & Meetings ── */}
-        <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 4 }]}>Events & Meetings</Text>
+        {/* ── Events & Meetings ────────────────────────────────────────────────── */}
+        {calEvents.length > 0 && (
+          <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 28 }]}>Events & Meetings</Text>
+        )}
         {calEvents.map((ev) => {
           const past       = isEventPast(ev.date, ev.endTime);
           const attendance = eventAttendance[ev.id];
@@ -816,20 +756,19 @@ export default function OperatorCalendar() {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               }}
             >
-              <View style={[styles.eventIcon, { backgroundColor: ev.type === "event" ? "#FEF3C7" : "#EFF6FF" }]}>
+              <View style={[styles.eventIcon, { backgroundColor: ev.type === "event" ? colors.secondary + "55" : colors.primary + "12" }]}>
                 <Ionicons
                   name={ev.type === "event" ? "star-outline" : ev.type === "meeting" ? "people-outline" : "musical-notes-outline"}
                   size={20}
-                  color={ev.type === "event" ? "#F59E0B" : colors.primary}
+                  color={colors.primary}
                 />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.eventTitle, { color: colors.primary }]}>{ev.title}</Text>
-                <Text style={[styles.eventDate,  { color: colors.mutedForeground }]}>
+                <Text style={[styles.eventDate, { color: colors.mutedForeground }]}>
                   {displayDate} · {ev.time}–{ev.endTime}
                 </Text>
               </View>
-              {/* Past attendance status */}
               {past && (
                 <View style={{
                   paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8,
@@ -849,59 +788,16 @@ export default function OperatorCalendar() {
         })}
       </ScrollView>
 
-      {/* ── Bottom action row ── */}
-      <View style={{
-        flexDirection: "row",
-        marginHorizontal: 20,
-        marginBottom: insets.bottom + 72,
-        gap: 10,
-      }}>
-        <Pressable
-          style={({ pressed }) => [{
-            flex: 1,
-            backgroundColor: colors.primary,
-            borderRadius: 16,
-            paddingVertical: 16,
-            flexDirection: "row" as const,
-            alignItems: "center" as const,
-            justifyContent: "center" as const,
-            gap: 8,
-            opacity: pressed ? 0.88 : 1,
-            shadowColor: colors.primary,
-            shadowOffset: { width: 0, height: 4 },
-            shadowOpacity: 0.3,
-            shadowRadius: 8,
-            elevation: 6,
-          }]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.navigate("/(operator)/my-availability" as never);
-          }}
-        >
-          <Ionicons name="calendar-outline" size={20} color={colors.secondary} />
-          <Text style={{ color: colors.secondary, fontWeight: "700", fontSize: 15 }}>My Schedule</Text>
-        </Pressable>
-        <Pressable
-          style={({ pressed }) => [{
-            backgroundColor: colors.primary + "18",
-            borderRadius: 16,
-            paddingHorizontal: 18,
-            paddingVertical: 16,
-            flexDirection: "row" as const,
-            alignItems: "center" as const,
-            justifyContent: "center" as const,
-            opacity: pressed ? 0.7 : 1,
-            borderWidth: 1.5,
-            borderColor: colors.primary + "40",
-          }]}
-          onPress={() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            router.navigate({ pathname: "/(operator)/private-lessons", params: { openTab: "availability" } } as never);
-          }}
-        >
-          <Ionicons name="person-outline" size={20} color={colors.primary} />
-        </Pressable>
-      </View>
+      {/* ── FAB: New Workshop ── */}
+      <Pressable
+        style={[styles.fab, { backgroundColor: colors.primary, bottom: insets.bottom + 80 }]}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          openModal();
+        }}
+      >
+        <Ionicons name="add" size={28} color={colors.secondary} />
+      </Pressable>
 
       {/* ══ Workshop Creation Sheet ══════════════════════════════════════════════ */}
       <Modal
