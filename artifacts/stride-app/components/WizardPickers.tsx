@@ -35,39 +35,94 @@ export function DrumRoll({ items, value, onChange }: {
 }) {
   const colors = useColors();
 
-  // ── Web: native <select> — reliable, no scroll hacks needed
+  // ── Web: real scroll-wheel drum (CSS scroll-snap)
   if (Platform.OS === "web") {
-    return (
-      <View style={{ flex: 1, height: DRUM_H, justifyContent: "center", alignItems: "center" }}>
-        {/* @ts-ignore — web-only select element */}
-        <select
-          value={value}
-          onChange={(e: React.ChangeEvent<HTMLSelectElement>) => onChange(e.target.value)}
-          style={{
-            fontSize: 22,
-            fontWeight: "700",
-            color: colors.foreground,
-            backgroundColor: colors.card,
-            border: `2px solid ${colors.primary}`,
-            borderRadius: 12,
-            padding: "10px 18px",
-            outline: "none",
-            cursor: "pointer",
-            minWidth: 90,
-            textAlign: "center",
-          }}
-        >
-          {items.map(item => (
-            // @ts-ignore
-            <option key={item} value={item}>{item}</option>
-          ))}
-        </select>
-      </View>
-    );
+    return <DrumRollWeb items={items} value={value} onChange={onChange} />;
   }
 
   // ── Native: drum roll ScrollView
   return <DrumRollNative items={items} value={value} onChange={onChange} />;
+}
+
+function DrumRollWeb({ items, value, onChange }: {
+  items: string[];
+  value: string;
+  onChange: (v: string) => void;
+}) {
+  const colors              = useColors();
+  const idx                 = Math.max(0, items.indexOf(value));
+  const ref                 = useRef<ScrollView>(null);
+  const [selIdx, setSelIdx] = useState(idx);
+  const settleTimer         = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      ref.current?.scrollTo({ y: idx * ITEM_H, animated: false });
+    }, 40);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleScroll = (e: { nativeEvent: { contentOffset: { y: number } } }) => {
+    const y = e.nativeEvent.contentOffset.y;
+    const live = Math.max(0, Math.min(items.length - 1, Math.round(y / ITEM_H)));
+    if (live !== selIdx) setSelIdx(live);
+    if (settleTimer.current) clearTimeout(settleTimer.current);
+    settleTimer.current = setTimeout(() => {
+      const clamped = Math.max(0, Math.min(items.length - 1, Math.round(y / ITEM_H)));
+      setSelIdx(clamped);
+      onChange(items[clamped] ?? value);
+      ref.current?.scrollTo({ y: clamped * ITEM_H, animated: true });
+    }, 110);
+  };
+
+  const pick = (i: number) => {
+    setSelIdx(i);
+    onChange(items[i] ?? value);
+    ref.current?.scrollTo({ y: i * ITEM_H, animated: true });
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+  };
+
+  return (
+    <View style={{ flex: 1, height: DRUM_H, overflow: "hidden" }}>
+      <View
+        pointerEvents="none"
+        style={{
+          position: "absolute", top: ITEM_H * 2, left: 0, right: 0,
+          height: ITEM_H, borderTopWidth: 1.5, borderBottomWidth: 1.5,
+          borderColor: colors.primary, backgroundColor: colors.primary + "0D", zIndex: 2,
+        }}
+      />
+      <ScrollView
+        ref={ref}
+        showsVerticalScrollIndicator={false}
+        scrollEventThrottle={16}
+        onScroll={handleScroll}
+        // @ts-ignore — web-only CSS scroll snap
+        style={{ scrollSnapType: "y mandatory" }}
+        contentContainerStyle={{ paddingVertical: ITEM_H * 2 }}
+      >
+        {items.map((item, i) => (
+          <Pressable
+            key={i}
+            // @ts-ignore — web-only CSS scroll snap alignment
+            style={{ height: ITEM_H, alignItems: "center", justifyContent: "center", scrollSnapAlign: "center" }}
+            onPress={() => pick(i)}
+          >
+            <Text
+              style={{
+                fontSize:   i === selIdx ? 24 : 16,
+                fontWeight: i === selIdx ? "700" : "400",
+                color:      i === selIdx ? colors.foreground : colors.mutedForeground + "99",
+              }}
+            >
+              {item}
+            </Text>
+          </Pressable>
+        ))}
+      </ScrollView>
+    </View>
+  );
 }
 
 function DrumRollNative({ items, value, onChange }: {

@@ -424,20 +424,6 @@ export default function OperatorCalendar() {
         {/* ── Header ── */}
         <View style={styles.headerRow}>
           <Text style={[styles.pageTitle, { color: colors.primary }]}>Calendar</Text>
-          <View style={[styles.viewToggle, { backgroundColor: colors.muted }]}>
-            <Pressable
-              style={[styles.toggleBtn, view === "month" && { backgroundColor: colors.primary }]}
-              onPress={() => setView("month")}
-            >
-              <Ionicons name="calendar-outline" size={16} color={view === "month" ? "#FFF" : colors.mutedForeground} />
-            </Pressable>
-            <Pressable
-              style={[styles.toggleBtn, view === "list" && { backgroundColor: colors.primary }]}
-              onPress={() => setView("list")}
-            >
-              <Ionicons name="list" size={16} color={view === "list" ? "#FFF" : colors.mutedForeground} />
-            </Pressable>
-          </View>
         </View>
 
         {/* ── Month calendar header (always visible) ── */}
@@ -451,8 +437,8 @@ export default function OperatorCalendar() {
           </Pressable>
         </View>
 
-        {/* ── Month grid (month view only) ── */}
-        {view === "month" && (
+        {/* ── Month grid ── */}
+        {(
           <>
             <View style={{ flexDirection: "row", marginBottom: 4 }}>
               {DAY_HEADS.map((h, hi) => (
@@ -520,25 +506,7 @@ export default function OperatorCalendar() {
         )}
 
         {/* ── My Availability ─────────────────────────────────────────────────── */}
-        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 28, marginBottom: 12 }}>
-          <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>My Availability</Text>
-          <Pressable
-            style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: colors.primary + "12", borderWidth: 1, borderColor: colors.primary + "30" }}
-            onPress={() => {
-              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              router.navigate({ pathname: "/(operator)/private-lessons", params: { openTab: "availability" } } as never);
-            }}
-          >
-            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>Manage</Text>
-            <Ionicons name="chevron-forward" size={12} color={colors.primary} />
-          </Pressable>
-        </View>
-
-        {availLoading ? (
-          <View style={{ borderRadius: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, padding: 20, alignItems: "center" }}>
-            <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Loading...</Text>
-          </View>
-        ) : (() => {
+        {(() => {
           const todayDow = (() => { const d = new Date().getDay(); return d === 0 ? 6 : d - 1; })();
           const slotsByDay: Record<number, ApiAvailabilitySlot[]> = {};
           availabilitySlots.forEach(s => {
@@ -548,128 +516,105 @@ export default function OperatorCalendar() {
               slotsByDay[d].push(s);
             }
           });
-          const hasAny = Object.keys(slotsByDay).length > 0;
-
-          if (!hasAny) {
-            return (
-              <Pressable
-                style={{ borderRadius: 16, borderWidth: 1.5, borderColor: colors.border, padding: 28, alignItems: "center", gap: 10, backgroundColor: colors.card }}
-                onPress={() => {
-                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-                  router.navigate({ pathname: "/(operator)/private-lessons", params: { openTab: "availability" } } as never);
-                }}
-              >
-                <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: colors.primary + "12", alignItems: "center", justifyContent: "center" }}>
-                  <Ionicons name="time-outline" size={24} color={colors.primary} />
-                </View>
-                <Text style={{ fontSize: 15, fontWeight: "700", color: colors.primary }}>No availability set yet</Text>
-                <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center", lineHeight: 19 }}>
-                  Tap to set your weekly schedule and start receiving private lesson bookings
-                </Text>
-              </Pressable>
-            );
-          }
+          const activeDays = Object.keys(slotsByDay).length;
+          const hasAny     = activeDays > 0;
+          const goManage   = () => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.navigate({ pathname: "/(operator)/private-lessons", params: { openTab: "availability" } } as never);
+          };
 
           return (
-            <View style={{ borderRadius: 16, overflow: "hidden", backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
-              {DAYS.map((day, idx) => {
-                const slots   = slotsByDay[idx] ?? [];
-                const isTodayRow = idx === todayDow;
-                return (
-                  <View
-                    key={idx}
-                    style={{
-                      flexDirection: "row",
-                      alignItems: "center",
-                      paddingHorizontal: 14,
-                      paddingVertical: 11,
-                      borderBottomWidth: idx < 6 ? StyleSheet.hairlineWidth : 0,
-                      borderBottomColor: colors.border,
-                      backgroundColor: isTodayRow ? colors.primary + "08" : "transparent",
-                    }}
-                  >
-                    <View style={{
-                      width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center",
-                      backgroundColor: isTodayRow ? colors.primary : colors.muted, marginRight: 12,
-                    }}>
-                      <Text style={{ fontSize: 11, fontWeight: "800", color: isTodayRow ? "#FFF" : colors.mutedForeground }}>{day}</Text>
-                    </View>
-                    {slots.length === 0 ? (
-                      <Text style={{ fontSize: 13, color: colors.mutedForeground, fontStyle: "italic" }}>Unavailable</Text>
-                    ) : (
-                      <View style={{ flex: 1, flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
-                        {slots.map((s, si) => (
-                          <View key={si} style={{
-                            flexDirection: "row", alignItems: "center", gap: 4,
-                            backgroundColor: isTodayRow ? colors.primary + "18" : colors.muted,
-                            paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,
-                          }}>
-                            <Ionicons name="time-outline" size={12} color={isTodayRow ? colors.primary : colors.mutedForeground} />
-                            <Text style={{ fontSize: 12, fontWeight: "700", color: isTodayRow ? colors.primary : colors.foreground }}>
-                              {s.start_time}–{s.end_time}
-                            </Text>
-                          </View>
-                        ))}
-                      </View>
-                    )}
-                  </View>
-                );
-              })}
-            </View>
-          );
-        })()}
+            <View style={{ marginTop: 28, borderRadius: 20, overflow: "hidden", backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, shadowColor: "#000", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
+              {/* Header strip */}
+              <View style={{ flexDirection: "row", alignItems: "center", paddingHorizontal: 16, paddingVertical: 14, backgroundColor: colors.primary }}>
+                <View style={{ width: 34, height: 34, borderRadius: 17, backgroundColor: colors.secondary, alignItems: "center", justifyContent: "center", marginRight: 10 }}>
+                  <Ionicons name="time" size={18} color={colors.primary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 15, fontWeight: "800", color: "#FFF" }}>My Availability</Text>
+                  <Text style={{ fontSize: 11.5, fontWeight: "600", color: "#FFFFFFB0", marginTop: 1 }}>
+                    {hasAny ? `${activeDays} ${activeDays === 1 ? "day" : "days"} set this week` : "Not set yet"}
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={goManage}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 12, paddingVertical: 7, borderRadius: 20, backgroundColor: colors.secondary }}
+                >
+                  <Ionicons name="create-outline" size={14} color={colors.primary} />
+                  <Text style={{ fontSize: 12, fontWeight: "800", color: colors.primary }}>Manage</Text>
+                </Pressable>
+              </View>
 
-        {/* ── Upcoming Workshops (agenda view) ─────────────────────────────────── */}
-        {view === "list" && (
-          <>
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 28, marginBottom: 12 }}>
-              <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>Upcoming Workshops</Text>
-              {upcomingWorkshops.length > 0 && (
-                <View style={{ backgroundColor: colors.secondary, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 }}>
-                  <Text style={{ fontSize: 12, fontWeight: "800", color: colors.primary }}>{upcomingWorkshops.length}</Text>
+              {availLoading ? (
+                <View style={{ padding: 28, alignItems: "center" }}>
+                  <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Loading…</Text>
+                </View>
+              ) : !hasAny ? (
+                <Pressable onPress={goManage} style={{ padding: 28, alignItems: "center", gap: 8 }}>
+                  <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: colors.primary + "10", alignItems: "center", justifyContent: "center" }}>
+                    <Ionicons name="calendar-outline" size={26} color={colors.primary} />
+                  </View>
+                  <Text style={{ fontSize: 15, fontWeight: "700", color: colors.primary }}>No availability set yet</Text>
+                  <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center", lineHeight: 19, maxWidth: 260 }}>
+                    Tap Manage to set the days and hours you can teach, then confirm requests from your admin.
+                  </Text>
+                </Pressable>
+              ) : (
+                <View>
+                  {DAYS.map((day, idx) => {
+                    const slots      = slotsByDay[idx] ?? [];
+                    const isTodayRow = idx === todayDow;
+                    const off        = slots.length === 0;
+                    return (
+                      <View
+                        key={idx}
+                        style={{
+                          flexDirection: "row",
+                          alignItems: "center",
+                          paddingHorizontal: 16,
+                          paddingVertical: 12,
+                          borderTopWidth: StyleSheet.hairlineWidth,
+                          borderTopColor: colors.border,
+                          backgroundColor: isTodayRow ? colors.primary + "0A" : "transparent",
+                        }}
+                      >
+                        <View style={{
+                          width: 44, height: 40, borderRadius: 12, alignItems: "center", justifyContent: "center",
+                          backgroundColor: isTodayRow ? colors.primary : off ? colors.muted : colors.secondary + "40", marginRight: 12,
+                        }}>
+                          <Text style={{ fontSize: 11, fontWeight: "800", color: isTodayRow ? "#FFF" : colors.primary }}>{day}</Text>
+                        </View>
+                        {off ? (
+                          <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Unavailable</Text>
+                        ) : (
+                          <View style={{ flex: 1, flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                            {slots.map((s, si) => (
+                              <View key={si} style={{
+                                flexDirection: "row", alignItems: "center", gap: 4,
+                                backgroundColor: isTodayRow ? colors.primary : colors.primary + "10",
+                                paddingHorizontal: 11, paddingVertical: 6, borderRadius: 20,
+                              }}>
+                                <Ionicons name="time-outline" size={12} color={isTodayRow ? "#FFF" : colors.primary} />
+                                <Text style={{ fontSize: 12.5, fontWeight: "700", color: isTodayRow ? "#FFF" : colors.primary }}>
+                                  {s.start_time}–{s.end_time}
+                                </Text>
+                              </View>
+                            ))}
+                          </View>
+                        )}
+                        {isTodayRow && (
+                          <View style={{ paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8, backgroundColor: colors.secondary, marginLeft: 8 }}>
+                            <Text style={{ fontSize: 9.5, fontWeight: "800", color: colors.primary }}>TODAY</Text>
+                          </View>
+                        )}
+                      </View>
+                    );
+                  })}
                 </View>
               )}
             </View>
-            {upcomingWorkshops.length === 0 ? (
-              <View style={{ borderRadius: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, padding: 24, alignItems: "center", gap: 8 }}>
-                <Ionicons name="school-outline" size={28} color={colors.primary} />
-                <Text style={{ fontSize: 14, fontWeight: "700", color: colors.primary }}>No upcoming workshops</Text>
-                <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Tap + to create one</Text>
-              </View>
-            ) : (
-              upcomingWorkshops.map(w => (
-                <View key={w.id} style={[styles.workshopCard, { backgroundColor: colors.card }]}>
-                  <View style={[styles.workshopAccent, { backgroundColor: colors.primary }]}>
-                    <Text style={{ fontSize: 10, fontWeight: "800", color: colors.secondary, textAlign: "center", paddingHorizontal: 4 }}>
-                      {w.style.toUpperCase().slice(0, 4)}
-                    </Text>
-                  </View>
-                  <View style={styles.workshopBody}>
-                    <Text style={[styles.workshopTitle, { color: colors.primary }]}>{w.title}</Text>
-                    <View style={styles.workshopMetaRow}>
-                      <Ionicons name="calendar-outline" size={13} color={colors.mutedForeground} />
-                      <Text style={[styles.workshopMetaText, { color: colors.mutedForeground }]}>
-                        {formatDateDisplay(w.startDate)}{w.startDate !== w.endDate ? ` – ${formatDateDisplay(w.endDate)}` : ""}
-                      </Text>
-                    </View>
-                    <View style={styles.workshopMetaRow}>
-                      <Ionicons name="time-outline" size={13} color={colors.mutedForeground} />
-                      <Text style={[styles.workshopMetaText, { color: colors.mutedForeground }]}>{w.startTime} – {w.endTime}</Text>
-                      <Ionicons name="location-outline" size={13} color={colors.mutedForeground} style={{ marginLeft: 8 }} />
-                      <Text style={[styles.workshopMetaText, { color: colors.mutedForeground }]} numberOfLines={1}>{w.location}</Text>
-                    </View>
-                    {!!w.description && (
-                      <Text style={[styles.workshopDesc, { color: colors.mutedForeground }]} numberOfLines={2}>{w.description}</Text>
-                    )}
-                  </View>
-                  <Pressable style={styles.workshopCancelBtn} onPress={() => cancelWorkshop(w.id)}>
-                    <Ionicons name="close-circle-outline" size={22} color="#EF4444" />
-                  </Pressable>
-                </View>
-              ))
-            )}
-          </>
-        )}
+          );
+        })()}
 
         {/* ── Meeting Invites ───────────────────────────────────────────────────── */}
         {(() => {
@@ -789,18 +734,7 @@ export default function OperatorCalendar() {
         })}
       </ScrollView>
 
-      {/* ── FAB: New Workshop ── */}
-      <Pressable
-        style={[styles.fab, { backgroundColor: colors.primary, bottom: insets.bottom + 80 }]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-          openModal();
-        }}
-      >
-        <Ionicons name="add" size={28} color={colors.secondary} />
-      </Pressable>
-
-      {/* ══ Workshop Creation Sheet ══════════════════════════════════════════════ */}
+      {/* ══ Workshop Creation Sheet (moved to Admin) ════════════════════════════ */}
       <Modal
         visible={showModal}
         transparent
