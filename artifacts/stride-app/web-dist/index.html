@@ -49,37 +49,41 @@
   <!-- Stride auto-update: SW controllerchange + version.json polling -->
   <script>
   (function(){
-    var INTERVAL = 2 * 60 * 1000;
-    var currentVersion = null;
+    var INTERVAL = 30 * 1000;
+    // The version baked into THIS build — any mismatch means a newer build is live
+    var knownVersion = '56f6c9d8afcc15d42959fe98f96bc401';
     var swReg = null;
     var reloading = false;
 
     function doReload(){
       if(reloading) return;
       reloading = true;
-      window.location.reload();
+      // Force past any SW cache
+      if('serviceWorker' in navigator && navigator.serviceWorker.controller){
+        navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+      }
+      window.location.reload(true);
     }
 
     function check(){
       fetch('/app/version.json?_=' + Date.now(), { cache: 'no-store' })
         .then(function(r){ return r.json(); })
         .then(function(d){
-          if(currentVersion === null){ currentVersion = d.v; return; }
-          if(currentVersion === d.v) return;
-          // New build detected — ask the SW to update itself, then reload
-          currentVersion = d.v;
-          if(swReg){
-            swReg.update().then(doReload).catch(doReload);
-          } else {
-            doReload();
+          if(d.v && d.v !== knownVersion){
+            // Server has a different (newer) build — update SW then hard-reload
+            if(swReg){
+              swReg.update().then(doReload).catch(doReload);
+            } else {
+              doReload();
+            }
           }
         }).catch(function(){});
     }
 
-    // First check after 30 s, then every INTERVAL
-    setTimeout(function(){ check(); setInterval(check, INTERVAL); }, 30000);
+    // Check immediately on load, then every INTERVAL
+    window.addEventListener('load', function(){ check(); setInterval(check, INTERVAL); });
 
-    // Also check when user brings the tab back to foreground
+    // Also check every time the user brings the PWA to the foreground
     document.addEventListener('visibilitychange', function(){
       if(!document.hidden) check();
     });
