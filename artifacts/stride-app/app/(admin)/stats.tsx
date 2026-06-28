@@ -496,9 +496,6 @@ export default function AdminHome() {
         {/* ── HEADER ── */}
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.pageTitle, { color: colors.primary }]}>
-              {(() => { const c = (s?: string | null) => (s && !s.startsWith("{") && s.trim()) ? s.trim() : undefined; return `Hi ${c(user?.preferredName) ?? c(user?.name?.split(" ")[0]) ?? "Admin"}`; })()}
-            </Text>
             {!!(orgName || user?.schoolName) && (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginTop: 1 }}>
                 {!!orgLogoUri && (

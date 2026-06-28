@@ -108,7 +108,6 @@ export default function ChildrenScreen() {
   const [newChildMedCertUri, setNewChildMedCertUri] = useState<string | null>(null);
   const [newChildMedCertExpiry, setNewChildMedCertExpiry] = useState<string | null>(null);
   const [medCertAnalyzing, setMedCertAnalyzing] = useState(false);
-  const [newChildPreferredName, setNewChildPreferredName] = useState("");
   const [guardianChecked, setGuardianChecked] = useState(false);
 
   // Per-child cert data stored locally (keyed by child id)
@@ -309,7 +308,6 @@ export default function ChildrenScreen() {
     setNewChildPhotoUri(null);
     setNewChildMedCertUri(null);
     setNewChildMedCertExpiry(null);
-    setNewChildPreferredName("");
     setGuardianChecked(false);
   };
 
@@ -351,7 +349,6 @@ export default function ChildrenScreen() {
       }
       await addChild({
         name: `${newChildName.trim()} ${newChildSurname.trim()}`,
-        preferredName: newChildPreferredName.trim() || undefined,
         age,
         dateOfBirth: dobStr,
         allergies: newChildHasAllergies ? (newChildAllergies.trim() || "Allergies") : "None",
@@ -604,9 +601,6 @@ export default function ChildrenScreen() {
                 </Pressable>
                 <View style={styles.childCardInfo}>
                   <Text style={[styles.childName, { color: colors.primary }]}>{child.name}</Text>
-                  {!!child.preferredName && (
-                    <Text style={{ fontSize: 12, color: colors.mutedForeground, marginTop: 1 }}>Called: {child.preferredName}</Text>
-                  )}
                   <Text style={[styles.childAge, { color: colors.mutedForeground }]}>
                     {child.dateOfBirth ? calcAgeFromDob(child.dateOfBirth) : child.age} yrs
                   </Text>
@@ -765,12 +759,6 @@ export default function ChildrenScreen() {
                   <Text style={[styles.infoValue, { color: colors.foreground }]}>
                     {new Date(child.dateOfBirth).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                   </Text>
-                </View>
-              )}
-              {!!child.preferredName && (
-                <View style={[styles.infoRow, { borderTopColor: colors.border }]}>
-                  <Text style={[styles.infoLabel, { color: colors.mutedForeground }]}>Called:</Text>
-                  <Text style={[styles.infoValue, { color: colors.foreground }]}>{child.preferredName}</Text>
                 </View>
               )}
               <View style={[styles.infoRow, { borderTopColor: colors.border }]}>
@@ -1354,9 +1342,6 @@ export default function ChildrenScreen() {
 
               <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>{secondaryRoleName}'s Last Name <Text style={{ color: "#EF4444" }}>*</Text></Text>
               <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildSurname} onChangeText={setNewChildSurname} placeholder="e.g. Doe" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
-
-              <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Preferred Name <Text style={{ color: colors.mutedForeground, fontWeight: "400" }}>(optional)</Text></Text>
-              <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildPreferredName} onChangeText={setNewChildPreferredName} placeholder="e.g. Alex" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
 
               <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Date of Birth <Text style={{ color: "#EF4444" }}>*</Text></Text>
               <View style={styles.dobGrid}>

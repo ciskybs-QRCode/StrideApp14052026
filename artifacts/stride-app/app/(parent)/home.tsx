@@ -334,14 +334,6 @@ export default function ParentHome() {
     setShowSOSModal(true);
   };
 
-  const firstName = (() => {
-    const pref = user?.preferredName;
-    if (pref && !pref.startsWith("{") && pref.trim() !== "") return pref.trim();
-    const first = user?.name?.split(" ")[0];
-    if (first && !first.startsWith("{") && first.trim() !== "") return first.trim();
-    return "there";
-  })();
-
   // ── Emergency Pulse dynamic content ───────────────────────────────────────
   const pulseType       = activePulse?.type ?? "emergency_pulse";
   const dependentLabel  = activePulse?.dependent_name ?? children[0]?.name ?? "your dependent";
@@ -388,7 +380,6 @@ export default function ParentHome() {
         {/* Header */}
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.pageTitle, { color: colors.primary }]}>Hi {firstName}</Text>
             {!!user?.schoolName && (
               <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
                 {user.schoolName}

@@ -364,9 +364,6 @@ export default function OperatorStudents() {
               </View>
               <View style={styles.studentInfo}>
                 <Text style={[styles.studentName, { color: colors.primary }]}>{s.name}</Text>
-                {!!s.preferredName && (
-                  <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}>Called: {s.preferredName}</Text>
-                )}
                 <Text style={[styles.studentCourse, { color: colors.mutedForeground }]}>{s.courses.join(", ")}</Text>
                 <View style={styles.studentMeta}>
                   <View style={{ width: 22, height: 22, borderRadius: 6, backgroundColor: "rgba(30,58,138,0.1)", alignItems: "center", justifyContent: "center" }}>

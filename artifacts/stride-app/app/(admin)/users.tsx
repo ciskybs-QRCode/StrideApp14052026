@@ -1625,9 +1625,6 @@ function UserCard({ user, colors, primaryRoleName, secondaryRoleName, onPress }:
           <Text style={[styles.userName, { color: colors.primary }]}>{user.name}</Text>
           {user.status === "suspended" && <Ionicons name="ban" size={12} color="#EF4444" />}
         </View>
-        {!!user.preferredName && (
-          <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 1 }}>Called: {user.preferredName}</Text>
-        )}
         {!!user.email
           ? <Text style={[styles.userEmail, { color: colors.mutedForeground }]}>{user.email}</Text>
           : !!user.parentName && (
