@@ -12,7 +12,7 @@ import { useColors } from "@/hooks/useColors";
 import { api, getMyOperatorSkills, type ApiAvailabilitySlot, type ApiCourseAvailTemplate, type ApiDiscipline, type ApiLocation, type ApiOperatorSkill, type ApiPrivateLessonBooking, type ApiPrivateNotification } from "@/lib/api";
 
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { TimePickerSheet } from "@/components/WizardPickers";
+import { CalendarPicker, TimePickerSheet } from "@/components/WizardPickers";
 
 // ── Date / time helpers ───────────────────────────────────────────────────────
 
@@ -159,6 +159,9 @@ export default function OperatorPrivateLessonsScreen() {
   const [slotDate, setSlotDate] = useState<Date | null>(null);
   const [slotStart, setSlotStart] = useState("");
   const [slotEnd, setSlotEnd] = useState("");
+  const [showSlotCal,      setShowSlotCal]      = useState(false);
+  const [showSlotFromTime, setShowSlotFromTime] = useState(false);
+  const [showSlotToTime,   setShowSlotToTime]   = useState(false);
   // Recurring mode
   const [slotRecurring, setSlotRecurring] = useState(false);
   const [recurringDays, setRecurringDays] = useState<number[]>([]); // 0=Sun…6=Sat
@@ -952,72 +955,56 @@ export default function OperatorPrivateLessonsScreen() {
                     <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, marginBottom: 8, textTransform: "uppercase", letterSpacing: 0.6 }}>
                       Date *
                     </Text>
-                    <TextInput
-                      style={{ borderWidth: 1.5, borderColor: colors.border, borderRadius: 10, paddingHorizontal: 12,
-                        paddingVertical: 10, fontSize: 14, color: colors.foreground, backgroundColor: colors.card, marginBottom: 16 }}
-                      value={slotDate ? toISODate(slotDate) : ""}
-                      onChangeText={v => {
-                        try { const d = new Date(v + "T00:00:00"); if (!isNaN(d.getTime())) setSlotDate(d); else setSlotDate(null); } catch { setSlotDate(null); }
-                      }}
-                      placeholder={`YYYY-MM-DD  (e.g. ${datePlaceholder})`}
-                      placeholderTextColor={colors.mutedForeground}
-                      keyboardType="numbers-and-punctuation"
-                    />
+                    <Pressable
+                      style={{ borderWidth: 1.5, borderColor: slotDate ? colors.primary : colors.border, borderRadius: 10,
+                        paddingHorizontal: 12, paddingVertical: 12, backgroundColor: colors.card, marginBottom: 16,
+                        flexDirection: "row", alignItems: "center", gap: 10 }}
+                      onPress={() => setShowSlotCal(true)}
+                    >
+                      <Ionicons name="calendar-outline" size={18} color={slotDate ? colors.primary : colors.mutedForeground} />
+                      <Text style={{ flex: 1, fontSize: 14, fontWeight: slotDate ? "700" : "400",
+                        color: slotDate ? colors.foreground : colors.mutedForeground }}>
+                        {slotDate
+                          ? `${String(slotDate.getDate()).padStart(2,"0")}/${String(slotDate.getMonth()+1).padStart(2,"0")}/${slotDate.getFullYear()}`
+                          : "Tap to select date"}
+                      </Text>
+                      <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} />
+                    </Pressable>
 
-                    {/* One-time: From / To with HH:MM typed inputs */}
+                    {/* One-time: From / To — drum picker chips */}
                     <View style={{ flexDirection: "row", gap: 12, marginBottom: 16 }}>
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6, textTransform: "uppercase" }}>From *</Text>
-                        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3,
-                          borderWidth: 1.5, borderColor: colors.border, borderRadius: 10, paddingVertical: 8, backgroundColor: colors.card }}>
-                          <TextInput
-                            style={{ width: 40, fontSize: 17, fontWeight: "700", color: colors.foreground, textAlign: "center" }}
-                            value={slotStart.split(":")[0] ?? ""}
-                            onChangeText={h => setSlotStart(`${h.replace(/\D/g,"").slice(0,2).padStart(2,"0")}:${slotStart.split(":")[1] ?? "00"}`)}
-                            placeholder="HH"
-                            placeholderTextColor={colors.mutedForeground}
-                            keyboardType="number-pad"
-                            maxLength={2}
-                          />
-                          <Text style={{ fontSize: 18, fontWeight: "700", color: colors.foreground }}>:</Text>
-                          <TextInput
-                            style={{ width: 40, fontSize: 17, fontWeight: "700", color: colors.foreground, textAlign: "center" }}
-                            value={slotStart.split(":")[1] ?? ""}
-                            onChangeText={m => setSlotStart(`${slotStart.split(":")[0] ?? "00"}:${m.replace(/\D/g,"").slice(0,2).padStart(2,"0")}`)}
-                            placeholder="MM"
-                            placeholderTextColor={colors.mutedForeground}
-                            keyboardType="number-pad"
-                            maxLength={2}
-                          />
-                        </View>
+                        <Pressable
+                          style={{ borderWidth: 1.5, borderColor: slotStart ? colors.primary : colors.border, borderRadius: 10,
+                            paddingVertical: 12, paddingHorizontal: 12, backgroundColor: colors.card,
+                            flexDirection: "row", alignItems: "center", gap: 8 }}
+                          onPress={() => setShowSlotFromTime(true)}
+                        >
+                          <Ionicons name="time-outline" size={16} color={slotStart ? colors.primary : colors.mutedForeground} />
+                          <Text style={{ flex: 1, fontSize: 16, fontWeight: "700", color: slotStart ? colors.foreground : colors.mutedForeground, textAlign: "center" }}>
+                            {slotStart || "HH:MM"}
+                          </Text>
+                          <Ionicons name="chevron-down" size={13} color={colors.mutedForeground} />
+                        </Pressable>
                       </View>
                       <View style={{ alignSelf: "flex-end", paddingBottom: 12 }}>
-                        <Text style={{ fontSize: 20, color: colors.mutedForeground }}>-</Text>
+                        <Text style={{ fontSize: 20, color: colors.mutedForeground }}>–</Text>
                       </View>
                       <View style={{ flex: 1 }}>
                         <Text style={{ fontSize: 11, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6, textTransform: "uppercase" }}>To *</Text>
-                        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 3,
-                          borderWidth: 1.5, borderColor: colors.border, borderRadius: 10, paddingVertical: 8, backgroundColor: colors.card }}>
-                          <TextInput
-                            style={{ width: 40, fontSize: 17, fontWeight: "700", color: colors.foreground, textAlign: "center" }}
-                            value={slotEnd.split(":")[0] ?? ""}
-                            onChangeText={h => setSlotEnd(`${h.replace(/\D/g,"").slice(0,2).padStart(2,"0")}:${slotEnd.split(":")[1] ?? "00"}`)}
-                            placeholder="HH"
-                            placeholderTextColor={colors.mutedForeground}
-                            keyboardType="number-pad"
-                            maxLength={2}
-                          />
-                          <Text style={{ fontSize: 18, fontWeight: "700", color: colors.foreground }}>:</Text>
-                          <TextInput
-                            style={{ width: 40, fontSize: 17, fontWeight: "700", color: colors.foreground, textAlign: "center" }}
-                            value={slotEnd.split(":")[1] ?? ""}
-                            onChangeText={m => setSlotEnd(`${slotEnd.split(":")[0] ?? "00"}:${m.replace(/\D/g,"").slice(0,2).padStart(2,"0")}`)}
-                            placeholder="MM"
-                            placeholderTextColor={colors.mutedForeground}
-                            keyboardType="number-pad"
-                            maxLength={2}
-                          />
-                        </View>
+                        <Pressable
+                          style={{ borderWidth: 1.5, borderColor: slotEnd ? colors.primary : colors.border, borderRadius: 10,
+                            paddingVertical: 12, paddingHorizontal: 12, backgroundColor: colors.card,
+                            flexDirection: "row", alignItems: "center", gap: 8 }}
+                          onPress={() => setShowSlotToTime(true)}
+                        >
+                          <Ionicons name="time-outline" size={16} color={slotEnd ? colors.primary : colors.mutedForeground} />
+                          <Text style={{ flex: 1, fontSize: 16, fontWeight: "700", color: slotEnd ? colors.foreground : colors.mutedForeground, textAlign: "center" }}>
+                            {slotEnd || "HH:MM"}
+                          </Text>
+                          <Ionicons name="chevron-down" size={13} color={colors.mutedForeground} />
+                        </Pressable>
                       </View>
                     </View>
                   </>
@@ -1755,6 +1742,62 @@ export default function OperatorPrivateLessonsScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      {/* ══ Slot Date Calendar Picker ═══════════════════════════════════════════ */}
+      <Modal visible={showSlotCal} transparent animationType="fade" onRequestClose={() => setShowSlotCal(false)}>
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center", padding: 24 }}
+          onPress={() => setShowSlotCal(false)}
+        >
+          <Pressable onPress={e => e.stopPropagation()}>
+            <CalendarPicker
+              value={slotDate
+                ? `${String(slotDate.getDate()).padStart(2,"0")}/${String(slotDate.getMonth()+1).padStart(2,"0")}/${slotDate.getFullYear()}`
+                : ""}
+              onConfirm={v => {
+                const parts = v.split("/");
+                if (parts.length === 3) {
+                  const [d, m, y] = parts;
+                  const dt = new Date(parseInt(y!), parseInt(m!) - 1, parseInt(d!));
+                  if (!isNaN(dt.getTime())) setSlotDate(dt);
+                }
+                setShowSlotCal(false);
+              }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ══ Slot From Time Drum Picker ══════════════════════════════════════════ */}
+      <Modal visible={showSlotFromTime} transparent animationType="slide" onRequestClose={() => setShowSlotFromTime(false)}>
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}
+          onPress={() => setShowSlotFromTime(false)}
+        >
+          <Pressable onPress={e => e.stopPropagation()}>
+            <TimePickerSheet
+              value={slotStart || "09:00"}
+              onConfirm={v => { setSlotStart(v); setShowSlotFromTime(false); }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ══ Slot To Time Drum Picker ════════════════════════════════════════════ */}
+      <Modal visible={showSlotToTime} transparent animationType="slide" onRequestClose={() => setShowSlotToTime(false)}>
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}
+          onPress={() => setShowSlotToTime(false)}
+        >
+          <Pressable onPress={e => e.stopPropagation()}>
+            <TimePickerSheet
+              value={slotEnd || "10:00"}
+              onConfirm={v => { setSlotEnd(v); setShowSlotToTime(false); }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
     </View>
   );
 }
