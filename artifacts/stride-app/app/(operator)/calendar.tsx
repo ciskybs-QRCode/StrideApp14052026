@@ -844,33 +844,59 @@ export default function OperatorCalendar() {
         })}
       </ScrollView>
 
-      {/* ── Submit Availability Button ── */}
-      <Pressable
-        style={({ pressed }) => [{
-          marginHorizontal: 20,
-          marginBottom: insets.bottom + 72,
-          backgroundColor: colors.primary,
-          borderRadius: 16,
-          paddingVertical: 16,
-          flexDirection: "row" as const,
-          alignItems: "center" as const,
-          justifyContent: "center" as const,
-          gap: 10,
-          opacity: pressed ? 0.88 : 1,
-          shadowColor: colors.primary,
-          shadowOffset: { width: 0, height: 4 },
-          shadowOpacity: 0.3,
-          shadowRadius: 8,
-          elevation: 6,
-        }]}
-        onPress={() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          router.navigate({ pathname: "/(operator)/private-lessons", params: { openTab: "availability" } } as never);
-        }}
-      >
-        <Ionicons name="calendar-outline" size={20} color={colors.secondary} />
-        <Text style={{ color: colors.secondary, fontWeight: "700", fontSize: 15 }}>Add Availability</Text>
-      </Pressable>
+      {/* ── Bottom action row ── */}
+      <View style={{
+        flexDirection: "row",
+        marginHorizontal: 20,
+        marginBottom: insets.bottom + 72,
+        gap: 10,
+      }}>
+        <Pressable
+          style={({ pressed }) => [{
+            flex: 1,
+            backgroundColor: colors.primary,
+            borderRadius: 16,
+            paddingVertical: 16,
+            flexDirection: "row" as const,
+            alignItems: "center" as const,
+            justifyContent: "center" as const,
+            gap: 8,
+            opacity: pressed ? 0.88 : 1,
+            shadowColor: colors.primary,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 6,
+          }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.navigate("/(operator)/my-availability" as never);
+          }}
+        >
+          <Ionicons name="calendar-outline" size={20} color={colors.secondary} />
+          <Text style={{ color: colors.secondary, fontWeight: "700", fontSize: 15 }}>My Schedule</Text>
+        </Pressable>
+        <Pressable
+          style={({ pressed }) => [{
+            backgroundColor: colors.primary + "18",
+            borderRadius: 16,
+            paddingHorizontal: 18,
+            paddingVertical: 16,
+            flexDirection: "row" as const,
+            alignItems: "center" as const,
+            justifyContent: "center" as const,
+            opacity: pressed ? 0.7 : 1,
+            borderWidth: 1.5,
+            borderColor: colors.primary + "40",
+          }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            router.navigate({ pathname: "/(operator)/private-lessons", params: { openTab: "availability" } } as never);
+          }}
+        >
+          <Ionicons name="person-outline" size={20} color={colors.primary} />
+        </Pressable>
+      </View>
 
       {/* ══ Workshop Creation Sheet ══════════════════════════════════════════════ */}
       <Modal

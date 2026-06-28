@@ -342,7 +342,8 @@ export default function AdminTabLayout() {
       <Tabs.Screen name="reimbursements" options={{ href: null }} />
       <Tabs.Screen name="billing"        options={{ href: null }} />
       <Tabs.Screen name="smart-roster"        options={{ href: null }} />
-      <Tabs.Screen name="calendar-management" options={{ href: null }} />
+      <Tabs.Screen name="calendar-management"  options={{ href: null }} />
+      <Tabs.Screen name="schedule-requests"   options={{ href: null }} />
       <Tabs.Screen name="copilot"        options={{ href: null }} />
       <Tabs.Screen name="beacons"        options={{ href: null }} />
       <Tabs.Screen name="marketplace"    options={{ href: null }} />

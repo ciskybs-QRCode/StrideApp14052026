@@ -864,6 +864,36 @@ export const api = {
   updateOperatorPrefs: (data: Partial<ApiOperatorPrefs>) =>
     request<{ ok: boolean }>("PUT", "/operator-prefs", data),
 
+  // ── Schedule management ────────────────────────────────────────────────────
+  getMyWeekAvailability: () =>
+    request<{ slots: ApiWeekSlot[] }>("GET", "/schedule/my-availability"),
+  putMyWeekAvailability: (slots: ApiWeekSlot[]) =>
+    request<{ ok: boolean }>("PUT", "/schedule/my-availability", { slots }),
+  getMyCourses: () =>
+    request<{ courses: ApiAssignedCourse[] }>("GET", "/schedule/my-courses"),
+  createScheduleChangeRequest: (data: {
+    course_id: number; change_type: string; reason?: string;
+    requested_day_of_week?: number; requested_start_time?: string;
+    requested_end_time?: string; requested_location?: string;
+  }) => request<{ id: number; ok: boolean }>("POST", "/schedule/change-request", data),
+  getMyScheduleChangeRequests: () =>
+    request<{ requests: ApiScheduleChangeRequest[] }>("GET", "/schedule/change-requests"),
+  getAdminScheduleChangeRequests: (status?: string) =>
+    request<{ requests: ApiScheduleChangeRequest[] }>(
+      "GET", `/schedule/admin/change-requests${status ? `?status=${status}` : ""}`),
+  decideScheduleChangeRequest: (id: number, decision: "accepted" | "declined", admin_note?: string) =>
+    request<{ ok: boolean; status: string }>("POST", `/schedule/admin/change-requests/${id}/decide`, { decision, admin_note }),
+  aiAnalyzeScheduleChange: (id: number) =>
+    request<{ ok: boolean; solution: ApiAIScheduleSolution }>("POST", `/schedule/admin/change-requests/${id}/ai-analyze`, {}),
+  executeScheduleChange: (id: number) =>
+    request<{ ok: boolean }>("POST", `/schedule/admin/change-requests/${id}/execute`, {}),
+  respondToScheduleCascade: (id: number, accept: boolean, note?: string) =>
+    request<{ ok: boolean }>("POST", `/schedule/change-requests/${id}/respond`, { accept, note }),
+  getScheduleAdminExportCsvUrl: () => {
+    const base = typeof window !== "undefined" ? (process.env["EXPO_PUBLIC_DOMAIN"] ?? "") : "";
+    return `${base}/api/schedule/admin/export/csv`;
+  },
+
   // Private lesson policy (reschedule/cancel/absence)
   getPrivateLessonPolicy: () =>
     request<ApiPrivateLessonPolicy>("GET", "/private-lessons/policy"),
@@ -2073,6 +2103,69 @@ export interface ApiOperatorPrefs {
   sub_min_hours: number | null;
   available_for_private_lessons: boolean;
   private_lesson_min_hours: number | null;
+}
+
+export interface ApiWeekSlot {
+  day_of_week: number; // 0=Mon … 6=Sun
+  from_time: string;   // HH:MM
+  to_time: string;     // HH:MM
+}
+
+export interface ApiAssignedCourse {
+  id: number;
+  name: string;
+  day_of_week: number;
+  start_time: string;
+  end_time: string;
+  location_label: string | null;
+  discipline_name: string | null;
+}
+
+export interface ApiScheduleChangeRequest {
+  id: number;
+  course_id: number;
+  course_name: string;
+  change_type: string;
+  status: string;
+  reason: string | null;
+  current_day_of_week: number;
+  current_start_time: string;
+  current_end_time: string;
+  current_location: string | null;
+  requested_day_of_week: number | null;
+  requested_start_time: string | null;
+  requested_end_time: string | null;
+  requested_location: string | null;
+  admin_note: string | null;
+  operator_name?: string;
+  operator_email?: string;
+  ai_solution_json?: ApiAIScheduleSolution | null;
+  cascade_responses?: Record<string, { accept: boolean; note?: string; responded_at: string }>;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ApiAIScheduleSolution {
+  feasible: boolean;
+  summary: string;
+  conflicts: string[];
+  location_conflict: boolean;
+  time_conflict: boolean;
+  suggested_changes: Array<{
+    action: string;
+    detail: string;
+    course_name?: string;
+    new_day?: string;
+    new_time?: string;
+    new_location?: string;
+  }>;
+  available_substitutes: Array<{
+    operator_profile_id: number;
+    operator_name: string;
+    available_slot: string;
+  }>;
+  recommended_action: string;
+  recommended_note: string;
 }
 
 export interface ApiPrivateLessonPolicy {

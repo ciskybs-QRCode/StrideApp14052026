@@ -1974,5 +1974,71 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_op_certs_org     ON operator_certs(organization_id);
   `).catch(() => {});
 
+  // ── Operator Weekly Availability (DB-backed, replaces AsyncStorage) ─────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS operator_week_availability (
+      id                  SERIAL       PRIMARY KEY,
+      operator_profile_id INTEGER      NOT NULL,
+      organization_id     INTEGER      NOT NULL,
+      day_of_week         SMALLINT     NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
+      from_time           TIME         NOT NULL,
+      to_time             TIME         NOT NULL,
+      created_at          TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+      UNIQUE(operator_profile_id, organization_id, day_of_week)
+    );
+    CREATE INDEX IF NOT EXISTS idx_owa_op   ON operator_week_availability(operator_profile_id);
+    CREATE INDEX IF NOT EXISTS idx_owa_org  ON operator_week_availability(organization_id);
+  `).catch(() => {});
+
+  // ── Schedule Change Requests ─────────────────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS schedule_change_requests (
+      id                    SERIAL       PRIMARY KEY,
+      course_id             INTEGER      NOT NULL,
+      organization_id       INTEGER      NOT NULL,
+      operator_profile_id   INTEGER      NOT NULL,
+      operator_user_id      INTEGER      NOT NULL,
+      course_name           TEXT         NOT NULL,
+      current_day_of_week   SMALLINT     NOT NULL,
+      current_start_time    TIME         NOT NULL,
+      current_end_time      TIME         NOT NULL,
+      current_location      TEXT,
+      requested_day_of_week SMALLINT,
+      requested_start_time  TIME,
+      requested_end_time    TIME,
+      requested_location    TEXT,
+      reason                TEXT,
+      change_type           TEXT         NOT NULL DEFAULT 'reschedule'
+                            CHECK (change_type IN ('reschedule','cancel','location','substitute')),
+      status                TEXT         NOT NULL DEFAULT 'pending'
+                            CHECK (status IN ('pending','ai_processing','cascade_pending','accepted','declined','executed')),
+      admin_user_id         INTEGER,
+      admin_note            TEXT,
+      ai_solution_json      JSONB,
+      cascade_operator_ids  INTEGER[]    DEFAULT '{}',
+      cascade_responses     JSONB        NOT NULL DEFAULT '{}'::jsonb,
+      executed_at           TIMESTAMPTZ,
+      created_at            TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+      updated_at            TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS idx_scr_org    ON schedule_change_requests(organization_id);
+    CREATE INDEX IF NOT EXISTS idx_scr_op     ON schedule_change_requests(operator_profile_id);
+    CREATE INDEX IF NOT EXISTS idx_scr_status ON schedule_change_requests(status);
+  `).catch(() => {});
+
+  // ── Schedule Change Reminders ───────────────────────────────────────────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS schedule_change_reminders (
+      id                SERIAL       PRIMARY KEY,
+      change_request_id INTEGER      NOT NULL,
+      send_at           TIMESTAMPTZ  NOT NULL,
+      sent_at           TIMESTAMPTZ,
+      recipient_user_id INTEGER      NOT NULL,
+      channel           TEXT         NOT NULL DEFAULT 'inapp'
+    );
+    CREATE INDEX IF NOT EXISTS idx_screm_cr  ON schedule_change_reminders(change_request_id);
+    CREATE INDEX IF NOT EXISTS idx_screm_due ON schedule_change_reminders(send_at) WHERE sent_at IS NULL;
+  `).catch(() => {});
+
   initialized = true;
 }

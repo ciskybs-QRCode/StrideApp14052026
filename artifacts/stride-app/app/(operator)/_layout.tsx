@@ -168,8 +168,9 @@ export default function OperatorTabLayout() {
         <Tabs.Screen name="workspace"       options={{ href: null }} />
         <Tabs.Screen name="profile-edit"    options={{ href: null }} />
         <Tabs.Screen name="ticket-scanner"    options={{ href: null }} />
-        <Tabs.Screen name="availability-prefs" options={{ href: null }} />
-        <Tabs.Screen name="skills-setup"      options={{ href: null }} />
+        <Tabs.Screen name="availability-prefs"  options={{ href: null }} />
+        <Tabs.Screen name="my-availability"    options={{ href: null }} />
+        <Tabs.Screen name="skills-setup"       options={{ href: null }} />
         <Tabs.Screen name="contract"           options={{ href: null }} />
         <Tabs.Screen name="resign"             options={{ href: null }} />
         <Tabs.Screen name="certificates"       options={{ href: null }} />

@@ -66,8 +66,46 @@ export function startReminderScheduler(): void {
     // Calendar event reminders run once per hour
     setInterval(() => { void checkCalendarEventReminders(); }, 60 * 60_000);
     void checkCalendarEventReminders();
+    // Schedule change reminders run every 10 minutes
+    setInterval(() => { void checkScheduleChangeReminders(); }, 10 * 60_000);
+    void checkScheduleChangeReminders();
   }, 15_000);
   logger.info("Lesson reminder scheduler started (checks every 60 s)");
+}
+
+async function checkScheduleChangeReminders(): Promise<void> {
+  try {
+    const { rows: due } = await pool.query(
+      `SELECT screm.id, screm.change_request_id, screm.recipient_user_id,
+              scr.course_name, scr.current_day_of_week, scr.status
+       FROM schedule_change_reminders screm
+       JOIN schedule_change_requests scr ON scr.id = screm.change_request_id
+       WHERE screm.sent_at IS NULL
+         AND screm.send_at <= NOW()
+         AND scr.status IN ('pending','cascade_pending')
+       LIMIT 50`,
+    );
+
+    for (const row of (due as Array<Record<string,unknown>>)) {
+      try {
+        await supabase.from("private_notifications").insert({
+          user_id: row["recipient_user_id"],
+          title:   "Schedule Request Still Pending",
+          body:    `A schedule change request for "${row["course_name"]}" is awaiting your review.`,
+          type:    "schedule_change",
+          is_read: false,
+          metadata: { change_request_id: row["change_request_id"] },
+        }).then(undefined, () => {});
+
+        await pool.query(
+          `UPDATE schedule_change_reminders SET sent_at = NOW() WHERE id = $1`,
+          [row["id"]],
+        );
+      } catch {}
+    }
+  } catch (err) {
+    logger.error({ err }, "[schedule-reminders] check failed");
+  }
 }
 
 async function checkReminders(): Promise<void> {

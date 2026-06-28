@@ -106,6 +106,14 @@ export default function OperationsHub() {
           iconColor={colors.secondary}
           onPress={() => router.push("/(admin)/calendar-management" as never)}
         />
+        <HubCard
+          icon="swap-horizontal-outline"
+          title="Schedule Requests"
+          description="Review operator change requests with AI conflict analysis and one-tap execution"
+          iconBg={colors.primary}
+          iconColor={colors.secondary}
+          onPress={() => router.push("/(admin)/schedule-requests" as never)}
+        />
         {can("ai_suite") && (
           <HubCard
             icon="sparkles"
