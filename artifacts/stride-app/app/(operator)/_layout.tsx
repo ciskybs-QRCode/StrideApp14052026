@@ -15,6 +15,8 @@ import { useT } from "@/context/TranslationContext";
 import { AIPageGuide } from "@/components/AIPageGuide";
 import { useAuth } from "@/context/AuthContext";
 import { getMyOperatorSkills } from "@/lib/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+const skillsDoneKey = (userId: string) => `stride_skills_done_${userId}`;
 
 // ── Booking notification banner ───────────────────────────────────────────────
 
@@ -100,16 +102,23 @@ export default function OperatorTabLayout() {
   const gateChecked = useRef(false);
   useEffect(() => {
     if (gateChecked.current) return;
-    if (user?.role !== "operator") return;
+    if (user?.role !== "operator" || !user?.id) return;
     gateChecked.current = true;
-    getMyOperatorSkills()
-      .then(({ skills_completed }) => {
-        if (!skills_completed) {
-          router.replace("/(operator)/skills-setup" as never);
-        }
+    const userId = user.id;
+    AsyncStorage.getItem(skillsDoneKey(userId))
+      .then(local => {
+        if (local === "1") return; // already completed — skip API call
+        return getMyOperatorSkills().then(({ skills_completed }) => {
+          if (skills_completed) {
+            // Cache it locally so future mounts skip the API call
+            AsyncStorage.setItem(skillsDoneKey(userId), "1").catch(() => {});
+          } else {
+            router.replace("/(operator)/skills-setup" as never);
+          }
+        });
       })
       .catch(() => {});
-  }, [user?.role]);
+  }, [user?.role, user?.id]);
 
 
   return (

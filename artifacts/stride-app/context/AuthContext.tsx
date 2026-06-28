@@ -92,6 +92,7 @@ export const AuthContext = createContext<AuthContextType | null>(null);
 
 const USER_KEY      = "stride_user";
 const ALL_ROLES_KEY = "stride_all_roles";
+const photoKey = (email: string) => `stride_photo_${email}`;
 
 /** Canonical route roots for each role (must match Expo Router file-system layout). */
 const ROLE_ROUTES: Record<UserRole, string> = {
@@ -215,6 +216,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const serverPhoto = ((apiUser as unknown) as Record<string, unknown>).profilePhotoUri as string | null | undefined;
     const serverName  = ((apiUser as unknown) as Record<string, unknown>).preferredName  as string | null | undefined;
 
+    // Per-email photo key survives logout — final fallback
+    const emailPhotoKey = photoKey(email);
+    const persistedPhoto = await AsyncStorage.getItem(emailPhotoKey).catch(() => null);
+
     const mapped: User = {
       id:             String(apiUser.id),
       name:           apiUser.name,
@@ -224,8 +229,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       activeRole:     primaryRole,
       orgId:          apiUser.orgId ?? (apiUser.organization_id as number | undefined),
       is_owner:       apiUser.is_owner ?? false,
-      // Prefer server photo; fall back to locally-stored URI so it survives re-login
-      profilePhotoUri: (serverPhoto ?? storedPhoto) || undefined,
+      // Prefer server photo → locally stored in session → per-email persistent key
+      profilePhotoUri: (serverPhoto ?? storedPhoto ?? persistedPhoto) || undefined,
       // Reject stale template placeholders (e.g. "{first name}") from old storage
       preferredName:  (serverName && !serverName.startsWith("{")) ? serverName : undefined,
     };
@@ -339,6 +344,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const updated = { ...user, ...resolvedUpdates };
     try {
       await AsyncStorage.setItem(USER_KEY, JSON.stringify(updated));
+      // Also persist photo to a per-email key that survives logout
+      if (resolvedUpdates.profilePhotoUri && user.email) {
+        await AsyncStorage.setItem(photoKey(user.email), resolvedUpdates.profilePhotoUri).catch(() => {});
+      }
     } catch (e) {
       console.error("Update error:", e);
     }

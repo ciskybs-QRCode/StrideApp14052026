@@ -15,10 +15,13 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { getSkillPresets, setMyOperatorSkills, type ApiSkillPreset } from "@/lib/api";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useAuth } from "@/context/AuthContext";
 
 export default function SkillsSetup() {
   const colors  = useColors();
   const router  = useRouter();
+  const { user } = useAuth();
   const insets  = useSafeAreaInsets();
   const styles  = makeStyles(colors.primary, colors.secondary, colors.foreground, colors.mutedForeground, colors.background, colors.card, colors.border);
 
@@ -68,8 +71,14 @@ export default function SkillsSetup() {
     setSaving(true);
     try {
       await setMyOperatorSkills(Array.from(selected));
+      if (user?.id) {
+        await AsyncStorage.setItem(`stride_skills_done_${user.id}`, "1").catch(() => {});
+      }
     } catch {
-      // Silently continue — skills can be updated later from profile settings
+      // Skills can be updated later; mark locally so we don't re-gate on next mount
+      if (user?.id) {
+        await AsyncStorage.setItem(`stride_skills_done_${user.id}`, "1").catch(() => {});
+      }
     } finally {
       setSaving(false);
     }

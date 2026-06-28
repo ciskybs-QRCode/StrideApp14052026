@@ -1285,7 +1285,7 @@ export default function OperatorDashboard() {
         {/* ── Header ── */}
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
-            <Text style={[styles.pageTitle, { color: colors.primary }]}>{firstName} 👋</Text>
+            <Text style={[styles.pageTitle, { color: colors.primary }]}>Hi {firstName}!</Text>
             {!!user?.schoolName && (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginTop: 1 }}>
                 {!!orgLogoUri && (
