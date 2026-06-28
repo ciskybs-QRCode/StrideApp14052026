@@ -1,5 +1,6 @@
 import { Router, type Request } from "express";
 import Stripe from "stripe";
+import crypto from "crypto";
 import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 
@@ -51,6 +52,16 @@ const router = Router();
         updated_at           TIMESTAMPTZ DEFAULT NOW()
       )
     `);
+
+    // ── Unified system: extra columns ─────────────────────────────────────────
+    for (const col of [
+      `ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS child_id   INTEGER`,
+      `ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS child_name TEXT`,
+      `ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS qr_token   TEXT`,
+      `ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS earnings_cents INTEGER NOT NULL DEFAULT 0`,
+      `ALTER TABLE private_lesson_bookings ADD COLUMN IF NOT EXISTS attended_at TIMESTAMPTZ`,
+    ]) { await pool.query(col).catch(() => {}); }
+
   } catch { /* tables already exist */ }
 })();
 
@@ -179,7 +190,8 @@ router.get("/private-lessons/operators/:configId", requireAuth, async (req, res)
          FROM users u
          JOIN operator_profiles op ON op.user_id=u.id
          JOIN operator_discipline_rates odr ON odr.operator_profile_id=op.id
-         WHERE op.organization_id=$1 AND odr.discipline_id=$2`,
+         WHERE op.organization_id=$1 AND odr.discipline_id=$2
+           AND COALESCE(op.available_for_private_lessons, false) = true`,
         [orgId, cfg.discipline_id],
       ));
     } else {
@@ -187,7 +199,8 @@ router.get("/private-lessons/operators/:configId", requireAuth, async (req, res)
         `SELECT DISTINCT u.id, u.name, op.id as profile_id, op.profile_type
          FROM users u
          JOIN operator_profiles op ON op.user_id=u.id
-         WHERE op.organization_id=$1`,
+         WHERE op.organization_id=$1
+           AND COALESCE(op.available_for_private_lessons, false) = true`,
         [orgId],
       ));
     }
@@ -204,9 +217,10 @@ router.get("/private-lessons/operators/:configId", requireAuth, async (req, res)
 router.post("/private-lessons/checkout", requireAuth, requireRole("parent"), async (req, res) => {
   const user  = (req as AuthReq).user;
   const orgId = user.orgId ?? 1;
-  const { config_id, operator_user_id, preferred_date, preferred_time, notes, success_url, cancel_url } = req.body as {
+  const { config_id, operator_user_id, preferred_date, preferred_time, notes, success_url, cancel_url, child_id, child_name } = req.body as {
     config_id: number; operator_user_id: number; preferred_date?: string;
     preferred_time?: string; notes?: string; success_url?: string; cancel_url?: string;
+    child_id?: number; child_name?: string;
   };
 
   try {
@@ -235,14 +249,17 @@ router.post("/private-lessons/checkout", requireAuth, requireRole("parent"), asy
     const operatorName = (opRows[0] as { name?: string })?.name ?? "Instructor";
 
     // Create pending booking
+    const qrToken = crypto.randomBytes(16).toString("hex");
     const { rows: bkRows } = await pool.query(
       `INSERT INTO private_lesson_bookings
          (organization_id,parent_user_id,operator_user_id,config_id,discipline_name,
-          preferred_date,preferred_time,duration_minutes,status,member_price_cents,operator_payout_cents,notes)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pending_payment',$9,$10,$11) RETURNING *`,
+          preferred_date,preferred_time,duration_minutes,status,member_price_cents,operator_payout_cents,
+          notes,child_id,child_name,qr_token)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'pending_payment',$9,$10,$11,$12,$13,$14) RETURNING *`,
       [orgId, parseInt(user.id), operator_user_id, config_id, cfg.discipline_name,
        preferred_date ?? null, preferred_time ?? null, cfg.duration_minutes,
-       cfg.member_price_cents, cfg.operator_payout_cents, notes ?? null],
+       cfg.member_price_cents, cfg.operator_payout_cents, notes ?? null,
+       child_id ?? null, child_name ?? null, qrToken],
     );
     const booking = bkRows[0] as { id: number };
 
@@ -330,6 +347,78 @@ router.get("/private-lessons/bookings", requireAuth, async (req, res) => {
   }
 });
 
+// ── POST /private-lessons/bookings/scan ───────────────────────────────────────
+// Operator scans parent's QR → marks lesson completed + credits earnings
+
+router.post("/private-lessons/bookings/scan", requireAuth, requireRole("operator", "admin"), async (req, res) => {
+  const user  = (req as AuthReq).user;
+  const orgId = user.orgId ?? 1;
+  const { qr_token } = req.body as { qr_token: string };
+  if (!qr_token?.trim()) { res.status(400).json({ error: "qr_token required" }); return; }
+
+  try {
+    const { rows } = await pool.query(
+      `SELECT * FROM private_lesson_bookings WHERE qr_token=$1 AND organization_id=$2`,
+      [qr_token.trim(), orgId],
+    );
+    const booking = rows[0] as {
+      id: number; status: string; operator_payout_cents: number;
+      payroll_credited: boolean; discipline_name: string; preferred_date: string | null;
+      operator_user_id: number; child_name: string | null;
+    } | undefined;
+    if (!booking) { res.status(404).json({ error: "Invalid QR code" }); return; }
+    if (booking.status === "completed") { res.status(409).json({ error: "Lesson already completed" }); return; }
+    if (booking.status === "cancelled") { res.status(409).json({ error: "Lesson was cancelled" }); return; }
+    if (booking.status === "pending_payment") { res.status(409).json({ error: "Payment not yet confirmed" }); return; }
+
+    const earningsCents = booking.operator_payout_cents;
+    const attended_at   = new Date().toISOString();
+
+    await pool.query(
+      `UPDATE private_lesson_bookings
+       SET status='completed', attended_at=$1, earnings_cents=$2, updated_at=NOW()
+       WHERE id=$3`,
+      [attended_at, earningsCents, booking.id],
+    );
+
+    // Credit payroll if not already done (e.g. free / manual bookings)
+    if (!booking.payroll_credited && earningsCents > 0) {
+      const now         = new Date();
+      const periodMonth = booking.preferred_date
+        ? booking.preferred_date.slice(0, 7)
+        : `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+      const periodLabel = booking.preferred_date
+        ? new Date(booking.preferred_date + "T00:00:00").toLocaleString("default", { month: "long", year: "numeric" })
+        : now.toLocaleString("default", { month: "long", year: "numeric" });
+      const { rows: opRows } = await pool.query(`SELECT name FROM users WHERE id=$1`, [booking.operator_user_id]);
+      const operatorName = (opRows[0] as { name?: string })?.name ?? "Operator";
+      await pool.query(
+        `INSERT INTO operator_invoice_submissions
+           (organization_id, operator_user_id, operator_name, period_label, period_month, total_cents, line_items)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+        [
+          orgId, booking.operator_user_id, operatorName, periodLabel, periodMonth, earningsCents,
+          JSON.stringify([{
+            description: `Private ${booking.discipline_name} lesson${booking.preferred_date ? " · " + booking.preferred_date : ""}${booking.child_name ? " for " + booking.child_name : ""}`,
+            amountCents: earningsCents,
+            bookingId:   booking.id,
+          }]),
+        ],
+      ).catch(() => {});
+      await pool.query(
+        `UPDATE private_lesson_bookings SET payroll_credited=true WHERE id=$1`,
+        [booking.id],
+      );
+    }
+
+    req.log.info({ bookingId: booking.id, earningsCents }, "private lesson QR scan completed");
+    res.json({ ok: true, earnings_cents: earningsCents, attended_at, child_name: booking.child_name });
+  } catch (err) {
+    req.log.error(err, "private-lessons POST scan");
+    res.status(500).json({ error: "Scan failed" });
+  }
+});
+
 // ── PATCH /private-lessons/bookings/:id ───────────────────────────────────────
 
 router.patch("/private-lessons/bookings/:id", requireAuth, async (req, res) => {
@@ -370,7 +459,9 @@ router.patch("/private-lessons/bookings/:id", requireAuth, async (req, res) => {
          status=$1, updated_at=NOW(),
          cancelled_at=CASE WHEN $1='cancelled' THEN NOW() ELSE cancelled_at END,
          cancel_fee_cents=CASE WHEN $1='cancelled' THEN $4 ELSE cancel_fee_cents END,
-         cancel_reason=CASE WHEN $1='cancelled' THEN $5 ELSE cancel_reason END
+         cancel_reason=CASE WHEN $1='cancelled' THEN $5 ELSE cancel_reason END,
+         attended_at=CASE WHEN $1='completed' THEN NOW() ELSE attended_at END,
+         earnings_cents=CASE WHEN $1='completed' THEN operator_payout_cents ELSE earnings_cents END
        WHERE id=$2 AND organization_id=$3 RETURNING *`,
       [status, id, orgId, cancel_fee_cents, cancel_reason ?? null],
     );

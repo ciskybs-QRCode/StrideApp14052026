@@ -64,7 +64,8 @@ export default function MyPrivateLessonsScreen() {
   const cur    = useOrgCurrency();
   const insets = useSafeAreaInsets();
 
-  const [bookings, setBookings]     = useState<ApiPrivateLessonBooking[]>([]);
+  const [bookings,  setBookings]    = useState<ApiPrivateLessonBooking[]>([]);
+  const [qrToken,   setQrToken]     = useState<string | null>(null);
   const [policy,   setPolicy]       = useState<ApiPrivateLessonPolicy | null>(null);
   const [loading,  setLoading]      = useState(true);
 
@@ -204,6 +205,11 @@ export default function MyPrivateLessonsScreen() {
                     <Text style={[styles.operatorName, { color: colors.mutedForeground }]}>
                       {b.operator_name ?? "Operator TBD"}
                     </Text>
+                    {b.child_name ? (
+                      <Text style={[styles.operatorName, { color: colors.mutedForeground }]}>
+                        For: {b.child_name}
+                      </Text>
+                    ) : null}
                   </View>
                   <View style={{ alignItems: "flex-end", gap: 4 }}>
                     <View style={[styles.statusPill, { backgroundColor: `${statusColor}20` }]}>
@@ -260,6 +266,15 @@ export default function MyPrivateLessonsScreen() {
                     <Ionicons name="calendar-outline" size={14} color={colors.primary} />
                     <Text style={[styles.actionBtnText, { color: colors.primary }]}>Reschedule</Text>
                   </Pressable>
+                  {b.qr_token && (b.status === "booked" || b.status === "confirmed") && (
+                    <Pressable
+                      style={[styles.actionBtn, { backgroundColor: "#F0FDF4", borderColor: "#86EFAC" }]}
+                      onPress={() => setQrToken(b.qr_token ?? null)}
+                    >
+                      <Ionicons name="qr-code-outline" size={14} color="#15803D" />
+                      <Text style={[styles.actionBtnText, { color: "#15803D" }]}>Show QR</Text>
+                    </Pressable>
+                  )}
                   <Pressable
                     style={[styles.actionBtn, { backgroundColor: "#FFF1F2", borderColor: "#FECACA" }]}
                     onPress={() => setCancelId(b.id)}
@@ -363,6 +378,35 @@ export default function MyPrivateLessonsScreen() {
                 }
               </Pressable>
             </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* ── QR Code modal ── */}
+      <Modal visible={qrToken !== null} transparent animationType="fade" onRequestClose={() => setQrToken(null)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { backgroundColor: colors.card }]}>
+            <View style={{ alignItems: "center", marginBottom: 12 }}>
+              <Ionicons name="qr-code-outline" size={44} color={colors.primary} />
+            </View>
+            <Text style={[styles.modalTitle, { color: colors.foreground }]}>Lesson QR Code</Text>
+            <Text style={[styles.modalSub, { color: colors.mutedForeground, marginBottom: 12 }]}>
+              Show this code to your operator to mark the lesson as completed.
+            </Text>
+            <View style={{ backgroundColor: colors.muted, borderRadius: 12, padding: 16, alignItems: "center" }}>
+              <Text style={{ fontFamily: "monospace", fontSize: 13, fontWeight: "700", color: colors.foreground, letterSpacing: 1, textAlign: "center" }}>
+                {qrToken}
+              </Text>
+            </View>
+            <Text style={{ fontSize: 11, color: colors.mutedForeground, textAlign: "center", marginTop: 10 }}>
+              The operator enters this code on their device to confirm your attendance.
+            </Text>
+            <Pressable
+              style={[styles.modalBtn, { backgroundColor: colors.primary, marginTop: 16 }]}
+              onPress={() => setQrToken(null)}
+            >
+              <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Close</Text>
+            </Pressable>
           </View>
         </View>
       </Modal>

@@ -9,7 +9,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { api, getMyOperatorSkills, type ApiAvailabilitySlot, type ApiCourseAvailTemplate, type ApiDiscipline, type ApiLocation, type ApiOperatorSkill, type ApiPrivateBooking, type ApiPrivateNotification } from "@/lib/api";
+import { api, getMyOperatorSkills, type ApiAvailabilitySlot, type ApiCourseAvailTemplate, type ApiDiscipline, type ApiLocation, type ApiOperatorSkill, type ApiPrivateLessonBooking, type ApiPrivateNotification } from "@/lib/api";
 
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { TimePickerSheet } from "@/components/WizardPickers";
@@ -148,7 +148,7 @@ export default function OperatorPrivateLessonsScreen() {
   const [disciplines, setDisciplines] = useState<ApiDiscipline[]>([]);
   const [locations, setLocations] = useState<ApiLocation[]>([]);
   const [slots, setSlots] = useState<ApiAvailabilitySlot[]>([]);
-  const [bookings, setBookings] = useState<ApiPrivateBooking[]>([]);
+  const [bookings, setBookings] = useState<ApiPrivateLessonBooking[]>([]);
   const [notifications, setNotifications] = useState<ApiPrivateNotification[]>([]);
 
   // Availability form
@@ -212,7 +212,7 @@ export default function OperatorPrivateLessonsScreen() {
       api.getDisciplines(),
       api.getLocations(),
       api.getAvailability(),
-      api.getPrivateBookings(),
+      api.getPrivateLessonBookings(),
       api.getPrivateNotifications(),
       api.getCourseAvailability(),
       getMyOperatorSkills(),
@@ -524,7 +524,7 @@ export default function OperatorPrivateLessonsScreen() {
     Alert.alert("Confirm Lesson", "Confirm this private lesson request?", [
       { text: "Cancel", style: "cancel" },
       { text: "Confirm", onPress: async () => {
-        await api.confirmPrivateBooking(id).catch((e: unknown) => Alert.alert("Error", e instanceof Error ? e.message : "Failed"));
+        await api.updatePrivateLessonBooking(id, "confirmed").catch((e: unknown) => Alert.alert("Error", e instanceof Error ? e.message : "Failed"));
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         await load();
       }},
@@ -537,7 +537,7 @@ export default function OperatorPrivateLessonsScreen() {
     if (!token.trim()) return;
     setSaving(true);
     try {
-      const result = await api.scanPrivateLesson(token.trim());
+      const result = await api.scanPrivateLessonQR(token.trim());
       setScanResult(result);
       if (result.ok) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -574,11 +574,19 @@ export default function OperatorPrivateLessonsScreen() {
   function slotBorderColor(s: ApiAvailabilitySlot["status"]) {
     return { pending: "#F59E0B", approved: "#10B981", rejected: "#EF4444", booked: colors.primary }[s];
   }
-  function bookingStatusColor(s: ApiPrivateBooking["status"]) {
-    return { pending: "#FEF9C3", confirmed: "#D1FAE5", cancelled: "#FEE2E2", completed: "#EFF6FF" }[s];
+  function bookingStatusColor(s: string) {
+    const m: Record<string, string> = {
+      pending_payment: "#FEF9C3", booked: "#EFF6FF",
+      confirmed: "#D1FAE5", completed: "#F0FDF4", cancelled: "#FEE2E2",
+    };
+    return m[s] ?? "#F3F4F6";
   }
-  function bookingStatusTextColor(s: ApiPrivateBooking["status"]) {
-    return { pending: "#92400E", confirmed: "#065F46", cancelled: "#991B1B", completed: colors.primary }[s];
+  function bookingStatusTextColor(s: string) {
+    const m: Record<string, string> = {
+      pending_payment: "#92400E", booked: colors.primary,
+      confirmed: "#065F46", completed: "#15803D", cancelled: "#991B1B",
+    };
+    return m[s] ?? "#6B7280";
   }
 
   // Computed for form
@@ -660,27 +668,35 @@ export default function OperatorPrivateLessonsScreen() {
             )}
             {bookings.map(b => (
               <View key={b.id} style={[styles.card, { backgroundColor: colors.card }]}>
-                <View style={[styles.bookingDateBox, { backgroundColor: `colors.secondary50` }]}>
-                  <Text style={[styles.bookingDay,    { color: colors.primary }]}>{fmtDate(b.slot_date).split(" ")[0]}</Text>
-                  <Text style={[styles.bookingDayNum, { color: colors.primary }]}>{fmtDate(b.slot_date).split(" ")[1]}</Text>
+                <View style={[styles.bookingDateBox, { backgroundColor: "rgba(30,58,138,0.08)" }]}>
+                  <Text style={[styles.bookingDay,    { color: colors.primary }]}>
+                    {b.preferred_date ? fmtDate(b.preferred_date).split(" ")[0] : "TBD"}
+                  </Text>
+                  <Text style={[styles.bookingDayNum, { color: colors.primary }]}>
+                    {b.preferred_date ? fmtDate(b.preferred_date).split(" ")[1] : "—"}
+                  </Text>
                 </View>
                 <View style={{ flex: 1 }}>
-                  <Text style={[styles.cardTitle, { color: colors.foreground }]}>{b.child?.name ?? "Member"}</Text>
-                  <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
-                    {b.discipline?.name} · {fmtTime(b.start_time)} – {fmtTime(b.end_time)}
+                  <Text style={[styles.cardTitle, { color: colors.foreground }]}>
+                    {b.child_name ?? "Member"}
                   </Text>
-                  <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>{b.location}</Text>
+                  <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
+                    {b.discipline_name} · {b.preferred_time ? fmtTime(b.preferred_time) : "Time TBD"}
+                  </Text>
+                  <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>{b.duration_minutes} min</Text>
                   <View style={styles.cardFooter}>
                     <View style={[styles.statusBadge, { backgroundColor: bookingStatusColor(b.status) }]}>
-                      <Text style={[styles.statusText, { color: bookingStatusTextColor(b.status) }]}>{b.status}</Text>
+                      <Text style={[styles.statusText, { color: bookingStatusTextColor(b.status) }]}>
+                        {b.status.replace("_", " ")}
+                      </Text>
                     </View>
-                    <Text style={[styles.bookingPrice, { color: colors.primary }]}>{fmt(b.price_cents)}</Text>
+                    <Text style={[styles.bookingPrice, { color: colors.primary }]}>{fmt(b.member_price_cents)}</Text>
                   </View>
-                  {b.earnings_cents != null && b.earnings_cents > 0 && (
+                  {(b.earnings_cents ?? 0) > 0 && (
                     <Text style={[styles.earningsText, { color: "#059669" }]}>Earned: {fmt(b.earnings_cents)}</Text>
                   )}
                 </View>
-                {b.status === "pending" && (
+                {b.status === "booked" && (
                   <Pressable style={[styles.confirmBtn, { backgroundColor: "#059669" }]} onPress={() => confirmBooking(b.id)}>
                     <Ionicons name="checkmark" size={16} color="#FFF" />
                   </Pressable>

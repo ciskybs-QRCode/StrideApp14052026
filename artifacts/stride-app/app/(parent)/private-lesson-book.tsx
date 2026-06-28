@@ -11,7 +11,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { api } from "@/lib/api";
+import { api, type ApiChild } from "@/lib/api";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -30,7 +30,7 @@ interface Operator {
   profile_type: string;
 }
 
-type Step = "discipline" | "operator" | "datetime" | "confirm";
+type Step = "discipline" | "child" | "operator" | "datetime" | "confirm";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -49,10 +49,11 @@ function fmtDate(d: string) {
 }
 
 const STEPS: { key: Step; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: "discipline", label: "Discipline", icon: "school-outline" },
-  { key: "operator",   label: "Operator",   icon: "person-outline" },
-  { key: "datetime",   label: "Date & Time", icon: "calendar-outline" },
-  { key: "confirm",    label: "Pay",         icon: "card-outline" },
+  { key: "discipline", label: "Discipline", icon: "school-outline"   },
+  { key: "child",      label: "Child",      icon: "person-outline"   },
+  { key: "operator",   label: "Operator",   icon: "fitness-outline"  },
+  { key: "datetime",   label: "Schedule",   icon: "calendar-outline" },
+  { key: "confirm",    label: "Pay",        icon: "card-outline"     },
 ];
 
 function StepBar({ current }: { current: Step }) {
@@ -102,12 +103,15 @@ export default function PrivateLessonBook() {
   const [loadingOps,  setLoadingOps]  = useState(false);
   const [submitting,  setSubmitting]  = useState(false);
 
-  const [step,        setStep]        = useState<Step>("discipline");
-  const [selConfig,   setSelConfig]   = useState<LessonConfig | null>(null);
-  const [selOperator, setSelOperator] = useState<Operator | null>(null);
-  const [prefDate,    setPrefDate]    = useState(todayStr());
-  const [prefTime,    setPrefTime]    = useState("09:00");
-  const [notes,       setNotes]       = useState("");
+  const [step,         setStep]        = useState<Step>("discipline");
+  const [selConfig,    setSelConfig]   = useState<LessonConfig | null>(null);
+  const [selOperator,  setSelOperator] = useState<Operator | null>(null);
+  const [selChild,     setSelChild]    = useState<ApiChild | null>(null);
+  const [children,     setChildren]    = useState<ApiChild[]>([]);
+  const [loadingKids,  setLoadingKids] = useState(false);
+  const [prefDate,     setPrefDate]    = useState(todayStr());
+  const [prefTime,     setPrefTime]    = useState("09:00");
+  const [notes,        setNotes]       = useState("");
 
   const [success,     setSuccess]     = useState(false);
 
@@ -125,14 +129,28 @@ export default function PrivateLessonBook() {
   const pickDiscipline = async (cfg: LessonConfig) => {
     setSelConfig(cfg);
     setSelOperator(null);
+    setSelChild(null);
     setLoadingOps(true);
-    setStep("operator");
+    setLoadingKids(true);
+    setStep("child");
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     try {
-      const ops = await api.getPrivateLessonOperators(cfg.id);
+      const [kids, ops] = await Promise.all([
+        api.getChildren().catch(() => [] as ApiChild[]),
+        api.getPrivateLessonOperators(cfg.id).catch(() => [] as Operator[]),
+      ]);
+      setChildren(kids);
       setOperators(ops);
-    } catch { setOperators([]); }
-    finally { setLoadingOps(false); }
+    } finally {
+      setLoadingKids(false);
+      setLoadingOps(false);
+    }
+  };
+
+  const pickChild = (child: ApiChild | null) => {
+    setSelChild(child);
+    setStep("operator");
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   };
 
   const pickOperator = (op: Operator) => {
@@ -157,6 +175,8 @@ export default function PrivateLessonBook() {
         preferred_date:   prefDate,
         preferred_time:   prefTime || undefined,
         notes:            notes || undefined,
+        child_id:         selChild?.id,
+        child_name:       selChild?.name,
       });
       if (res.checkoutUrl) {
         const supported = await Linking.canOpenURL(res.checkoutUrl).catch(() => false);
@@ -173,9 +193,10 @@ export default function PrivateLessonBook() {
   };
 
   const goBack = () => {
-    if (step === "operator")   { setStep("discipline"); return; }
-    if (step === "datetime")   { setStep("operator");   return; }
-    if (step === "confirm")    { setStep("datetime");   return; }
+    if (step === "child")    { setStep("discipline"); return; }
+    if (step === "operator") { setStep("child");      return; }
+    if (step === "datetime") { setStep("operator");   return; }
+    if (step === "confirm")  { setStep("datetime");   return; }
     router.back();
   };
 
@@ -219,6 +240,7 @@ export default function PrivateLessonBook() {
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <ScreenHeader title="Book a Private Lesson" subtitle={
         step === "discipline" ? "Choose a discipline" :
+        step === "child"      ? "Who is this lesson for?" :
         step === "operator"   ? "Choose your operator" :
         step === "datetime"   ? "Preferred date & time" :
                                 "Review & pay"
@@ -269,7 +291,72 @@ export default function PrivateLessonBook() {
           </>
         )}
 
-        {/* ── STEP 2: Operator ───────────────────────────────── */}
+        {/* ── STEP 2: Child ─────────────────────────────────── */}
+        {step === "child" && (
+          <>
+            {loadingKids ? (
+              <View style={styles.center}>
+                <ActivityIndicator color={colors.primary} />
+                <Text style={[styles.emptySub, { color: colors.mutedForeground, marginTop: 8 }]}>Loading…</Text>
+              </View>
+            ) : children.length === 0 ? (
+              <View style={[styles.emptyCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+                <Ionicons name="person-add-outline" size={44} color={colors.mutedForeground} />
+                <Text style={[styles.emptyTitle, { color: colors.primary }]}>No Children Found</Text>
+                <Text style={[styles.emptySub, { color: colors.mutedForeground }]}>
+                  This lesson will be booked for your account directly.
+                </Text>
+                <Pressable
+                  style={[styles.btn, { backgroundColor: colors.primary, marginTop: 8 }]}
+                  onPress={() => pickChild(null)}
+                >
+                  <Text style={[styles.btnText, { color: "#FFF" }]}>Continue</Text>
+                  <Ionicons name="arrow-forward" size={16} color="#FFF" />
+                </Pressable>
+              </View>
+            ) : (
+              <>
+                {children.map(c => (
+                  <Pressable
+                    key={c.id}
+                    style={[styles.optionCard, {
+                      backgroundColor: selChild?.id === c.id ? colors.primary + "15" : colors.card,
+                      borderColor: selChild?.id === c.id ? colors.primary : colors.border,
+                    }]}
+                    onPress={() => pickChild(c)}
+                  >
+                    <View style={[styles.avatarCircle, { backgroundColor: colors.primary + "20" }]}>
+                      <Text style={{ fontSize: 18, fontWeight: "800", color: colors.primary }}>
+                        {c.name.slice(0, 1).toUpperCase()}
+                      </Text>
+                    </View>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.optionTitle, { color: colors.foreground }]}>{c.name}</Text>
+                      {c.date_of_birth ? (
+                        <Text style={[styles.optionSub, { color: colors.mutedForeground }]}>DOB: {c.date_of_birth}</Text>
+                      ) : null}
+                    </View>
+                    <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+                  </Pressable>
+                ))}
+                <Pressable
+                  style={[styles.optionCard, { backgroundColor: colors.card, borderColor: colors.border, marginTop: 4 }]}
+                  onPress={() => pickChild(null)}
+                >
+                  <View style={[styles.iconCircle, { backgroundColor: colors.muted }]}>
+                    <Ionicons name="person-outline" size={22} color={colors.mutedForeground} />
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.optionTitle, { color: colors.mutedForeground }]}>For myself / no child</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
+                </Pressable>
+              </>
+            )}
+          </>
+        )}
+
+        {/* ── STEP 3: Operator ───────────────────────────────── */}
         {step === "operator" && (
           <>
             {loadingOps ? (
@@ -367,7 +454,8 @@ export default function PrivateLessonBook() {
               {[
                 ["Discipline",  selConfig.discipline_name],
                 ["Duration",    `${selConfig.duration_minutes} minutes`],
-                ["Operator",  selOperator.name],
+                ...(selChild ? [["Child", selChild.name]] : []),
+                ["Operator",   selOperator.name],
                 ["Preferred date", fmtDate(prefDate)],
                 ["Preferred time", prefTime || "Flexible"],
                 ...(notes ? [["Notes", notes]] : []),

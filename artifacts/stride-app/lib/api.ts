@@ -1029,12 +1029,15 @@ export const api = {
     request<{ enabled: boolean; configs: ApiPrivateLessonConfig[] }>("GET", "/private-lessons/public"),
   getPrivateLessonOperators: (configId: number) =>
     request<ApiPrivateLessonOperator[]>("GET", `/private-lessons/operators/${configId}`),
-  createPrivateLessonCheckout: (data: { config_id: number; operator_user_id: number; preferred_date?: string; preferred_time?: string; notes?: string }) =>
+  createPrivateLessonCheckout: (data: { config_id: number; operator_user_id: number; preferred_date?: string; preferred_time?: string; notes?: string; child_id?: number; child_name?: string }) =>
     request<{ checkoutUrl: string; bookingId: number; sessionId: string }>("POST", "/private-lessons/checkout", data),
   getPrivateLessonBookings: () =>
     request<ApiPrivateLessonBooking[]>("GET", "/private-lessons/bookings"),
   updatePrivateLessonBooking: (id: number, status: string) =>
     request<ApiPrivateLessonBooking>("PATCH", `/private-lessons/bookings/${id}`, { status }),
+  scanPrivateLessonQR: (qr_token: string) =>
+    request<{ ok: boolean; earnings_cents: number; attended_at: string; child_name: string | null }>(
+      "POST", "/private-lessons/bookings/scan", { qr_token }),
 
   // Operator bank details
   getBankDetails: () =>
@@ -2250,6 +2253,11 @@ export interface ApiPrivateLessonBooking {
   notes: string | null;
   parent_name?: string;
   operator_name?: string;
+  child_id?: number | null;
+  child_name?: string | null;
+  qr_token?: string | null;
+  earnings_cents: number;
+  attended_at?: string | null;
   created_at: string;
   updated_at: string;
 }

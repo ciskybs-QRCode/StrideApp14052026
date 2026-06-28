@@ -14,7 +14,7 @@ import { useRouter } from "expo-router";
 import {
   api,
   type ApiDiscipline, type ApiOperatorProfile, type ApiAvailabilitySlot,
-  type ApiScheduledCourse, type ApiCourseAvailTemplate,
+  type ApiScheduledCourse, type ApiCourseAvailTemplate, type ApiPrivateLessonBooking,
 } from "@/lib/api";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -26,7 +26,7 @@ function fmtDate(d: string) {
   catch { return d; }
 }
 
-type Tab = "disciplines" | "availability" | "scheduler" | "private";
+type Tab = "disciplines" | "availability" | "scheduler" | "private" | "bookings";
 
 // ── Private Lessons Tab component ────────────────────────────────────────────
 
@@ -40,6 +40,80 @@ interface PLConfig {
 }
 function plCents(c: number, sym = "\u20AC") { return `${sym}${(c / 100).toFixed(2)}`; }
 function plParseCents(s: string) { return Math.round(parseFloat(s.replace(",", ".") || "0") * 100); }
+
+function AdminPrivateLessonBookingsTab() {
+  const colors = useColors();
+  const cur    = useOrgCurrency();
+  const [bookings, setBookings] = useState<ApiPrivateLessonBooking[]>([]);
+  const [loading,  setLoading]  = useState(true);
+
+  useFocusEffect(useCallback(() => {
+    setLoading(true);
+    api.getPrivateLessonBookings()
+      .then(d => setBookings(d))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []));
+
+  const SC: Record<string, string> = {
+    pending_payment: "#FEF9C3", booked: "#EFF6FF",
+    confirmed: "#D1FAE5", completed: "#F0FDF4", cancelled: "#FEE2E2",
+  };
+  const ST: Record<string, string> = {
+    pending_payment: "#92400E", booked: "#1E3A8A",
+    confirmed: "#065F46", completed: "#15803D", cancelled: "#991B1B",
+  };
+
+  if (loading) return (
+    <View style={{ alignItems: "center", paddingVertical: 60 }}>
+      <ActivityIndicator size="large" color="#1E3A8A" />
+    </View>
+  );
+
+  if (bookings.length === 0) return (
+    <View style={styles.emptyCard}>
+      <Ionicons name="receipt-outline" size={40} color="#9CA3AF" />
+      <Text style={[styles.emptyText, { color: "#9CA3AF" }]}>No private lesson bookings yet</Text>
+    </View>
+  );
+
+  return (
+    <>
+      {bookings.map(b => (
+        <View key={b.id} style={[styles.card, { backgroundColor: colors.card }]}>
+          <View style={{ flex: 1, gap: 2 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <Text style={[styles.cardTitle, { color: colors.foreground, flex: 1 }]}>{b.discipline_name}</Text>
+              <View style={{ backgroundColor: SC[b.status] ?? "#F3F4F6", borderRadius: 20, paddingHorizontal: 10, paddingVertical: 4, marginLeft: 8 }}>
+                <Text style={{ fontSize: 10, fontWeight: "800", color: ST[b.status] ?? "#6B7280" }}>
+                  {b.status.replace("_", " ")}
+                </Text>
+              </View>
+            </View>
+            {b.child_name ? <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>Child: {b.child_name}</Text> : null}
+            <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>Parent: {b.parent_name ?? "—"}</Text>
+            <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>Operator: {b.operator_name ?? "TBD"}</Text>
+            <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
+              {b.preferred_date ? fmtDate(b.preferred_date) : "Date TBD"}
+              {b.preferred_time ? ` · ${b.preferred_time}` : ""}
+              {" · "}{b.duration_minutes} min
+            </Text>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", marginTop: 4 }}>
+              <Text style={[styles.cardSub, { color: "#1E3A8A", fontWeight: "800" }]}>
+                {cur}{(b.member_price_cents / 100).toFixed(2)}
+              </Text>
+              {(b.earnings_cents ?? 0) > 0 && (
+                <Text style={[styles.cardSub, { color: "#059669", fontWeight: "700" }]}>
+                  Operator: {cur}{(b.earnings_cents / 100).toFixed(2)}
+                </Text>
+              )}
+            </View>
+          </View>
+        </View>
+      ))}
+    </>
+  );
+}
 
 function PrivateLessonsTab() {
   const colors = useColors();
@@ -484,6 +558,7 @@ export default function AdminLessonsScreen() {
           { key: "availability", label: "Requests",   icon: "calendar-outline"        as const },
           { key: "scheduler",    label: "Schedule",   icon: "calendar-number-outline" as const },
           { key: "private",      label: "Private",    icon: "school-outline"          as const },
+          { key: "bookings",     label: "Bookings",   icon: "receipt-outline"         as const },
         ]).map(t => {
           const active = tab === t.key;
           return (
@@ -1397,6 +1472,9 @@ export default function AdminLessonsScreen() {
 
         {/* ══ PRIVATE LESSONS TAB ══ */}
         {tab === "private" && <PrivateLessonsTab />}
+
+        {/* ══ BOOKINGS TAB ══ */}
+        {tab === "bookings" && <AdminPrivateLessonBookingsTab />}
       </ScrollView>
 
       {/* ══ ADD DISCIPLINE MODAL ══ */}
