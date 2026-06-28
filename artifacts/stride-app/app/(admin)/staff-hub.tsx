@@ -284,6 +284,13 @@ export default function StaffHub() {
               <Ionicons name="shield-checkmark-outline" size={16} color={colors.primary} />
               <Text style={[styles.headerBtnText, { color: colors.primary }]}>Certs</Text>
             </Pressable>
+            <Pressable
+              style={[styles.headerBtn, { backgroundColor: colors.secondary + "30" }]}
+              onPress={() => router.push("/(admin)/operator-availability" as never)}
+            >
+              <Ionicons name="time-outline" size={16} color={colors.primary} />
+              <Text style={[styles.headerBtnText, { color: colors.primary }]}>Slots</Text>
+            </Pressable>
           </View>
         }
       />
