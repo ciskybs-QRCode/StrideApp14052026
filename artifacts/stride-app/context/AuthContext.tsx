@@ -232,7 +232,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Prefer server photo → locally stored in session → per-email persistent key
       profilePhotoUri: (serverPhoto ?? storedPhoto ?? persistedPhoto) || undefined,
       // Reject stale template placeholders (e.g. "{first name}") from old storage
-      preferredName:  (serverName && !serverName.startsWith("{")) ? serverName : undefined,
+      preferredName:  (serverName && !serverName.startsWith("{") && serverName.trim() !== "") ? serverName.trim() : undefined,
     };
 
     const finalAllRoles = dbRoles ?? derivedRoles.map(r => ({ role: r, orgId: mapped.orgId ?? 0 }));

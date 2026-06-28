@@ -415,7 +415,8 @@ export default function OperatorDashboard() {
   const checkedIn     = students.filter(s => s.checkedIn).length;
   const operatorQrValue = `STRIDE:OPERATOR:${user?.id ?? "0"}:${user?.orgId ?? "1"}`;
   const logoSource    = orgLogoUri ?? (user?.logoUri ?? null);
-  const firstName     = user?.preferredName || user?.name?.split(" ")[0] || "Operator";
+  const cleanName = (s?: string | null) => (s && !s.startsWith("{") && s.trim() !== "") ? s.trim() : undefined;
+  const firstName = cleanName(user?.preferredName) ?? cleanName(user?.name?.split(" ")[0]) ?? "Operator";
   const emergency     = detectEmergencyInfo(campusAddress);
 
   const handlePickProfilePhoto = async () => {
