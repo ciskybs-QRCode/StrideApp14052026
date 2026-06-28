@@ -3,7 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Image } from "expo-image";
-import * as ImagePicker from "expo-image-picker";
+import { pickAvatarDataUri } from "@/lib/avatar";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useEffect, useRef, useState } from "react";
@@ -198,19 +198,8 @@ export default function AdminHome() {
   const [orgContactEmail, setOrgContactEmail] = useState("");
 
   const handlePickProfilePhoto = async () => {
-    try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) return;
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.25,
-      });
-      if (!result.canceled && result.assets[0]?.uri) {
-        await updateUser({ profilePhotoUri: result.assets[0].uri });
-      }
-    } catch { }
+    const uri = await pickAvatarDataUri();
+    if (uri) await updateUser({ profilePhotoUri: uri });
   };
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
@@ -496,6 +485,9 @@ export default function AdminHome() {
         {/* ── HEADER ── */}
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 19, fontWeight: "800", color: colors.foreground }} numberOfLines={1}>
+              Hi {user?.preferredName?.trim() || user?.name?.trim().split(" ")[0] || "there"}
+            </Text>
             {!!(orgName || user?.schoolName) && (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginTop: 1 }}>
                 {!!orgLogoUri && (

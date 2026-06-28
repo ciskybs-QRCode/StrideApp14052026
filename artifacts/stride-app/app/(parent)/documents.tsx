@@ -27,6 +27,7 @@ import { useColors } from "@/hooks/useColors";
 import { useTerminology } from "@/context/TerminologyContext";
 import { HubCard } from "@/components/HubCard";
 import { api } from "@/lib/api";
+import { pickAvatarDataUri } from "@/lib/avatar";
 import { getDeviceLocale } from "@/hooks/useDeviceLocale";
 
 const PROFILE_EXTRA_KEY = "stride_profile_extra";
@@ -177,21 +178,9 @@ export default function DocumentsScreen() {
   };
 
   const handlePickProfilePhoto = async () => {
-    if (Platform.OS !== "web") {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permission needed", "Please allow access to your photo library.");
-        return;
-      }
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: "images",
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.25,
-    });
-    if (!result.canceled && result.assets[0]) {
-      await updateUser({ profilePhotoUri: result.assets[0].uri });
+    const uri = await pickAvatarDataUri();
+    if (uri) {
+      await updateUser({ profilePhotoUri: uri });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   };

@@ -3,7 +3,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { NotificationBell } from "@/components/NotificationBell";
 import { Image } from "expo-image";
-import * as ImagePicker from "expo-image-picker";
+import { pickAvatarDataUri } from "@/lib/avatar";
 import React, { useEffect, useRef, useState } from "react";
 
 import {
@@ -255,21 +255,9 @@ export default function ParentHome() {
   };
 
   const handlePickProfilePhoto = async () => {
-    if (Platform.OS !== "web") {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) {
-        Alert.alert("Permission Required", "Please allow photo library access in Settings.");
-        return;
-      }
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      quality: 0.25,
-      allowsEditing: true,
-      aspect: [1, 1],
-    });
-    if (!result.canceled) {
-      await updateUser({ profilePhotoUri: result.assets[0].uri });
+    const uri = await pickAvatarDataUri();
+    if (uri) {
+      await updateUser({ profilePhotoUri: uri });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   };
@@ -380,6 +368,9 @@ export default function ParentHome() {
         {/* Header */}
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 19, fontWeight: "800", color: colors.foreground }} numberOfLines={1}>
+              Hi {user?.preferredName?.trim() || user?.name?.trim().split(" ")[0] || "there"}
+            </Text>
             {!!user?.schoolName && (
               <Text style={[styles.pageSubtitle, { color: colors.mutedForeground }]}>
                 {user.schoolName}

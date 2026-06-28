@@ -116,6 +116,19 @@ router.post("/auth/login", authLimiter, async (req, res) => {
   // Lazily ensure owner_email is seeded on first login
   await initOwnerEmail().catch(() => {});
 
+  // preferred_name lives in pg user_profile_extra (not Supabase users)
+  let preferredName: string | null = null;
+  try {
+    const { rows } = await pool.query(
+      "SELECT preferred_name FROM user_profile_extra WHERE user_id = $1",
+      [parseInt(String(user.id), 10)],
+    );
+    const pn = rows[0]?.preferred_name as string | null | undefined;
+    if (pn && pn.trim() !== "" && !pn.startsWith("{")) preferredName = pn.trim();
+  } catch (err) {
+    req.log?.error({ err }, "login preferred_name lookup failed");
+  }
+
   const u = user as Record<string, unknown>;
   res.json({
     token,
@@ -127,7 +140,7 @@ router.post("/auth/login", authLimiter, async (req, res) => {
       orgId: resolvedOrgId,
       is_owner: user.email?.toLowerCase() === getOwnerEmail().toLowerCase(),
       profilePhotoUri: u.profile_photo_url ?? null,
-      preferredName: u.preferred_name ?? null,
+      preferredName,
       ...(globalUserId !== null ? { globalUserId } : {}),
     },
   });
@@ -147,22 +160,35 @@ router.patch("/user/me", requireAuth, async (req, res) => {
   const updates: Record<string, unknown> = {};
   if (profilePhotoUri !== undefined) updates["profile_photo_url"] = profilePhotoUri;
   if (name !== undefined) updates["name"] = name;
-  // preferred_name lives in pg user_profiles (account.ts), not Supabase users
+  // preferred_name lives in pg user_profile_extra (account.ts), not Supabase users
 
-  if (Object.keys(updates).length === 0) {
+  if (Object.keys(updates).length === 0 && preferred_name === undefined) {
     res.status(400).json({ error: "No fields to update" });
     return;
   }
 
   try {
-    const { error } = await supabase
-      .from("users")
-      .update(updates)
-      .eq("id", userId);
+    if (Object.keys(updates).length > 0) {
+      const { error } = await supabase
+        .from("users")
+        .update(updates)
+        .eq("id", userId);
 
-    if (error) {
-      res.status(500).json({ error: error.message });
-      return;
+      if (error) {
+        res.status(500).json({ error: error.message });
+        return;
+      }
+    }
+
+    if (preferred_name !== undefined) {
+      await pool.query(
+        `INSERT INTO user_profile_extra (user_id, preferred_name, updated_at)
+         VALUES ($1, $2, NOW())
+         ON CONFLICT (user_id) DO UPDATE SET
+           preferred_name = EXCLUDED.preferred_name,
+           updated_at     = NOW()`,
+        [parseInt(String(userId), 10), preferred_name],
+      );
     }
 
     res.json({ ok: true });

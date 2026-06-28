@@ -18,7 +18,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { SignaturePad } from "@/components/SignaturePad";
 import { api, type ApiDocument } from "@/lib/api";
+import { pickAvatarDataUri } from "@/lib/avatar";
 import { useColors } from "@/hooks/useColors";
+import { Image } from "expo-image";
 
 // ── Country / dial-code list ───────────────────────────────────────────────────
 interface Country {
@@ -151,6 +153,8 @@ export default function OnboardingScreen() {
   const [zip,       setZip]       = useState("");
   const [state,     setState]     = useState("");
   const [country,   setCountry]   = useState("");
+  const [preferredName, setPreferredName] = useState("");
+  const [photoUri,      setPhotoUri]      = useState<string | null>(null);
 
   // Step 2 — Phone
   const [dialCode,           setDialCode]           = useState(detectDialCode);
@@ -215,6 +219,11 @@ export default function OnboardingScreen() {
 
   const back = () => setStep(s => s - 1);
 
+  const handlePickPhoto = async () => {
+    const uri = await pickAvatarDataUri();
+    if (uri) setPhotoUri(uri);
+  };
+
   const addMember = () => {
     if (!newFn.trim() || !newLn.trim()) {
       Alert.alert("Missing info", "Please enter at least a first and last name.");
@@ -255,7 +264,13 @@ export default function OnboardingScreen() {
         if (sig) await api.signDocumentWithSignature(String(doc.id), sig);
       }
 
-      await updateUser({ name: fullName, phone: fullPhone, onboardingComplete: true });
+      await updateUser({
+        name: fullName,
+        phone: fullPhone,
+        onboardingComplete: true,
+        ...(preferredName.trim() ? { preferredName: preferredName.trim() } : {}),
+        ...(photoUri ? { profilePhotoUri: photoUri } : {}),
+      });
       router.replace("/(parent)/home");
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : "Something went wrong";
@@ -314,8 +329,29 @@ export default function OnboardingScreen() {
 
               <View style={styles.card}>
                 <Text style={styles.sectionLabel}>👤  Personal Information</Text>
+
+                {/* Profile photo */}
+                <View style={{ alignItems: "center", marginBottom: 18 }}>
+                  <Pressable onPress={handlePickPhoto} style={{ width: 92, height: 92 }} accessibilityLabel="Add profile photo">
+                    {photoUri ? (
+                      <Image source={{ uri: photoUri }} style={{ width: 92, height: 92, borderRadius: 46 }} contentFit="cover" />
+                    ) : (
+                      <View style={{ width: 92, height: 92, borderRadius: 46, backgroundColor: "#EEF2FF", alignItems: "center", justifyContent: "center", borderWidth: 2, borderColor: GOLD, borderStyle: "dashed" }}>
+                        <Ionicons name="person" size={32} color={NAVY} />
+                      </View>
+                    )}
+                    <View style={{ position: "absolute", bottom: 0, right: 0, width: 30, height: 30, borderRadius: 15, backgroundColor: NAVY, alignItems: "center", justifyContent: "center", borderWidth: 2.5, borderColor: "#FFF" }}>
+                      <Ionicons name="camera" size={14} color="#FFF" />
+                    </View>
+                  </Pressable>
+                  <Text style={{ fontSize: 12, color: "#64748B", marginTop: 8 }}>
+                    {photoUri ? "Tap to change photo" : "Add a profile photo (optional)"}
+                  </Text>
+                </View>
+
                 <Field label="First Name" value={firstName} onChange={setFirstName} placeholder="e.g. Maria" autoCapitalize="words" />
                 <Field label="Last Name" value={lastName} onChange={setLastName} placeholder="e.g. Rossi" autoCapitalize="words" />
+                <Field label="Preferred Name (optional)" value={preferredName} onChange={setPreferredName} placeholder="How the app greets you, e.g. Maria" autoCapitalize="words" last />
               </View>
 
               <View style={styles.card}>

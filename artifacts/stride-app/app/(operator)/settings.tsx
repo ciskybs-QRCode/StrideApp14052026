@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import { Image } from "expo-image";
-import * as ImagePicker from "expo-image-picker";
+import { pickAvatarDataUri } from "@/lib/avatar";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
@@ -48,21 +48,9 @@ export default function OperatorSettingsScreen() {
   }, []);
 
   const handlePickPhoto = async () => {
-    if (Platform.OS !== "web") {
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (status !== "granted") {
-        Alert.alert("Permission needed", "Please allow access to your photo library.");
-        return;
-      }
-    }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: "images",
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.25,
-    });
-    if (!result.canceled && result.assets[0]) {
-      await updateUser({ profilePhotoUri: result.assets[0].uri });
+    const uri = await pickAvatarDataUri();
+    if (uri) {
+      await updateUser({ profilePhotoUri: uri });
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     }
   };

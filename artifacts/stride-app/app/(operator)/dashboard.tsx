@@ -4,7 +4,7 @@ import * as Haptics from "expo-haptics";
 import { NotificationBell } from "@/components/NotificationBell";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import { Image } from "expo-image";
-import * as ImagePicker from "expo-image-picker";
+import { pickAvatarDataUri } from "@/lib/avatar";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
@@ -418,19 +418,8 @@ export default function OperatorDashboard() {
   const emergency     = detectEmergencyInfo(campusAddress);
 
   const handlePickProfilePhoto = async () => {
-    try {
-      const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      if (!perm.granted) return;
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.25,
-      });
-      if (!result.canceled && result.assets[0]?.uri) {
-        await updateUser({ profilePhotoUri: result.assets[0].uri });
-      }
-    } catch { }
+    const uri = await pickAvatarDataUri();
+    if (uri) await updateUser({ profilePhotoUri: uri });
   };
 
   // ── Effects ─────────────────────────────────────────────────────────────────
@@ -1284,6 +1273,9 @@ export default function OperatorDashboard() {
         {/* ── Header ── */}
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>
+            <Text style={{ fontSize: 19, fontWeight: "800", color: colors.foreground }} numberOfLines={1}>
+              Hi {user?.preferredName?.trim() || user?.name?.trim().split(" ")[0] || "there"}
+            </Text>
             {!!user?.schoolName && (
               <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginTop: 1 }}>
                 {!!orgLogoUri && (

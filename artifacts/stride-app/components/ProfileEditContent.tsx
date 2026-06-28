@@ -407,9 +407,14 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
         acn:              form.acn,
       });
 
-      // 2. Persist full name to backend + local state
+      // 2. Persist full name + preferred name to backend + live user state
+      //    (updateUser refreshes the AuthContext user so the home greeting and
+      //     avatar reflect the change immediately and survive role switches)
       const fullName = [form.firstName.trim(), form.lastName.trim()].filter(Boolean).join(" ");
-      if (fullName) await updateUser({ name: fullName });
+      await updateUser({
+        ...(fullName ? { name: fullName } : {}),
+        preferredName: form.preferredName.trim(),
+      });
 
       // 3. Cache locally for offline access
       const toSave: ProfileExtra = { ...form, address: combined };
