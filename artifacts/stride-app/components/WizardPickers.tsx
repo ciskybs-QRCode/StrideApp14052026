@@ -44,6 +44,14 @@ export function DrumRoll({ items, value, onChange }: {
   return <DrumRollNative items={items} value={value} onChange={onChange} />;
 }
 
+// Hide the native scrollbar on the web drum (once, web only).
+if (Platform.OS === "web" && typeof document !== "undefined" && !document.getElementById("stride-drum-style")) {
+  const styleEl = document.createElement("style");
+  styleEl.id = "stride-drum-style";
+  styleEl.textContent = '[data-stride-drum="1"]::-webkit-scrollbar{display:none}';
+  document.head.appendChild(styleEl);
+}
+
 function DrumRollWeb({ items, value, onChange }: {
   items: string[];
   value: string;
@@ -51,35 +59,73 @@ function DrumRollWeb({ items, value, onChange }: {
 }) {
   const colors              = useColors();
   const idx                 = Math.max(0, items.indexOf(value));
-  const ref                 = useRef<ScrollView>(null);
+  // On web this ref resolves to the underlying scrollable <div>.
+  const ref                 = useRef<any>(null);
   const [selIdx, setSelIdx] = useState(idx);
   const settleTimer         = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const valueRef            = useRef(value);
+  valueRef.current          = value;
+  const scrollingRef        = useRef(false);
 
+  const clampIdx = (y: number) =>
+    Math.max(0, Math.min(items.length - 1, Math.round(y / ITEM_H)));
+
+  // Initialise position + attach DOM listeners that read the REAL scroll offset.
   useEffect(() => {
-    const t = setTimeout(() => {
-      ref.current?.scrollTo({ y: idx * ITEM_H, animated: false });
-    }, 40);
-    return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    const el = ref.current as HTMLElement | null;
+    if (!el) return;
+    el.scrollTop = idx * ITEM_H;
 
-  const handleScroll = (e: { nativeEvent: { contentOffset: { y: number } } }) => {
-    const y = e.nativeEvent.contentOffset.y;
-    const live = Math.max(0, Math.min(items.length - 1, Math.round(y / ITEM_H)));
-    if (live !== selIdx) setSelIdx(live);
-    if (settleTimer.current) clearTimeout(settleTimer.current);
-    settleTimer.current = setTimeout(() => {
-      const clamped = Math.max(0, Math.min(items.length - 1, Math.round(y / ITEM_H)));
-      setSelIdx(clamped);
-      onChange(items[clamped] ?? value);
-      ref.current?.scrollTo({ y: clamped * ITEM_H, animated: true });
-    }, 110);
-  };
+    const commit = () => {
+      scrollingRef.current = false;
+      const i = clampIdx(el.scrollTop);
+      setSelIdx(i);
+      const v = items[i];
+      if (v != null && v !== valueRef.current) onChange(v);
+    };
+
+    const onScroll = () => {
+      scrollingRef.current = true;
+      const i = clampIdx(el.scrollTop);
+      setSelIdx(i);
+      // Commit live too, so a fast Confirm tap never uses a stale value.
+      const v = items[i];
+      if (v != null && v !== valueRef.current) onChange(v);
+      if (settleTimer.current) clearTimeout(settleTimer.current);
+      settleTimer.current = setTimeout(commit, 90);
+    };
+
+    const onScrollEnd = () => {
+      if (settleTimer.current) clearTimeout(settleTimer.current);
+      commit();
+    };
+
+    el.addEventListener("scroll", onScroll, { passive: true });
+    el.addEventListener("scrollend", onScrollEnd);
+    return () => {
+      el.removeEventListener("scroll", onScroll);
+      el.removeEventListener("scrollend", onScrollEnd);
+      if (settleTimer.current) clearTimeout(settleTimer.current);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [items.length]);
+
+  // Re-sync if the value is changed from outside (without fighting active scroll).
+  useEffect(() => {
+    if (scrollingRef.current) return;
+    const el = ref.current as HTMLElement | null;
+    if (!el) return;
+    const target = idx * ITEM_H;
+    if (Math.abs(el.scrollTop - target) > 2) el.scrollTop = target;
+    setSelIdx(idx);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
 
   const pick = (i: number) => {
+    const el = ref.current as HTMLElement | null;
     setSelIdx(i);
     onChange(items[i] ?? value);
-    ref.current?.scrollTo({ y: i * ITEM_H, animated: true });
+    el?.scrollTo({ top: i * ITEM_H, behavior: "smooth" });
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
   };
 
@@ -93,20 +139,23 @@ function DrumRollWeb({ items, value, onChange }: {
           borderColor: colors.primary, backgroundColor: colors.primary + "0D", zIndex: 2,
         }}
       />
-      <ScrollView
+      <View
         ref={ref}
-        showsVerticalScrollIndicator={false}
-        scrollEventThrottle={16}
-        onScroll={handleScroll}
-        // @ts-ignore — web-only CSS scroll snap
-        style={{ scrollSnapType: "y mandatory" }}
-        contentContainerStyle={{ paddingVertical: ITEM_H * 2 }}
+        // @ts-ignore — web-only: native scrollable div with CSS scroll-snap
+        dataSet={{ strideDrum: "1" }}
+        style={{
+          flex: 1,
+          overflowY: "scroll",
+          scrollSnapType: "y mandatory",
+          WebkitOverflowScrolling: "touch",
+          scrollbarWidth: "none",
+          paddingVertical: ITEM_H * 2,
+        } as any}
       >
         {items.map((item, i) => (
           <Pressable
             key={i}
-            // @ts-ignore — web-only CSS scroll snap alignment
-            style={{ height: ITEM_H, alignItems: "center", justifyContent: "center", scrollSnapAlign: "center" }}
+            style={{ height: ITEM_H, alignItems: "center", justifyContent: "center", scrollSnapAlign: "center" } as any}
             onPress={() => pick(i)}
           >
             <Text
@@ -120,7 +169,7 @@ function DrumRollWeb({ items, value, onChange }: {
             </Text>
           </Pressable>
         ))}
-      </ScrollView>
+      </View>
     </View>
   );
 }
