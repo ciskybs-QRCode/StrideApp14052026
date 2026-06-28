@@ -156,3 +156,5 @@ main().catch((err: unknown) => {
   console.error("Unhandled error:", err);
   process.exit(1);
 });
+
+export {};
