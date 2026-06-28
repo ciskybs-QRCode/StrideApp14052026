@@ -2,7 +2,7 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import {
   Alert,
@@ -13,6 +13,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -20,9 +21,11 @@ import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { api, type ApiAvailabilitySlot, type ApiDiscipline } from "@/lib/api";
+import { CalendarPicker, TimePickerSheet } from "@/components/WizardPickers";
 
 const DAYS      = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const DAY_HEADS = ["M", "T", "W", "T", "F", "S", "S"];
+const slotDow   = (slot_date: string) => { const d = new Date(slot_date + "T00:00:00"); return (d.getDay() + 6) % 7; };
 
 // ── Monthly calendar helpers ───────────────────────────────────────────────────
 
@@ -55,6 +58,11 @@ function lessonColor(courseName: string, primary: string, secondary: string): st
 
 const MONTH_NAMES = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 
+type StyleId = string;
+
+const STORAGE_KEY           = "stride_workshops";
+const SAVED_INSTRUCTORS_KEY = "stride_saved_instructors";
+const SAVED_VENUES_KEY      = "stride_saved_venues";
 const EVENTS_STORAGE_KEY    = "stride_calendar_events";
 const ATTENDANCE_STORAGE_KEY= "stride_event_attendance";
 const MEETING_INVITES_KEY   = "stride_meeting_invites";
@@ -77,6 +85,21 @@ interface MeetingInviteRecord {
   payAmount?: string;
 }
 
+type Workshop = {
+  id: string;
+  title: string;
+  style: StyleId;
+  instructor: string;
+  location: string;
+  startDate: string;
+  endDate: string;
+  startTime: string;
+  endTime: string;
+  capacity: number;
+  price: number;
+  description: string;
+  status: "upcoming" | "cancelled";
+};
 
 type CalendarEvent = {
   id: string;
@@ -99,6 +122,37 @@ type LessonItem = {
   cancelled?: boolean;
 };
 
+function formatDateDisplay(iso: string): string {
+  if (!iso || iso.length < 10) return iso;
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function isoToDisplay(iso: string): string {
+  if (!iso || iso.length < 10) return "";
+  const [y, m, d] = iso.split("-");
+  return `${d}/${m}/${y}`;
+}
+
+function displayToIso(display: string): string {
+  if (!display) return "";
+  const parts = display.split("/");
+  if (parts.length === 3 && parts[2]?.length === 4) {
+    return `${parts[2]}-${parts[1].padStart(2, "0")}-${parts[0].padStart(2, "0")}`;
+  }
+  return "";
+}
+
+function daysBetween(a: string, b: string): number {
+  const da = new Date(a);
+  const db = new Date(b);
+  if (isNaN(da.getTime()) || isNaN(db.getTime())) return 0;
+  return Math.round((db.getTime() - da.getTime()) / 86_400_000);
+}
+
+function todayIso(): string {
+  return new Date().toISOString().split("T")[0];
+}
 
 // Helper — is an event's datetime already in the past?
 function isEventPast(date: string, endTime: string): boolean {
@@ -121,10 +175,14 @@ export default function OperatorCalendar() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
 
+  const isAdmin = user?.role === "admin" || user?.role === "super_admin";
 
   const [selectedDay, setSelectedDay]   = useState(() => { const d = new Date().getDay(); return d === 0 ? 6 : d - 1; });
+  const [view, setView]                 = useState<"month" | "list">("month");
   const [schedule, setSchedule]         = useState<LessonItem[][]>(INITIAL_SCHEDULE);
   const [showOptions, setShowOptions]   = useState<{ dayIdx: number; lessonIdx: number } | null>(null);
+  const [showModal, setShowModal]       = useState(false);
+  const [workshops, setWorkshops]       = useState<Workshop[]>([]);
   const [viewDate, setViewDate]         = useState(new Date());
   const [dayDetail, setDayDetail]       = useState<{ date: Date; lessons: LessonItem[] } | null>(null);
   const [campusAddress, setCampusAddress] = useState("1 Main Street, Sydney NSW 2000");
@@ -137,16 +195,63 @@ export default function OperatorCalendar() {
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
   const [eventAttendance, setEventAttendance] = useState<Record<string, "attended" | "missed">>({});
 
+  // ── form state ──────────────────────────────────────────────────────────────
+  const [wTitle,            setWTitle]           = useState("");
+  const [wStyle,            setWStyle]           = useState<StyleId>("");
   const [orgDisciplines,    setOrgDisciplines]   = useState<ApiDiscipline[]>([]);
+  const [wStartDate,        setWStartDate]       = useState(todayIso());
+  const [wEndDate,          setWEndDate]         = useState(todayIso());
+  const [wStartTime,        setWStartTime]       = useState("10:00");
+  const [wEndTime,          setWEndTime]         = useState("13:00");
+  const [wInstructor,       setWInstructor]      = useState("");
+  const [wCustomInstructor, setWCustomInstructor]= useState(false);
+  const [wNewInstructor,    setWNewInstructor]   = useState("");
+  const [wLocation,         setWLocation]        = useState("");
+  const [wCustomLocation,   setWCustomLocation]  = useState(false);
+  const [wNewLocation,      setWNewLocation]     = useState("");
+  const [wCapacity,         setWCapacity]        = useState("20");
+  const [wPrice,            setWPrice]           = useState("0");
+  const [wDescription,      setWDescription]     = useState("");
+  const [validationMsg,     setValidationMsg]    = useState("");
+  const [wSingleDay,        setWSingleDay]       = useState(false);
+  const [wStartDateDisplay, setWStartDateDisplay]= useState(isoToDisplay(todayIso()));
+  const [wEndDateDisplay,   setWEndDateDisplay]  = useState(isoToDisplay(todayIso()));
+  const [showStartCal,      setShowStartCal]     = useState(false);
+  const [showEndCal,        setShowEndCal]       = useState(false);
+  const [showFromTime,      setShowFromTime]     = useState(false);
+  const [showToTime,        setShowToTime]       = useState(false);
   const [availabilitySlots, setAvailabilitySlots] = useState<ApiAvailabilitySlot[]>([]);
   const [availLoading,      setAvailLoading]     = useState(true);
+  const [savedInstructors,  setSavedInstructors] = useState<string[]>([]);
+  const [savedVenues,       setSavedVenues]      = useState<string[]>([]);
+
+  // ── derived lists ────────────────────────────────────────────────────────────
+  const knownInstructors: string[] = (() => {
+    const fromCourses = courses.map(c => c.instructor).filter(i => i && i !== "TBA");
+    const unique = [...new Set([...fromCourses, ...savedInstructors])];
+    return unique.length ? unique : ["Jane Smith", "Tom Davis", "Emma Wilson"];
+  })();
+
+  const knownRooms: string[] = [
+    ...new Set(["Main Hall", "Room A", "Room B", "Room C", "Studio 1", ...schedule.flat().map(l => l.room), ...savedVenues]),
+  ];
 
   // ── persistence ──────────────────────────────────────────────────────────────
   useEffect(() => {
     api.getDisciplines().then(d => {
       const active = d.filter(x => x.active !== false);
       setOrgDisciplines(active);
+      if (active[0]) setWStyle(active[0].name);
     }).catch(() => {});
+    AsyncStorage.getItem(STORAGE_KEY)
+      .then(val => { if (val) setWorkshops(JSON.parse(val) as Workshop[]); })
+      .catch(() => {});
+    AsyncStorage.getItem(SAVED_INSTRUCTORS_KEY)
+      .then(val => { if (val) setSavedInstructors(JSON.parse(val) as string[]); })
+      .catch(() => {});
+    AsyncStorage.getItem(SAVED_VENUES_KEY)
+      .then(val => { if (val) setSavedVenues(JSON.parse(val) as string[]); })
+      .catch(() => {});
     AsyncStorage.getItem("stride_campus_address")
       .then(val => { if (val) setCampusAddress(val); })
       .catch(() => {});
@@ -210,6 +315,85 @@ export default function OperatorCalendar() {
     Linking.openURL(`https://maps.google.com/maps?q=${q}`);
   };
 
+  const persistWorkshops = useCallback(async (next: Workshop[]) => {
+    setWorkshops(next);
+    await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(next)).catch(() => {});
+  }, []);
+
+  // ── helpers ──────────────────────────────────────────────────────────────────
+  const resetForm = () => {
+    const today = todayIso();
+    setWTitle(""); setWStyle("general");
+    setWStartDate(today); setWEndDate(today);
+    setWStartDateDisplay(isoToDisplay(today)); setWEndDateDisplay(isoToDisplay(today));
+    setWSingleDay(false);
+    setWStartTime("10:00"); setWEndTime("13:00");
+    setWInstructor(""); setWCustomInstructor(false); setWNewInstructor("");
+    setWLocation(""); setWCustomLocation(false); setWNewLocation("");
+    setWCapacity("20"); setWPrice("0"); setWDescription("");
+    setValidationMsg("");
+  };
+
+  const openModal = () => {
+    resetForm();
+    setShowModal(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
+
+  const handleCreate = () => {
+    const instructor = wCustomInstructor ? wNewInstructor.trim() : wInstructor;
+    const location   = wCustomLocation   ? wNewLocation.trim()   : wLocation;
+    const duration   = daysBetween(wStartDate, wEndDate);
+
+    if (!wTitle.trim())   { setValidationMsg("Enter a workshop title.");              return; }
+    if (!instructor)      { setValidationMsg("Select or enter an operator.");         return; }
+    if (!location)        { setValidationMsg("Select or enter a venue.");             return; }
+    if (duration < 0)     { setValidationMsg("End date must be after start date.");   return; }
+    if (duration > 6)     { setValidationMsg("Max 7 days — use a Course for longer."); return; }
+
+    const w: Workshop = {
+      id: Date.now().toString(),
+      title:       wTitle.trim(),
+      style:       wStyle,
+      instructor,
+      location,
+      startDate:   wStartDate,
+      endDate:     wEndDate,
+      startTime:   wStartTime,
+      endTime:     wEndTime,
+      capacity:    parseInt(wCapacity) || 20,
+      price:       parseFloat(wPrice)  || 0,
+      description: wDescription.trim(),
+      status:      "upcoming",
+    };
+    persistWorkshops([...workshops, w]);
+
+    // Persist instructor and venue so they appear in future dropdowns
+    AsyncStorage.getItem(SAVED_INSTRUCTORS_KEY).then(raw => {
+      const saved: string[] = raw ? JSON.parse(raw) : [];
+      if (!saved.includes(instructor)) {
+        const updated = [...saved, instructor];
+        setSavedInstructors(updated);
+        AsyncStorage.setItem(SAVED_INSTRUCTORS_KEY, JSON.stringify(updated)).catch(() => {});
+      }
+    }).catch(() => {});
+    AsyncStorage.getItem(SAVED_VENUES_KEY).then(raw => {
+      const saved: string[] = raw ? JSON.parse(raw) : [];
+      if (!saved.includes(location)) {
+        const updated = [...saved, location];
+        setSavedVenues(updated);
+        AsyncStorage.setItem(SAVED_VENUES_KEY, JSON.stringify(updated)).catch(() => {});
+      }
+    }).catch(() => {});
+
+    setShowModal(false);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const cancelWorkshop = (id: string) => {
+    persistWorkshops(workshops.map(w => w.id === id ? { ...w, status: "cancelled" } : w));
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+  };
 
   const cancelLesson = (dayIdx: number, lessonIdx: number) => {
     const next = [...schedule];
@@ -220,7 +404,9 @@ export default function OperatorCalendar() {
   };
 
   // ── derived ──────────────────────────────────────────────────────────────────
-  const selectedLesson = showOptions ? schedule[showOptions.dayIdx]?.[showOptions.lessonIdx] : null;
+  const selectedLesson    = showOptions ? schedule[showOptions.dayIdx]?.[showOptions.lessonIdx] : null;
+  const upcomingWorkshops = workshops.filter(w => w.status === "upcoming");
+  const durationDays      = daysBetween(wStartDate, wEndDate);
 
   // ── month view vars (used in month branch of the toggle) ──────────────────
   const yr      = viewDate.getFullYear();
@@ -238,6 +424,20 @@ export default function OperatorCalendar() {
         {/* ── Header ── */}
         <View style={styles.headerRow}>
           <Text style={[styles.pageTitle, { color: colors.primary }]}>Calendar</Text>
+          <View style={[styles.viewToggle, { backgroundColor: colors.muted }]}>
+            <Pressable
+              style={[styles.toggleBtn, view === "month" && { backgroundColor: colors.primary }]}
+              onPress={() => setView("month")}
+            >
+              <Ionicons name="calendar-outline" size={16} color={view === "month" ? "#FFF" : colors.mutedForeground} />
+            </Pressable>
+            <Pressable
+              style={[styles.toggleBtn, view === "list" && { backgroundColor: colors.primary }]}
+              onPress={() => setView("list")}
+            >
+              <Ionicons name="list" size={16} color={view === "list" ? "#FFF" : colors.mutedForeground} />
+            </Pressable>
+          </View>
         </View>
 
         {/* ── Month calendar header (always visible) ── */}
@@ -251,8 +451,9 @@ export default function OperatorCalendar() {
           </Pressable>
         </View>
 
-        {/* ── Month grid ── */}
-        <>
+        {/* ── Month grid (month view only) ── */}
+        {view === "month" && (
+          <>
             <View style={{ flexDirection: "row", marginBottom: 4 }}>
               {DAY_HEADS.map((h, hi) => (
                 <View key={hi} style={{ flex: 1, alignItems: "center" }}>
@@ -315,142 +516,160 @@ export default function OperatorCalendar() {
                 <Text style={{ fontSize: 11, color: colors.mutedForeground }}>Meeting</Text>
               </View>
             </View>
-        </>
+          </>
+        )}
 
         {/* ── My Availability ─────────────────────────────────────────────────── */}
-        <Text style={[styles.sectionTitle, { color: colors.primary, marginTop: 28 }]}>My Availability</Text>
+        <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 28, marginBottom: 12 }}>
+          <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>My Availability</Text>
+          <Pressable
+            style={{ flexDirection: "row", alignItems: "center", gap: 4, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: colors.primary + "12", borderWidth: 1, borderColor: colors.primary + "30" }}
+            onPress={() => {
+              Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+              router.navigate({ pathname: "/(operator)/private-lessons", params: { openTab: "availability" } } as never);
+            }}
+          >
+            <Text style={{ fontSize: 12, fontWeight: "700", color: colors.primary }}>Manage</Text>
+            <Ionicons name="chevron-forward" size={12} color={colors.primary} />
+          </Pressable>
+        </View>
 
         {availLoading ? (
-          <View style={{ borderRadius: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, padding: 24, alignItems: "center" }}>
+          <View style={{ borderRadius: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, padding: 20, alignItems: "center" }}>
             <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Loading...</Text>
           </View>
         ) : (() => {
-          const todayIsoStr = new Date().toISOString().slice(0, 10);
-          const pendingSlots  = availabilitySlots.filter(s => s.status === "pending");
-          const approvedSlots = availabilitySlots
-            .filter(s => s.status === "approved" && s.slot_date >= todayIsoStr)
-            .sort((a, b) => a.slot_date.localeCompare(b.slot_date));
+          const todayDow = (() => { const d = new Date().getDay(); return d === 0 ? 6 : d - 1; })();
+          const slotsByDay: Record<number, ApiAvailabilitySlot[]> = {};
+          availabilitySlots.forEach(s => {
+            if (s.slot_date) {
+              const d = slotDow(s.slot_date);
+              if (!slotsByDay[d]) slotsByDay[d] = [];
+              slotsByDay[d].push(s);
+            }
+          });
+          const hasAny = Object.keys(slotsByDay).length > 0;
+
+          if (!hasAny) {
+            return (
+              <Pressable
+                style={{ borderRadius: 16, borderWidth: 1.5, borderColor: colors.border, padding: 28, alignItems: "center", gap: 10, backgroundColor: colors.card }}
+                onPress={() => {
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                  router.navigate({ pathname: "/(operator)/private-lessons", params: { openTab: "availability" } } as never);
+                }}
+              >
+                <View style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: colors.primary + "12", alignItems: "center", justifyContent: "center" }}>
+                  <Ionicons name="time-outline" size={24} color={colors.primary} />
+                </View>
+                <Text style={{ fontSize: 15, fontWeight: "700", color: colors.primary }}>No availability set yet</Text>
+                <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center", lineHeight: 19 }}>
+                  Tap to set your weekly schedule and start receiving private lesson bookings
+                </Text>
+              </Pressable>
+            );
+          }
 
           return (
-            <>
-              {/* Pending confirmation from admin */}
-              {pendingSlots.length > 0 && (
-                <View style={{ marginBottom: 16 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                    <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: "#F59E0B" }} />
-                    <Text style={{ fontSize: 11, fontWeight: "700", color: "#92400E", letterSpacing: 0.5, textTransform: "uppercase" }}>
-                      Awaiting your confirmation
-                    </Text>
-                    <View style={{ backgroundColor: "#F59E0B", borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 }}>
-                      <Text style={{ fontSize: 11, fontWeight: "800", color: "#FFF" }}>{pendingSlots.length}</Text>
+            <View style={{ borderRadius: 16, overflow: "hidden", backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border }}>
+              {DAYS.map((day, idx) => {
+                const slots   = slotsByDay[idx] ?? [];
+                const isTodayRow = idx === todayDow;
+                return (
+                  <View
+                    key={idx}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      paddingHorizontal: 14,
+                      paddingVertical: 11,
+                      borderBottomWidth: idx < 6 ? StyleSheet.hairlineWidth : 0,
+                      borderBottomColor: colors.border,
+                      backgroundColor: isTodayRow ? colors.primary + "08" : "transparent",
+                    }}
+                  >
+                    <View style={{
+                      width: 38, height: 38, borderRadius: 10, alignItems: "center", justifyContent: "center",
+                      backgroundColor: isTodayRow ? colors.primary : colors.muted, marginRight: 12,
+                    }}>
+                      <Text style={{ fontSize: 11, fontWeight: "800", color: isTodayRow ? "#FFF" : colors.mutedForeground }}>{day}</Text>
                     </View>
-                  </View>
-                  {pendingSlots.map(slot => {
-                    const d = new Date(slot.slot_date + "T00:00:00");
-                    const dateStr = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-                    return (
-                      <View key={slot.id} style={{
-                        backgroundColor: "#FFFBEB", borderRadius: 16, borderWidth: 1.5, borderColor: "#F59E0B",
-                        padding: 14, marginBottom: 10, flexDirection: "row", alignItems: "center", gap: 12,
-                      }}>
-                        <View style={{ width: 46, height: 46, borderRadius: 13, backgroundColor: "#FEF3C7", alignItems: "center", justifyContent: "center" }}>
-                          <Ionicons name="time-outline" size={22} color="#D97706" />
-                        </View>
-                        <View style={{ flex: 1 }}>
-                          <Text style={{ fontSize: 14, fontWeight: "700", color: "#92400E" }}>{dateStr}</Text>
-                          <Text style={{ fontSize: 13, color: "#B45309", marginTop: 2 }}>
-                            {slot.start_time} – {slot.end_time}
-                            {slot.discipline?.name ? `  ·  ${slot.discipline.name}` : ""}
-                          </Text>
-                        </View>
-                        <View style={{ gap: 6 }}>
-                          <Pressable
-                            onPress={() => {
-                              api.reviewAvailability(slot.id, "approved")
-                                .then(u => setAvailabilitySlots(p => p.map(s => s.id === u.id ? u : s)))
-                                .catch(() => {});
-                              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-                            }}
-                            style={{ backgroundColor: "#10B981", borderRadius: 9, paddingHorizontal: 12, paddingVertical: 7, flexDirection: "row", alignItems: "center", gap: 4 }}
-                          >
-                            <Ionicons name="checkmark" size={13} color="#FFF" />
-                            <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 12 }}>Confirm</Text>
-                          </Pressable>
-                          <Pressable
-                            onPress={() => {
-                              api.reviewAvailability(slot.id, "rejected")
-                                .then(u => setAvailabilitySlots(p => p.map(s => s.id === u.id ? u : s)))
-                                .catch(() => {});
-                              Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-                            }}
-                            style={{ backgroundColor: "transparent", borderRadius: 9, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1.5, borderColor: "#EF4444", flexDirection: "row", alignItems: "center", gap: 4 }}
-                          >
-                            <Ionicons name="close" size={13} color="#EF4444" />
-                            <Text style={{ color: "#EF4444", fontWeight: "700", fontSize: 12 }}>Decline</Text>
-                          </Pressable>
-                        </View>
+                    {slots.length === 0 ? (
+                      <Text style={{ fontSize: 13, color: colors.mutedForeground, fontStyle: "italic" }}>Unavailable</Text>
+                    ) : (
+                      <View style={{ flex: 1, flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
+                        {slots.map((s, si) => (
+                          <View key={si} style={{
+                            flexDirection: "row", alignItems: "center", gap: 4,
+                            backgroundColor: isTodayRow ? colors.primary + "18" : colors.muted,
+                            paddingHorizontal: 10, paddingVertical: 5, borderRadius: 20,
+                          }}>
+                            <Ionicons name="time-outline" size={12} color={isTodayRow ? colors.primary : colors.mutedForeground} />
+                            <Text style={{ fontSize: 12, fontWeight: "700", color: isTodayRow ? colors.primary : colors.foreground }}>
+                              {s.start_time}–{s.end_time}
+                            </Text>
+                          </View>
+                        ))}
                       </View>
-                    );
-                  })}
-                </View>
-              )}
-
-              {/* Confirmed upcoming schedule */}
-              {approvedSlots.length > 0 ? (
-                <View style={{ borderRadius: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, overflow: "hidden" }}>
-                  <View style={{ backgroundColor: colors.primary, paddingHorizontal: 16, paddingVertical: 11, flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <Ionicons name="calendar-outline" size={15} color={colors.secondary} />
-                    <Text style={{ color: colors.secondary, fontWeight: "700", fontSize: 13, flex: 1 }}>Confirmed Sessions</Text>
-                    <View style={{ backgroundColor: colors.secondary, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 2 }}>
-                      <Text style={{ fontSize: 11, fontWeight: "800", color: colors.primary }}>{approvedSlots.length}</Text>
-                    </View>
+                    )}
                   </View>
-                  {approvedSlots.slice(0, 6).map((slot, idx) => {
-                    const d = new Date(slot.slot_date + "T00:00:00");
-                    const dateStr = d.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" });
-                    const isToday = slot.slot_date === todayIsoStr;
-                    return (
-                      <View key={slot.id} style={{
-                        flexDirection: "row", alignItems: "center",
-                        paddingHorizontal: 16, paddingVertical: 13,
-                        borderTopWidth: idx === 0 ? 0 : StyleSheet.hairlineWidth,
-                        borderTopColor: colors.border,
-                        backgroundColor: isToday ? colors.primary + "08" : "transparent",
-                      }}>
-                        <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: isToday ? colors.secondary : colors.primary + "50", marginRight: 12 }} />
-                        <Text style={{ fontSize: 13, fontWeight: "600", color: isToday ? colors.primary : colors.foreground, width: 96 }}>{dateStr}</Text>
-                        <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 5 }}>
-                          <Ionicons name="time-outline" size={13} color={colors.primary} />
-                          <Text style={{ fontSize: 13, fontWeight: "700", color: colors.primary }}>{slot.start_time}–{slot.end_time}</Text>
-                        </View>
-                        {!!slot.discipline?.name && (
-                          <Text style={{ fontSize: 11, color: colors.mutedForeground }}>{slot.discipline.name}</Text>
-                        )}
-                      </View>
-                    );
-                  })}
-                  {approvedSlots.length > 6 && (
-                    <View style={{ paddingVertical: 10, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border }}>
-                      <Text style={{ fontSize: 12, color: colors.mutedForeground, textAlign: "center" }}>
-                        +{approvedSlots.length - 6} more upcoming sessions
-                      </Text>
-                    </View>
-                  )}
-                </View>
-              ) : pendingSlots.length === 0 ? (
-                <View style={{ borderRadius: 16, borderWidth: 1.5, borderColor: colors.border, borderStyle: "dashed", padding: 32, alignItems: "center", gap: 12, backgroundColor: colors.card }}>
-                  <View style={{ width: 54, height: 54, borderRadius: 27, backgroundColor: colors.primary + "10", alignItems: "center", justifyContent: "center" }}>
-                    <Ionicons name="time-outline" size={26} color={colors.primary} />
-                  </View>
-                  <Text style={{ fontSize: 14, fontWeight: "700", color: colors.primary }}>No sessions assigned yet</Text>
-                  <Text style={{ fontSize: 13, color: colors.mutedForeground, textAlign: "center", lineHeight: 20 }}>
-                    Your admin will assign availability slots.{"\n"}You will be notified to confirm.
-                  </Text>
-                </View>
-              ) : null}
-            </>
+                );
+              })}
+            </View>
           );
         })()}
+
+        {/* ── Upcoming Workshops (agenda view) ─────────────────────────────────── */}
+        {view === "list" && (
+          <>
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 28, marginBottom: 12 }}>
+              <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>Upcoming Workshops</Text>
+              {upcomingWorkshops.length > 0 && (
+                <View style={{ backgroundColor: colors.secondary, borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3 }}>
+                  <Text style={{ fontSize: 12, fontWeight: "800", color: colors.primary }}>{upcomingWorkshops.length}</Text>
+                </View>
+              )}
+            </View>
+            {upcomingWorkshops.length === 0 ? (
+              <View style={{ borderRadius: 16, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border, padding: 24, alignItems: "center", gap: 8 }}>
+                <Ionicons name="school-outline" size={28} color={colors.primary} />
+                <Text style={{ fontSize: 14, fontWeight: "700", color: colors.primary }}>No upcoming workshops</Text>
+                <Text style={{ fontSize: 12, color: colors.mutedForeground }}>Tap + to create one</Text>
+              </View>
+            ) : (
+              upcomingWorkshops.map(w => (
+                <View key={w.id} style={[styles.workshopCard, { backgroundColor: colors.card }]}>
+                  <View style={[styles.workshopAccent, { backgroundColor: colors.primary }]}>
+                    <Text style={{ fontSize: 10, fontWeight: "800", color: colors.secondary, textAlign: "center", paddingHorizontal: 4 }}>
+                      {w.style.toUpperCase().slice(0, 4)}
+                    </Text>
+                  </View>
+                  <View style={styles.workshopBody}>
+                    <Text style={[styles.workshopTitle, { color: colors.primary }]}>{w.title}</Text>
+                    <View style={styles.workshopMetaRow}>
+                      <Ionicons name="calendar-outline" size={13} color={colors.mutedForeground} />
+                      <Text style={[styles.workshopMetaText, { color: colors.mutedForeground }]}>
+                        {formatDateDisplay(w.startDate)}{w.startDate !== w.endDate ? ` – ${formatDateDisplay(w.endDate)}` : ""}
+                      </Text>
+                    </View>
+                    <View style={styles.workshopMetaRow}>
+                      <Ionicons name="time-outline" size={13} color={colors.mutedForeground} />
+                      <Text style={[styles.workshopMetaText, { color: colors.mutedForeground }]}>{w.startTime} – {w.endTime}</Text>
+                      <Ionicons name="location-outline" size={13} color={colors.mutedForeground} style={{ marginLeft: 8 }} />
+                      <Text style={[styles.workshopMetaText, { color: colors.mutedForeground }]} numberOfLines={1}>{w.location}</Text>
+                    </View>
+                    {!!w.description && (
+                      <Text style={[styles.workshopDesc, { color: colors.mutedForeground }]} numberOfLines={2}>{w.description}</Text>
+                    )}
+                  </View>
+                  <Pressable style={styles.workshopCancelBtn} onPress={() => cancelWorkshop(w.id)}>
+                    <Ionicons name="close-circle-outline" size={22} color="#EF4444" />
+                  </Pressable>
+                </View>
+              ))
+            )}
+          </>
+        )}
 
         {/* ── Meeting Invites ───────────────────────────────────────────────────── */}
         {(() => {
@@ -570,8 +789,328 @@ export default function OperatorCalendar() {
         })}
       </ScrollView>
 
+      {/* ── FAB: New Workshop ── */}
+      <Pressable
+        style={[styles.fab, { backgroundColor: colors.primary, bottom: insets.bottom + 80 }]}
+        onPress={() => {
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          openModal();
+        }}
+      >
+        <Ionicons name="add" size={28} color={colors.secondary} />
+      </Pressable>
+
+      {/* ══ Workshop Creation Sheet ══════════════════════════════════════════════ */}
+      <Modal
+        visible={showModal}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowModal(false)}
+      >
+        <View style={styles.overlay}>
+          <View style={styles.sheet}>
+            {/* Sheet handle */}
+            <View style={styles.sheetHandle} />
 
             {/* Sheet header */}
+            <View style={styles.sheetHeaderRow}>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.sheetTitle, { color: colors.primary }]}>New Workshop</Text>
+                <Text style={[styles.sheetSubtitle, { color: colors.mutedForeground }]}>
+                  Short event · max 7 days · distinct from recurring courses
+                </Text>
+              </View>
+              <Pressable
+                onPress={() => setShowModal(false)}
+                style={[styles.sheetCloseBtn, { backgroundColor: colors.muted }]}
+              >
+                <Ionicons name="close" size={20} color={colors.primary} />
+              </Pressable>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 32 }}>
+              {/* Validation banner */}
+              {!!validationMsg && (
+                <View style={styles.validationBanner}>
+                  <Ionicons name="alert-circle-outline" size={16} color="#92400E" />
+                  <Text style={styles.validationText}>{validationMsg}</Text>
+                </View>
+              )}
+
+              {/* ─ Title ─ */}
+              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Workshop Title</Text>
+              <TextInput
+                style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
+                placeholder="e.g. Summer Sports Intensive"
+                placeholderTextColor={colors.mutedForeground}
+                value={wTitle}
+                onChangeText={t => { setWTitle(t); setValidationMsg(""); }}
+              />
+
+              {/* ─ Style ─ */}
+              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Discipline</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 4 }}>
+                {(orgDisciplines.length > 0 ? orgDisciplines : [{ id: 0, name: "General", active: true }]).map(d => {
+                  const isActive = wStyle === d.name;
+                  return (
+                    <Pressable
+                      key={d.id}
+                      onPress={() => setWStyle(d.name)}
+                      style={[styles.chip, { backgroundColor: isActive ? colors.primary : colors.muted }]}
+                    >
+                      <Text style={[styles.chipText, { color: isActive ? "#FFF" : colors.mutedForeground }]}>
+                        {d.name}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+
+              {/* ─ Dates ─ */}
+              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Date</Text>
+
+              {/* Single Day / Date Range segmented toggle */}
+              <View style={{ flexDirection: "row", borderRadius: 10, borderWidth: 1.5, borderColor: colors.primary, overflow: "hidden", marginBottom: 12 }}>
+                <Pressable
+                  style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 10, backgroundColor: wSingleDay ? colors.primary : "transparent" }}
+                  onPress={() => { setWSingleDay(true); setWEndDate(wStartDate); setWEndDateDisplay(wStartDateDisplay); setValidationMsg(""); }}
+                >
+                  <Ionicons name="today-outline" size={14} color={wSingleDay ? "#FFF" : colors.primary} />
+                  <Text style={{ fontSize: 13, fontWeight: "600" as const, color: wSingleDay ? "#FFF" : colors.primary }}>Single Day</Text>
+                </Pressable>
+                <View style={{ width: 1.5, backgroundColor: colors.primary }} />
+                <Pressable
+                  style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 10, backgroundColor: !wSingleDay ? colors.primary : "transparent" }}
+                  onPress={() => { setWSingleDay(false); setValidationMsg(""); }}
+                >
+                  <Ionicons name="calendar-outline" size={14} color={!wSingleDay ? "#FFF" : colors.primary} />
+                  <Text style={{ fontSize: 13, fontWeight: "600" as const, color: !wSingleDay ? "#FFF" : colors.primary }}>Date Range</Text>
+                </Pressable>
+              </View>
+
+              {/* Date inputs — calendar picker chips */}
+              <View style={wSingleDay ? {} : styles.twoCol}>
+                <View style={wSingleDay ? {} : { flex: 1 }}>
+                  <Text style={styles.subLabel}>{wSingleDay ? "Date" : "Start date"}</Text>
+                  <Pressable
+                    style={[styles.input, { borderColor: colors.primary, flexDirection: "row", alignItems: "center", gap: 8 }]}
+                    onPress={() => setShowStartCal(true)}
+                  >
+                    <Ionicons name="calendar-outline" size={16} color={colors.primary} />
+                    <Text style={{ flex: 1, color: wStartDateDisplay ? colors.foreground : colors.mutedForeground, fontSize: 14, fontWeight: "600" }}>
+                      {wStartDateDisplay || isoToDisplay(todayIso())}
+                    </Text>
+                    <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} />
+                  </Pressable>
+                </View>
+                {!wSingleDay && (
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.subLabel}>End date (max +7 days)</Text>
+                    <Pressable
+                      style={[styles.input, { borderColor: durationDays > 6 ? "#EF4444" : colors.primary, flexDirection: "row", alignItems: "center", gap: 8 }]}
+                      onPress={() => setShowEndCal(true)}
+                    >
+                      <Ionicons name="calendar-outline" size={16} color={durationDays > 6 ? "#EF4444" : colors.primary} />
+                      <Text style={{ flex: 1, color: wEndDateDisplay ? colors.foreground : colors.mutedForeground, fontSize: 14, fontWeight: "600" }}>
+                        {wEndDateDisplay || isoToDisplay(todayIso())}
+                      </Text>
+                      <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} />
+                    </Pressable>
+                  </View>
+                )}
+              </View>
+
+              {/* Duration pill */}
+              {wStartDate.length === 10 && wEndDate.length === 10 && (
+                durationDays > 6 ? (
+                  <View style={[styles.durationPill, { backgroundColor: "#FEE2E2" }]}>
+                    <Ionicons name="warning-outline" size={13} color="#EF4444" />
+                    <Text style={[styles.durationPillText, { color: "#EF4444" }]}>
+                      {durationDays + 1} days — limit exceeded, use a Course
+                    </Text>
+                  </View>
+                ) : durationDays >= 0 ? (
+                  <View style={[styles.durationPill, { backgroundColor: colors.secondary }]}>
+                    <Ionicons name="calendar-outline" size={13} color={colors.primary} />
+                    <Text style={[styles.durationPillText, { color: colors.primary }]}>
+                      {durationDays + 1} {durationDays + 1 === 1 ? "day" : "days"}
+                    </Text>
+                  </View>
+                ) : null
+              )}
+
+              {/* ─ Times — drum picker chips ─ */}
+              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Time</Text>
+              <View style={styles.twoCol}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.subLabel}>From</Text>
+                  <Pressable
+                    style={[styles.input, { borderColor: colors.primary, flexDirection: "row", alignItems: "center", gap: 8 }]}
+                    onPress={() => setShowFromTime(true)}
+                  >
+                    <Ionicons name="time-outline" size={16} color={colors.primary} />
+                    <Text style={{ flex: 1, color: colors.foreground, fontSize: 14, fontWeight: "600" }}>{wStartTime}</Text>
+                    <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} />
+                  </Pressable>
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.subLabel}>To</Text>
+                  <Pressable
+                    style={[styles.input, { borderColor: colors.primary, flexDirection: "row", alignItems: "center", gap: 8 }]}
+                    onPress={() => setShowToTime(true)}
+                  >
+                    <Ionicons name="time-outline" size={16} color={colors.primary} />
+                    <Text style={{ flex: 1, color: colors.foreground, fontSize: 14, fontWeight: "600" }}>{wEndTime}</Text>
+                    <Ionicons name="chevron-down" size={14} color={colors.mutedForeground} />
+                  </Pressable>
+                </View>
+              </View>
+
+              {/* ─ Operator ─ */}
+              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Operator</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }}>
+                {knownInstructors.map(instr => {
+                  const active = wInstructor === instr && !wCustomInstructor;
+                  return (
+                    <Pressable
+                      key={instr}
+                      onPress={() => { setWInstructor(instr); setWCustomInstructor(false); setValidationMsg(""); }}
+                      style={[styles.chip, { backgroundColor: active ? colors.primary : colors.muted }]}
+                    >
+                      <Ionicons name="person-outline" size={14} color={active ? colors.secondary : colors.mutedForeground} />
+                      <Text style={[styles.chipText, { color: active ? "#FFF" : colors.mutedForeground }]}>{instr}</Text>
+                    </Pressable>
+                  );
+                })}
+                <Pressable
+                  onPress={() => { setWCustomInstructor(true); setWInstructor(""); setValidationMsg(""); }}
+                  style={[
+                    styles.chip,
+                    {
+                      backgroundColor: wCustomInstructor ? colors.primary : "transparent",
+                      borderWidth: 1.5,
+                      borderStyle: "dashed",
+                      borderColor: colors.primary,
+                    },
+                  ]}
+                >
+                  <Ionicons name="add" size={14} color={wCustomInstructor ? colors.secondary : colors.primary} />
+                  <Text style={[styles.chipText, { color: wCustomInstructor ? "#FFF" : colors.primary }]}>New</Text>
+                </Pressable>
+              </ScrollView>
+              {wCustomInstructor && (
+                <TextInput
+                  style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
+                  placeholder="Full name"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={wNewInstructor}
+                  onChangeText={t => { setWNewInstructor(t); setValidationMsg(""); }}
+                />
+              )}
+
+              {/* ─ Venue ─ */}
+              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Venue / Room</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 6 }}>
+                {knownRooms.map(room => {
+                  const active = wLocation === room && !wCustomLocation;
+                  return (
+                    <Pressable
+                      key={room}
+                      onPress={() => { setWLocation(room); setWCustomLocation(false); setValidationMsg(""); }}
+                      style={[styles.chip, { backgroundColor: active ? colors.primary : colors.muted }]}
+                    >
+                      <Ionicons name="location-outline" size={14} color={active ? colors.secondary : colors.mutedForeground} />
+                      <Text style={[styles.chipText, { color: active ? "#FFF" : colors.mutedForeground }]}>{room}</Text>
+                    </Pressable>
+                  );
+                })}
+                <Pressable
+                  onPress={() => { setWCustomLocation(true); setWLocation(""); setValidationMsg(""); }}
+                  style={[
+                    styles.chip,
+                    {
+                      backgroundColor: wCustomLocation ? colors.primary : "transparent",
+                      borderWidth: 1.5,
+                      borderStyle: "dashed",
+                      borderColor: colors.primary,
+                    },
+                  ]}
+                >
+                  <Ionicons name="add" size={14} color={wCustomLocation ? colors.secondary : colors.primary} />
+                  <Text style={[styles.chipText, { color: wCustomLocation ? "#FFF" : colors.primary }]}>New</Text>
+                </Pressable>
+              </ScrollView>
+              {wCustomLocation && (
+                <TextInput
+                  style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
+                  placeholder="Venue or room name"
+                  placeholderTextColor={colors.mutedForeground}
+                  value={wNewLocation}
+                  onChangeText={t => { setWNewLocation(t); setValidationMsg(""); }}
+                />
+              )}
+
+              {/* ─ Capacity & Price ─ */}
+              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Details</Text>
+              <View style={styles.twoCol}>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.subLabel}>Max participants</Text>
+                  <TextInput
+                    style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
+                    placeholder="20"
+                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="number-pad"
+                    value={wCapacity}
+                    onChangeText={setWCapacity}
+                  />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.subLabel}>Price ({cur || "€"}, 0 = free)</Text>
+                  <TextInput
+                    style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
+                    placeholder="0"
+                    placeholderTextColor={colors.mutedForeground}
+                    keyboardType="decimal-pad"
+                    value={wPrice}
+                    onChangeText={setWPrice}
+                  />
+                </View>
+              </View>
+
+              {/* ─ Description ─ */}
+              <Text style={styles.subLabel}>Short description (optional)</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  { borderColor: colors.primary, color: colors.foreground, minHeight: 64, textAlignVertical: "top" },
+                ]}
+                placeholder="What will participants learn or experience?"
+                placeholderTextColor={colors.mutedForeground}
+                multiline
+                value={wDescription}
+                onChangeText={setWDescription}
+              />
+
+              {/* ─ Action buttons ─ */}
+              <View style={styles.sheetBtns}>
+                <Pressable
+                  style={[styles.sheetBtnSec, { borderColor: colors.primary }]}
+                  onPress={() => setShowModal(false)}
+                >
+                  <Text style={[styles.sheetBtnSecText, { color: colors.primary }]}>Cancel</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.sheetBtnPri, { backgroundColor: colors.primary }]}
+                  onPress={handleCreate}
+                >
+                  <Ionicons name="school-outline" size={18} color={colors.secondary} />
+                  <Text style={[styles.sheetBtnPriText, { color: colors.secondary }]}>Create Workshop</Text>
+                </Pressable>
+              </View>
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
 
       {/* ══ Day Detail Modal ════════════════════════════════════════════════════ */}
       <Modal
@@ -899,6 +1438,80 @@ export default function OperatorCalendar() {
         </Pressable>
       </Modal>
 
+      {/* ══ Start Date Calendar Picker ══════════════════════════════════════════ */}
+      <Modal visible={showStartCal} transparent animationType="fade" onRequestClose={() => setShowStartCal(false)}>
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center", padding: 24 }}
+          onPress={() => setShowStartCal(false)}
+        >
+          <Pressable onPress={e => e.stopPropagation()}>
+            <CalendarPicker
+              value={wStartDateDisplay}
+              onConfirm={v => {
+                setWStartDateDisplay(v);
+                setValidationMsg("");
+                const iso = displayToIso(v);
+                if (iso.length === 10) {
+                  setWStartDate(iso);
+                  if (wSingleDay) { setWEndDate(iso); setWEndDateDisplay(v); }
+                }
+                setShowStartCal(false);
+              }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ══ End Date Calendar Picker ════════════════════════════════════════════ */}
+      <Modal visible={showEndCal} transparent animationType="fade" onRequestClose={() => setShowEndCal(false)}>
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", alignItems: "center", justifyContent: "center", padding: 24 }}
+          onPress={() => setShowEndCal(false)}
+        >
+          <Pressable onPress={e => e.stopPropagation()}>
+            <CalendarPicker
+              value={wEndDateDisplay}
+              onConfirm={v => {
+                setWEndDateDisplay(v);
+                setValidationMsg("");
+                const iso = displayToIso(v);
+                if (iso.length === 10) setWEndDate(iso);
+                setShowEndCal(false);
+              }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ══ From Time Drum Picker ════════════════════════════════════════════════ */}
+      <Modal visible={showFromTime} transparent animationType="slide" onRequestClose={() => setShowFromTime(false)}>
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}
+          onPress={() => setShowFromTime(false)}
+        >
+          <Pressable onPress={e => e.stopPropagation()}>
+            <TimePickerSheet
+              value={wStartTime}
+              onConfirm={v => { setWStartTime(v); setShowFromTime(false); }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ══ To Time Drum Picker ══════════════════════════════════════════════════ */}
+      <Modal visible={showToTime} transparent animationType="slide" onRequestClose={() => setShowToTime(false)}>
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}
+          onPress={() => setShowToTime(false)}
+        >
+          <Pressable onPress={e => e.stopPropagation()}>
+            <TimePickerSheet
+              value={wEndTime}
+              onConfirm={v => { setWEndTime(v); setShowToTime(false); }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
 
     </View>
   );
