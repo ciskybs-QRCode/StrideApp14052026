@@ -71,7 +71,6 @@ channel = "stable-25_05"
 
 [userenv.shared]
 SUPABASE_URL = "https://kpidlicvbvpyhwcokqzn.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtwaWRsaWN2YnZweWh3Y29rcXpuIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3NzY3OTU1NywiZXhwIjoyMDkzMjU1NTU3fQ.K-k3BA1QjrGZsv-KL0Stqm9jVuuBk981ydz7Ejh4pfo"
 STRIPE_PRICE_CORE = "price_1TmtYPE94jOQFnGlGLvj5Kmu"
 STRIPE_PRICE_PLUS = "price_1TmteVE94jOQFnGljCFM8adM"
 STRIPE_PRICE_PREMIUM = "price_1TmtgVE94jOQFnGllo3fn1Qc"
