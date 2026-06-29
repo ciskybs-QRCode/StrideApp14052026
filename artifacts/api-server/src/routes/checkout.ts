@@ -4,6 +4,12 @@ import { supabase } from "../lib/supabase.js";
 import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { getPricingForOrg } from "../lib/pricing-service.js";
+import {
+  computeFamilyDiscount,
+  effectiveFamilyConfig,
+  FAMILY_DISCOUNT_DEFAULT,
+  type FamilyDiscountConfig,
+} from "../lib/family-discount.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -267,36 +273,9 @@ async function resolveAllLineItems(
 // Flexible, per-org rule engine. The cart of a single member IS the "family":
 // every course enrolment tied to a dependant (childId) in the same checkout is
 // grouped together and discounted per the org's rule. Server is authoritative.
-type FamilyDiscountTier = { index: number; percent: number };
-export type FamilyDiscountConfig = {
-  enabled:            boolean;
-  advancedEnabled:    boolean;   // false = simple mode (toggle + percent only)
-  fromDependantIndex: number;    // 1-based; discount starts at this dependant
-  scopeType:          "all" | "courses" | "discipline";
-  scopeCourseIds:     string[];
-  scopeDiscipline:    string | null;
-  discountType:       "percent" | "fixed" | "tiered";
-  percent:            number;    // 0-100
-  fixedCents:         number;    // per discounted dependant
-  tiers:              FamilyDiscountTier[];
-  applyTo:            "subsequent" | "cheapest" | "all";
-  capCents:           number | null;
-};
-
-const FAMILY_DISCOUNT_DEFAULT: FamilyDiscountConfig = {
-  enabled:            false,
-  advancedEnabled:    false,
-  fromDependantIndex: 2,
-  scopeType:          "all",
-  scopeCourseIds:     [],
-  scopeDiscipline:    null,
-  discountType:       "percent",
-  percent:            10,
-  fixedCents:         0,
-  tiers:              [],
-  applyTo:            "subsequent",
-  capCents:           null,
-};
+// FamilyDiscountConfig, FAMILY_DISCOUNT_DEFAULT and the pure compute engine now
+// live in ../lib/family-discount.js (DB-free + unit-tested). This file keeps only
+// the DB-backed glue: loading the config and resolving owned children/disciplines.
 
 async function loadFamilyDiscountConfig(orgId: number): Promise<FamilyDiscountConfig> {
   try {
@@ -312,24 +291,17 @@ async function loadFamilyDiscountConfig(orgId: number): Promise<FamilyDiscountCo
 }
 
 // Mutates lineItems (discount/finalPrice). Returns total family discount in euros.
+// DB-backed glue around the pure engine in ../lib/family-discount.js: it loads the
+// org config, resolves which childIds the buyer actually owns *within this org*
+// (server-authoritative — never trusts client participant names/childIds), and,
+// only when the rule scopes by discipline, resolves course→discipline names.
 async function applyFamilyDiscount(orgId: number, userId: string, lineItems: CheckoutLineItem[]): Promise<number> {
   const cfg = await loadFamilyDiscountConfig(orgId);
   if (!cfg.enabled) return 0;
 
-  // Simple mode forces the basic behaviour regardless of stored advanced fields.
-  const eff: FamilyDiscountConfig = cfg.advancedEnabled
-    ? cfg
-    : { ...FAMILY_DISCOUNT_DEFAULT, enabled: true, percent: cfg.percent ?? FAMILY_DISCOUNT_DEFAULT.percent };
-
-  // Server-authoritative dependant identity. We do NOT trust the client-supplied
-  // participant name (or an arbitrary childId) for grouping: only childIds that
-  // actually belong to this buyer *within this org* (members.user_id = buyer AND
-  // members.organization_id = orgId) count as distinct dependants. A genuinely
-  // absent childId is the account holder enrolling themselves and maps to a single
-  // self group. A childId that is present but NOT owned by the buyer is a crafted
-  // request — such lines are dropped from discount eligibility entirely so a
-  // tampered cart can neither fabricate extra dependants nor split one real child
-  // into a second (self) group to inflate the discount.
+  // Owned children for this buyer in this org. A childId present but NOT in this
+  // set is a crafted request and is dropped by the engine; an absent childId maps
+  // to the account holder's single self group.
   const ownedChildIds = new Set<string>();
   const numericUser = parseInt(String(userId), 10);
   if (Number.isFinite(numericUser)) {
@@ -342,22 +314,17 @@ async function applyFamilyDiscount(orgId: number, userId: string, lineItems: Che
       ownedChildIds.add(String(r.id));
     }
   }
-  const selfKey = `self:${userId}`;
-  const depKey = (li: CheckoutLineItem): string | null => {
-    const cid = String(li.childId ?? "").trim();
-    if (!cid) return selfKey;
-    return ownedChildIds.has(cid) ? `child:${cid}` : null;
-  };
 
-  // Eligible = course enrolments with a payable amount.
-  let eligible = lineItems.filter(li => li.kind === "course" && li.finalPrice > 0);
-
-  if (eff.scopeType === "courses" && eff.scopeCourseIds.length > 0) {
-    const set = new Set(eff.scopeCourseIds.map(String));
-    eligible = eligible.filter(li => set.has(String(li.courseId)));
-  } else if (eff.scopeType === "discipline" && eff.scopeDiscipline) {
-    const ids = [...new Set(eligible.map(li => parseInt(li.courseId)).filter(n => !isNaN(n)))];
-    const disciplineByCourse = new Map<number, string>();
+  // Resolve disciplines only when the effective rule scopes by discipline.
+  const eff = effectiveFamilyConfig(cfg);
+  const disciplineByCourse = new Map<number, string>();
+  if (eff.scopeType === "discipline" && eff.scopeDiscipline) {
+    const ids = [...new Set(
+      lineItems
+        .filter(li => li.kind === "course" && li.finalPrice > 0)
+        .map(li => parseInt(li.courseId))
+        .filter(n => !isNaN(n)),
+    )];
     if (ids.length > 0) {
       const { rows } = await pool.query<{ scheduled_course_id: number; discipline_name: string | null }>(
         `SELECT scheduled_course_id, discipline_name FROM course_extras
@@ -366,92 +333,9 @@ async function applyFamilyDiscount(orgId: number, userId: string, lineItems: Che
       );
       for (const r of rows) if (r.discipline_name) disciplineByCourse.set(r.scheduled_course_id, r.discipline_name);
     }
-    const target = eff.scopeDiscipline.toLowerCase();
-    eligible = eligible.filter(li => (disciplineByCourse.get(parseInt(li.courseId)) ?? "").toLowerCase() === target);
   }
 
-  if (eligible.length === 0) return 0;
-
-  // Group eligible items per dependant and compute each dependant's spend.
-  const byDependant = new Map<string, CheckoutLineItem[]>();
-  for (const li of eligible) {
-    const k = depKey(li);
-    if (k === null) continue; // crafted/unowned childId — ineligible for family discount
-    const arr = byDependant.get(k);
-    if (arr) arr.push(li); else byDependant.set(k, [li]);
-  }
-  const dependants = [...byDependant.entries()].map(([childId, items]) => ({
-    childId,
-    items,
-    spend: items.reduce((s, i) => s + i.finalPrice, 0),
-  }));
-
-  // "subsequent" needs at least 2 dependants (the first always pays full).
-  if (eff.applyTo === "subsequent" && dependants.length < 2) return 0;
-
-  // Most expensive dependant first → the "first" pays full under "subsequent".
-  dependants.sort((a, b) => b.spend - a.spend);
-
-  const applied: { li: CheckoutLineItem; amount: number }[] = [];
-  dependants.forEach((dep, i) => {
-    const position = i + 1; // 1-based
-    let included: boolean;
-    if (eff.applyTo === "all")            included = true;
-    else if (eff.applyTo === "cheapest")  included = i === dependants.length - 1;
-    else                                  included = position >= eff.fromDependantIndex;
-    if (!included) return;
-
-    let percent = 0;
-    let fixedCents = 0;
-    if (eff.discountType === "percent")      percent = eff.percent;
-    else if (eff.discountType === "fixed")   fixedCents = eff.fixedCents;
-    else if (eff.discountType === "tiered") {
-      const tier = [...eff.tiers].sort((a, b) => a.index - b.index).filter(t => position >= t.index).pop();
-      percent = tier?.percent ?? 0;
-    }
-
-    if (percent > 0) {
-      for (const li of dep.items) {
-        const d = Math.round(li.finalPrice * percent) / 100;
-        if (d <= 0) continue;
-        li.discount += d;
-        li.finalPrice = Math.max(0, li.finalPrice - d);
-        applied.push({ li, amount: d });
-      }
-    } else if (fixedCents > 0) {
-      const euros = fixedCents / 100;
-      const line = [...dep.items].sort((a, b) => b.finalPrice - a.finalPrice)[0];
-      if (line) {
-        const d = Math.min(euros, line.finalPrice);
-        if (d > 0) {
-          line.discount += d;
-          line.finalPrice = Math.max(0, line.finalPrice - d);
-          applied.push({ li: line, amount: d });
-        }
-      }
-    }
-  });
-
-  let totalFamily = applied.reduce((s, a) => s + a.amount, 0);
-
-  // Optional cap on the total family discount per checkout.
-  if (eff.capCents != null && eff.capCents > 0) {
-    const cap = eff.capCents / 100;
-    let excess = Math.round((totalFamily - cap) * 100) / 100;
-    if (excess > 0) {
-      for (let i = applied.length - 1; i >= 0 && excess > 0; i--) {
-        const a = applied[i]!;
-        const refund = Math.min(excess, a.amount);
-        a.li.discount = Math.max(0, a.li.discount - refund);
-        a.li.finalPrice += refund;
-        a.amount -= refund;
-        excess = Math.round((excess - refund) * 100) / 100;
-      }
-      totalFamily = cap;
-    }
-  }
-
-  return Math.round(totalFamily * 100) / 100;
+  return computeFamilyDiscount(cfg, ownedChildIds, String(userId), lineItems, disciplineByCourse);
 }
 
 // ── POST /checkout/web-session ────────────────────────────────────────────────
@@ -817,6 +701,11 @@ router.post("/checkout/batch-session", requireAuth, async (req, res) => {
         promoCode, promoDiscountType, promoDiscountPercent,
         promoDiscountAmount, promoTargetCourseIds,
       );
+
+      // Apply the per-org family/sibling discount to this group. In a split
+      // (multi-org) checkout each org's children form their own family, so the
+      // discount is computed independently per group using that org's config.
+      await applyFamilyDiscount(group.orgId, String(user.id), lineItems);
 
       const groupCents = Math.round(lineItems.reduce((s, i) => s + i.finalPrice, 0) * 100);
       if (groupCents <= 0) continue;

@@ -7,7 +7,9 @@ description: How the flexible per-org family discount works and its trust-model 
 
 Per-org flexible discount engine. Config stored in pg `org_family_discount_config` (organization_id PK, config JSONB) — NOT Supabase, consistent with the pg-only config pattern.
 
-Engine lives in `checkout.ts` (`applyFamilyDiscount`). Server-authoritative: course prices are resolved from DB, discount computed server-side and charged in `/checkout/web-session`; `/checkout/preview` returns the same `familyDiscount` for live cart display.
+**Pure engine lives in `lib/family-discount.ts`** (`computeFamilyDiscount` + `effectiveFamilyConfig` + types + `FAMILY_DISCOUNT_DEFAULT`) — DB-free so it is unit-testable without env. `checkout.ts` `applyFamilyDiscount(orgId,userId,lineItems)` is DB glue only: loads config (pg `org_family_discount_config`), resolves owned childIds (Supabase `members`), resolves discipline map (pg `course_extras`) only when scoped, then delegates. Server-authoritative: prices resolved from DB, discount charged in `/checkout/web-session`, `/checkout/batch-session`, and previewed in `/checkout/preview`.
+
+**Tests:** `lib/family-discount.test.ts` (vitest). api-server now has `vitest` devDep + `"test":"vitest run"` script — first test runner in the repo; copy this pattern for future server unit tests.
 
 **Two modes (two toggles):** `enabled` (feature on/off) + `advancedEnabled`. Simple mode = just a `percent` for additional dependants (first pays full). Advanced = `fromDependantIndex`, `scopeType` (all/courses/discipline), `discountType` (percent/fixed/tiered), `applyTo` (subsequent/cheapest/all), optional `capCents`.
 
@@ -17,7 +19,7 @@ Engine lives in `checkout.ts` (`applyFamilyDiscount`). Server-authoritative: cou
 
 **Why ownership query uses `supabase` not `pool`:** `members` is a Supabase table; the rest of the engine's config (`org_family_discount_config`, `course_extras`) is pg/pool. Don't mix them up.
 
-**Remaining gap (other phases):** `/checkout/batch-session` (multi-org split checkout) does NOT apply the family discount at all — only `/checkout/web-session` and `/checkout/preview` do.
+**Multi-org split checkout:** `/checkout/batch-session` applies the family discount **per org group** (each org's children form their own family) by calling `applyFamilyDiscount(group.orgId, userId, lineItems)` right after `resolveLineItems` and before `groupCents`/audit/Stripe recompute — applied once per group, no double-application.
 
 **Why `cfg.percent ?? default` not `||`:** in simple mode a configured `0%` must be respected; `||` turns 0 into the default.
 
