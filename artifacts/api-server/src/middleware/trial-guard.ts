@@ -63,7 +63,7 @@ async function fetchOrgBillingInfo(orgId: number): Promise<Omit<OrgBillingInfo, 
   try {
     const { createClient } = await import("@supabase/supabase-js");
     const url = process.env["SUPABASE_URL"]  ?? "";
-    const key = process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? process.env["SUPABASE_KEY"] ?? "";
+    const key = process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? "";
     if (!url || !key) return { trialEndsAt: null, subscriptionStatus: "trialing" };
     const { data } = await createClient(url, key)
       .from("organizations")
@@ -92,7 +92,8 @@ export async function trialGuard(req: Request, res: Response, next: NextFunction
 
   let payload: TokenPayload | null = null;
   try {
-    const secret = process.env["SESSION_SECRET"] || "stride-fallback-secret";
+    const secret = process.env["SESSION_SECRET"];
+    if (!secret) throw new Error("SESSION_SECRET is required");
     payload = jwt.verify(header.slice(7), secret) as TokenPayload;
   } catch {
     next(); return; // requireAuth downstream handles invalid tokens

@@ -8,6 +8,17 @@ import { PLAN_LIMITS, getOrgPlanTier } from "./billing.js";
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
 
+// Escape HTML before interpolating user-controlled values into a browser-served
+// HTML page (e.g. dependent names). Prevents reflected/stored XSS.
+function escapeHtml(value: string | null | undefined): string {
+  return String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
 // ── Blacklist helper ──────────────────────────────────────────────────────────
 async function isBlacklisted(
   orgId: number,
@@ -373,9 +384,9 @@ router.get("/members/confirm-promotion", async (req, res) => {
         to:      row.dependent_email,
         subject: `Welcome to Stride — ${row.dependent_name}, your account is ready`,
         html: `<div style="font-family:sans-serif;max-width:520px;margin:auto">
-          <h2 style="color:#1E3A8A">Welcome, ${row.dependent_name}!</h2>
+          <h2 style="color:#1E3A8A">Welcome, ${escapeHtml(row.dependent_name)}!</h2>
           <p>Your primary member has confirmed your promotion to an independent Stride account.</p>
-          <p>You can now register with this email (<strong>${row.dependent_email}</strong>) on the Stride app.</p>
+          <p>You can now register with this email (<strong>${escapeHtml(row.dependent_email)}</strong>) on the Stride app.</p>
           <div style="text-align:center;margin:28px 0">
             <a href="https://${domain}/join" style="background:#1E3A8A;color:#FBBF24;padding:14px 28px;border-radius:10px;font-weight:bold;text-decoration:none;font-size:16px">Create Your Account</a>
           </div>
@@ -391,8 +402,8 @@ router.get("/members/confirm-promotion", async (req, res) => {
     <div style="font-family:sans-serif;text-align:center;padding:60px;max-width:520px;margin:auto">
       <div style="font-size:64px;margin-bottom:16px">✅</div>
       <h2 style="color:#1E3A8A">Promotion Confirmed!</h2>
-      <p><strong>${row.dependent_name}</strong> is now approved as an independent member.</p>
-      <p style="color:#6B7280">A welcome email with registration instructions has been sent to <strong>${row.dependent_email}</strong>.</p>
+      <p><strong>${escapeHtml(row.dependent_name)}</strong> is now approved as an independent member.</p>
+      <p style="color:#6B7280">A welcome email with registration instructions has been sent to <strong>${escapeHtml(row.dependent_email)}</strong>.</p>
       <p style="margin-top:32px;color:#9CA3AF;font-size:13px">You can close this tab and return to the Stride app.</p>
     </div>
   `);

@@ -23,7 +23,7 @@ API Server (Express 5 + esbuild)
 
 | Client | Variable | Tables | Notes |
 |---|---|---|---|
-| `supabase` | `SUPABASE_KEY` (anon) | users, orgs, courses, … | Respects RLS |
+| `supabase` | `SUPABASE_SERVICE_ROLE_KEY` | users, orgs, courses, … | Trusted server client — RLS bypassed; tenant isolation enforced at the API layer (org-scoped queries) |
 | `supabaseAdmin` | `SUPABASE_SERVICE_ROLE_KEY` | global_users, tenant_memberships, system_audit_logs, … | Bypasses RLS — server-only |
 | `pool` (pg) | `DATABASE_URL` | Drizzle-managed tables | Custom schema via drizzle-orm |
 
@@ -309,8 +309,7 @@ On limit breach: HTTP `429` with body `{ "error": "Too many requests..." }`.
 | Variable | Required | Description |
 |---|---|---|
 | `SUPABASE_URL` | ✅ | Supabase project REST URL |
-| `SUPABASE_KEY` | ✅ | Anon key — safe for RLS-gated reads |
-| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Service role key — bypasses RLS, **server only** |
+| `SUPABASE_SERVICE_ROLE_KEY` | ✅ | Service-role key used by both server clients. Bypasses RLS — **server only**. Store ONLY as a managed secret, never commit in plaintext. Rotate in the Supabase dashboard if ever exposed. |
 | `DATABASE_URL` | ✅ | PostgreSQL connection string (Drizzle tables) |
 | `SESSION_SECRET` | ✅ | JWT signing secret (≥ 32 random chars) |
 | `PORT` | Set by workflow | Defaults to 8080 |

@@ -15,9 +15,15 @@ description: Core security invariants for the Stride API and the recurring traps
 - **Integer ids in params are guessable.** Any route taking `:id`/`:courseId`/`:memberId` must confirm the row belongs to the caller's org before read/write (e.g. `courseInOrg`, `ownsNotification`, member ownership selects). `ON CONFLICT (single_key)` upserts are especially dangerous — they can overwrite another org's row.
 - **Sensitive-data endpoints need a role check, not just `requireAuth`.** Endpoints returning phone / medical / ambulance-consent / emergency-contact data (e.g. emergency members picker) must be gated to operator/admin, never any logged-in parent/member.
 
-# Known remaining items (not yet fixed — need user action / decision)
+# Fixed in the deep audit
 
-- **CRITICAL — rotate Supabase service_role key.** A plaintext service_role JWT is committed in `.replit` (`[env]` SUPABASE_KEY). It is in git history, so it must be rotated in the Supabase dashboard, then stored only as a Secret and the plaintext line removed. Also consider switching the public client to the anon key and using `supabaseAdmin` only where elevated access is truly required.
-- pg.ts sets `ssl: { rejectUnauthorized: false }` (TLS verification off on the DB connection) — MITM risk; prefer a proper CA.
-- Many server-generated HTML emails/receipts interpolate variables without HTML-encoding (semgrep html-in-template-string / raw-html-format) — escape user-controlled values to avoid HTML/email injection.
-- Dependency audit: 0 critical / ~30 high / ~21 moderate (mostly transitive build/Expo deps) — run periodic `pnpm audit` and bump.
+- **Plaintext key removed.** `SUPABASE_KEY` existed ONLY as a plaintext `.replit` `[userenv.shared]` env var (NOT a separate managed secret) — deleting that shared env var removed the key entirely. ALL runtime reads now use `SUPABASE_SERVICE_ROLE_KEY` (managed secret) with NO `SUPABASE_KEY` fallback — supabase.ts (both clients), trial-guard.ts, super-admin.ts, invites.ts. `SUPABASE_URL` stays in `.replit` (not sensitive).
+- **Fail-closed JWT everywhere.** Both auth.ts AND trial-guard.ts now throw if `SESSION_SECRET` is missing — no `"stride-fallback-secret"` default anywhere.
+- **DB TLS verification ON.** pg.ts now uses `ssl: { rejectUnauthorized: process.env.PGSSL_NO_VERIFY !== "1" }`. Verified empirically: Supabase's pooler cert validates against Node's default CA bundle, so verification works with no CA file. Escape hatch: set `PGSSL_NO_VERIFY=1` if a future env lacks the chain.
+- **HTML injection escaped.** `esc()` in services/emailService.ts (trial/role/upgrade templates incl. toPlan/fromPlan) and `escapeHtml()` in routes/children.ts — both the confirm-promotion browser page (real XSS) AND the welcome email. Remaining raw interpolation lives in other route email builders (events/fee-events/employment/etc.) — lower risk (email clients strip script), apply same treatment over time. Browser-served HTML in events.ts (stripe callback/cancel) is fully static = safe.
+
+# Known remaining items (need USER action / future work)
+
+- **CRITICAL — user must still ROTATE the service_role key in the Supabase dashboard.** The old key is in git HISTORY (past commits of `.replit`), so removal alone is not enough — it must be regenerated, then the `SUPABASE_SERVICE_ROLE_KEY` secret updated and the app republished. Only the user can do this.
+- Dependency audit: 0 critical / ~30 high / ~21 moderate (mostly transitive build/Expo deps). Deliberately NOT mass-bumped — blind upgrades across the large Expo app risk breaking the build. Do incrementally with testing.
+- CSV exports (expenses.ts, schedule-management.ts) — consider CSV formula-injection guard (prefix leading =,+,-,@ with '). Not done; low risk.

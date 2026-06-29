@@ -6,7 +6,7 @@ const router = Router();
 type AuthReq = Request & { user: TokenPayload };
 
 const _url = process.env["SUPABASE_URL"] ?? "";
-const _key = process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? process.env["SUPABASE_KEY"] ?? "";
+const _key = process.env["SUPABASE_SERVICE_ROLE_KEY"] ?? "";
 const sa = createClient(_url, _key);
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
