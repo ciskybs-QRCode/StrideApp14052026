@@ -6,12 +6,26 @@ import { supabase } from "../lib/supabase.js";
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
 
+// Org ownership guard: a course must belong to the caller's org before its
+// waitlist config can be read or written. Prevents cross-tenant read/overwrite
+// via a guessed integer courseId.
+async function courseInOrg(courseId: number, orgId: number): Promise<boolean> {
+  const { data } = await supabase
+    .from("courses")
+    .select("id")
+    .eq("id", courseId)
+    .eq("organization_id", orgId)
+    .maybeSingle();
+  return !!data;
+}
+
 // ── GET /waitlist/config/:courseId ────────────────────────────────────────────
 router.get("/waitlist/config/:courseId", requireAuth, requireRole("admin", "operator"), async (req, res) => {
   const user     = (req as AuthReq).user;
   const orgId    = user.orgId ?? 1;
   const courseId = parseInt(String(req.params["courseId"]), 10);
   if (isNaN(courseId)) { res.status(400).json({ error: "Invalid courseId" }); return; }
+  if (!(await courseInOrg(courseId, orgId))) { res.status(404).json({ error: "Course not found" }); return; }
   try {
     const { rows } = await pool.query(
       `SELECT * FROM course_waitlist_config WHERE course_id = $1`,
@@ -30,6 +44,7 @@ router.put("/waitlist/config/:courseId", requireAuth, requireRole("admin"), asyn
   const orgId    = user.orgId ?? 1;
   const courseId = parseInt(String(req.params["courseId"]), 10);
   if (isNaN(courseId)) { res.status(400).json({ error: "Invalid courseId" }); return; }
+  if (!(await courseInOrg(courseId, orgId))) { res.status(404).json({ error: "Course not found" }); return; }
   const { waitlist_enabled, max_capacity, waitlist_threshold } = req.body as {
     waitlist_enabled?: boolean; max_capacity?: number; waitlist_threshold?: number;
   };

@@ -12,7 +12,12 @@ export interface TokenPayload {
   globalUserId?: number;
 }
 
-const secret = () => process.env["SESSION_SECRET"] || "stride-fallback-secret";
+const secret = () => {
+  const s = process.env["SESSION_SECRET"];
+  // Fail closed: never sign/verify tokens with a guessable fallback secret.
+  if (!s) throw new Error("SESSION_SECRET is required");
+  return s;
+};
 
 export function signToken(payload: TokenPayload): string {
   return jwt.sign(payload, secret(), { expiresIn: "7d" });

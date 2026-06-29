@@ -74,7 +74,9 @@ router.post("/emergency/pulse", requireAuth, requireRole("operator", "admin", "s
     patient_name?:      string;
   };
 
-  const resolvedOrgId   = org_id ?? (user as { org_id?: number }).org_id ?? 1;
+  // Security: derive org from the authenticated token, never trust a client body org_id.
+  // Only a super_admin may target a specific org via the body.
+  const resolvedOrgId   = user.role === "super_admin" ? (org_id ?? user.orgId) : user.orgId;
   const locationLabel   = (location_label ?? "Main Campus").trim();
   const safeCategory    = (["FIRE", "MEDICAL", "POLICE", "DEPENDANT_MISSING"].includes(category ?? "")
     ? category
@@ -231,9 +233,9 @@ router.post("/emergency/pulse", requireAuth, requireRole("operator", "admin", "s
 // ── GET /emergency/members-present ───────────────────────────────────────────
 // Returns members in the operator's org for the Medical emergency picker.
 // Includes org members + their dependants where available.
-router.get("/emergency/members-present", requireAuth, async (req: Request, res: Response) => {
+router.get("/emergency/members-present", requireAuth, requireRole("operator", "admin", "super_admin"), async (req: Request, res: Response) => {
   const user = (req as AuthedReq).user;
-  const orgId = (user as { org_id?: number }).org_id ?? 1;
+  const orgId = user.orgId;
 
   type RichMember = {
     id:                      string;
@@ -441,7 +443,7 @@ router.patch("/emergency/pulse/:id/resolve", requireAuth, async (req: Request, r
 router.post("/emergency/silent-alarm", requireAuth, async (req: Request, res: Response) => {
   const user = (req as AuthedReq).user;
   const { location_label } = req.body as { location_label?: string };
-  const orgId        = (user as { org_id?: number }).org_id ?? 1;
+  const orgId        = user.orgId;
   const locationLabel = (location_label ?? "").trim() || "Association";
   const triggeredAt  = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
 
