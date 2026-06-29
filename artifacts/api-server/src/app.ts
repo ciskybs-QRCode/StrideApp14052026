@@ -35,6 +35,9 @@ app.use(globalApiLimiter);
 app.use("/api/billing/webhook", express.raw({ type: "*/*" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+// Healthcheck — must respond immediately before any auth/DB middleware
+app.get("/api/healthz", (_req, res) => { res.json({ ok: true }); });
+
 app.use(trialGuard);
 app.use(auditTrailMiddleware);
 
