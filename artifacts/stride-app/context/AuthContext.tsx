@@ -211,7 +211,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Preserve locally-stored photo if server doesn't have one (local URI from pick)
     const storedRaw = await AsyncStorage.getItem(USER_KEY).catch(() => null);
-    const storedPhoto = storedRaw ? (JSON.parse(storedRaw) as User).profilePhotoUri : undefined;
+    const storedUser = storedRaw ? (JSON.parse(storedRaw) as User) : undefined;
+    const storedPhoto         = storedUser?.profilePhotoUri;
+    const storedPreferredName = storedUser?.preferredName;
 
     const serverPhoto = ((apiUser as unknown) as Record<string, unknown>).profilePhotoUri as string | null | undefined;
     const serverName  = ((apiUser as unknown) as Record<string, unknown>).preferredName  as string | null | undefined;
@@ -231,8 +233,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       is_owner:       apiUser.is_owner ?? false,
       // Prefer server photo → locally stored in session → per-email persistent key
       profilePhotoUri: (serverPhoto ?? storedPhoto ?? persistedPhoto) || undefined,
-      // Reject stale template placeholders (e.g. "{first name}") from old storage
-      preferredName:  (serverName && !serverName.startsWith("{") && serverName.trim() !== "") ? serverName.trim() : undefined,
+      // Server value wins; fall back to locally-stored name so it survives a
+      // re-login even when the pool DB hasn't returned it yet (e.g. cold start).
+      preferredName: (() => {
+        const srv = (serverName && !serverName.startsWith("{") && serverName.trim() !== "") ? serverName.trim() : null;
+        const loc = (storedPreferredName && !storedPreferredName.startsWith("{") && storedPreferredName.trim() !== "") ? storedPreferredName.trim() : null;
+        return srv ?? loc ?? undefined;
+      })(),
     };
 
     const finalAllRoles = dbRoles ?? derivedRoles.map(r => ({ role: r, orgId: mapped.orgId ?? 0 }));
