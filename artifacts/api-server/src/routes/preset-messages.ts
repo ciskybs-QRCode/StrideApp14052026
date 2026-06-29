@@ -84,8 +84,13 @@ router.get("/preset-messages", requireAuth, requireRole("admin"), async (req, re
     });
     res.json(result);
   } catch (err) {
-    req.log.error(err, "preset-messages GET error");
-    res.status(500).json({ error: "Failed to load preset messages" });
+    req.log.error(err, "preset-messages GET error — falling back to built-in defaults");
+    const fallback = Object.entries(DEFAULT_TEMPLATES).map(([key, def]) => ({
+      key, subject: def.subject, body: def.body,
+      channel_inapp: def.channel_inapp, channel_push: def.channel_push, channel_email: def.channel_email,
+      updated_at: null,
+    }));
+    res.json(fallback);
   }
 });
 

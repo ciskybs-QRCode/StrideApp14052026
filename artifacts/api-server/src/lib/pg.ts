@@ -1165,6 +1165,11 @@ export async function ensureTables(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS idx_pm_org ON preset_messages(org_id);
   `).catch(() => {});
+  await pool.query(`
+    ALTER TABLE preset_messages ADD COLUMN IF NOT EXISTS channel_inapp BOOLEAN NOT NULL DEFAULT TRUE;
+    ALTER TABLE preset_messages ADD COLUMN IF NOT EXISTS channel_push  BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE preset_messages ADD COLUMN IF NOT EXISTS channel_email BOOLEAN NOT NULL DEFAULT TRUE;
+  `).catch(() => {});
 
   // ── Per-course waitlist config ────────────────────────────────────────────
   await pool.query(`
