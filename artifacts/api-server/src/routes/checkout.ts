@@ -323,26 +323,30 @@ async function applyFamilyDiscount(orgId: number, userId: string, lineItems: Che
 
   // Server-authoritative dependant identity. We do NOT trust the client-supplied
   // participant name (or an arbitrary childId) for grouping: only childIds that
-  // actually belong to this buyer (members.user_id = buyer) count as distinct
-  // dependants. Anything else — a missing childId (e.g. the account holder) or a
-  // childId not owned by the buyer (a crafted request) — collapses into a single
-  // account-holder group, so a tampered cart can never fabricate extra dependants
-  // to inflate the discount.
+  // actually belong to this buyer *within this org* (members.user_id = buyer AND
+  // members.organization_id = orgId) count as distinct dependants. A genuinely
+  // absent childId is the account holder enrolling themselves and maps to a single
+  // self group. A childId that is present but NOT owned by the buyer is a crafted
+  // request — such lines are dropped from discount eligibility entirely so a
+  // tampered cart can neither fabricate extra dependants nor split one real child
+  // into a second (self) group to inflate the discount.
   const ownedChildIds = new Set<string>();
   const numericUser = parseInt(String(userId), 10);
   if (Number.isFinite(numericUser)) {
     const { data: memberRows } = await supabase
       .from("members")
       .select("id")
-      .eq("user_id", numericUser);
+      .eq("user_id", numericUser)
+      .eq("organization_id", orgId);
     for (const r of (memberRows ?? []) as Array<{ id: number | string }>) {
       ownedChildIds.add(String(r.id));
     }
   }
   const selfKey = `self:${userId}`;
-  const depKey = (li: CheckoutLineItem) => {
+  const depKey = (li: CheckoutLineItem): string | null => {
     const cid = String(li.childId ?? "").trim();
-    return cid && ownedChildIds.has(cid) ? `child:${cid}` : selfKey;
+    if (!cid) return selfKey;
+    return ownedChildIds.has(cid) ? `child:${cid}` : null;
   };
 
   // Eligible = course enrolments with a payable amount.
@@ -372,6 +376,7 @@ async function applyFamilyDiscount(orgId: number, userId: string, lineItems: Che
   const byDependant = new Map<string, CheckoutLineItem[]>();
   for (const li of eligible) {
     const k = depKey(li);
+    if (k === null) continue; // crafted/unowned childId — ineligible for family discount
     const arr = byDependant.get(k);
     if (arr) arr.push(li); else byDependant.set(k, [li]);
   }
