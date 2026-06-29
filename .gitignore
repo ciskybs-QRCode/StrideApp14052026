@@ -8,6 +8,15 @@ out-tsc
 .expo
 .expo-shared
 
+# Un-ignore pre-built deployment artifacts so the production container
+# doesn't need a build step (expo export can take minutes and time out).
+# Source maps are excluded to keep repo size reasonable.
+!artifacts/api-server/dist/
+!artifacts/api-server/dist/**
+artifacts/api-server/dist/**/*.map
+!artifacts/stride-app/web-dist/
+!artifacts/stride-app/web-dist/**
+
 # dependencies
 node_modules
 

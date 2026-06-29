@@ -29,14 +29,18 @@ app.use(
   }),
 );
 app.use(cors());
+
+// Healthchecks — registered before rate-limiter, auth, and any DB middleware
+// so the deployment system gets an immediate 200 regardless of backend state.
+app.get("/api/healthz", (_req, res) => { res.json({ ok: true }); });
+app.get("/api",         (_req, res) => { res.json({ ok: true }); });
+
 // Global rate limiter — 300 req / 15 min per IP across all /api routes
 app.use(globalApiLimiter);
 // Raw body required for Stripe webhook signature verification — must precede express.json()
 app.use("/api/billing/webhook", express.raw({ type: "*/*" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// Healthcheck — must respond immediately before any auth/DB middleware
-app.get("/api/healthz", (_req, res) => { res.json({ ok: true }); });
 
 app.use(trialGuard);
 app.use(auditTrailMiddleware);
