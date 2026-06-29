@@ -10,6 +10,7 @@ import type {
 } from "../lib/api";
 
 const LEGAL_DOCS_KEY      = "stride_legal_docs_v2";
+const SIGNED_DOCS_KEY     = "stride_signed_doc_ids_v1";
 const MEDIA_CONSENT_KEY   = "stride_media_consent_v1";
 
 export interface Child {
@@ -169,6 +170,7 @@ interface AppDataContextType {
   documents: Document[];
   legalAdminDocs: LegalAdminDoc[];
   signedAdminDocIds: string[];
+  signedIdsLoaded: boolean;
   students: Student[];
   lessons: Lesson[];
   isLoadingData: boolean;
@@ -371,6 +373,7 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
   const [documents, setDocuments] = useState<Document[]>([]);
   const [legalAdminDocs, setLegalAdminDocs] = useState<LegalAdminDoc[]>(FALLBACK_LEGAL_DOCS);
   const [signedAdminDocIds, setSignedAdminDocIds] = useState<string[]>([]);
+  const [signedIdsLoaded, setSignedIdsLoaded] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
   const [lessons, setLessons] = useState<Lesson[]>([]);
   const [isLoadingData, setIsLoadingData] = useState(false);
@@ -391,14 +394,53 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
     }).catch(() => {});
   }, []);
 
-  // Load signed document IDs from backend (persists across devices)
+  // Load signed document IDs: hydrate locally first (so the signature gate never
+  // re-appears for already-signed users while offline / before the network call),
+  // then merge backend results and persist the union back to AsyncStorage.
   useEffect(() => {
-    if (!user) return;
-    api.legalSignedIds().then(result => {
-      if (result && Array.isArray(result.ids) && result.ids.length > 0) {
-        setSignedAdminDocIds(prev => [...new Set([...prev, ...result.ids])]);
+    if (!user?.id) {
+      // Logged out: clear any prior user's signatures so they never leak.
+      setSignedAdminDocIds([]);
+      setSignedIdsLoaded(false);
+      return;
+    }
+    let active = true;
+    const localKey = `${SIGNED_DOCS_KEY}:${user.id}`;
+    // Hard reset on user change: replace (never merge with the previous user's
+    // in-memory ids) so one account's signatures can't suppress another's gate.
+    setSignedAdminDocIds([]);
+    setSignedIdsLoaded(false);
+    (async () => {
+      let merged: string[] = [];
+      try {
+        const raw = await AsyncStorage.getItem(localKey);
+        if (raw) {
+          const saved = JSON.parse(raw) as string[];
+          if (Array.isArray(saved)) merged = [...saved];
+        }
+      } catch { /* ignore corrupt local cache */ }
+      // Release the loading gate as soon as the local cache is trusted, so a
+      // slow/hanging backend request can never lock an already-signed user out.
+      if (active && merged.length > 0) {
+        setSignedAdminDocIds(merged);
+        setSignedIdsLoaded(true);
       }
-    }).catch(() => {});
+      try {
+        // Time-box the backend sync; a hung request must never block forever.
+        const result = await Promise.race([
+          api.legalSignedIds(),
+          new Promise<null>(resolve => setTimeout(() => resolve(null), 6000)),
+        ]);
+        if (result && Array.isArray(result.ids)) {
+          merged = [...new Set([...merged, ...result.ids])];
+          await AsyncStorage.setItem(localKey, JSON.stringify(merged)).catch(() => {});
+        }
+      } catch { /* keep locally-cached ids when offline */ }
+      if (!active) return;
+      setSignedAdminDocIds(merged);
+      setSignedIdsLoaded(true);
+    })();
+    return () => { active = false; };
   }, [user?.id]);
 
   // Hydrate media consent from AsyncStorage (per-user, survives restarts)
@@ -766,7 +808,13 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
     selected_option?: string;
     device_os?: string;
   }) => {
-    setSignedAdminDocIds(prev => [...new Set([...prev, id])]);
+    setSignedAdminDocIds(prev => {
+      const next = [...new Set([...prev, id])];
+      if (user?.id) {
+        AsyncStorage.setItem(`${SIGNED_DOCS_KEY}:${user.id}`, JSON.stringify(next)).catch(() => {});
+      }
+      return next;
+    });
     if (auditPayload) {
       try {
         await api.legalSign({
@@ -800,6 +848,7 @@ export function AppDataProvider({ children: childrenProp }: { children: React.Re
       documents,
       legalAdminDocs,
       signedAdminDocIds,
+      signedIdsLoaded,
       students,
       lessons,
       isLoadingData,

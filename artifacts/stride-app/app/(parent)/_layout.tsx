@@ -76,7 +76,7 @@ export default function ParentTabLayout() {
   const isWeb     = Platform.OS === "web";
   const { user }                                       = useAuth();
   const { cartBadgeCount }                            = useRealtime();
-  const { legalAdminDocs, signedAdminDocIds, signAdminDoc } = useAppData();
+  const { legalAdminDocs, signedAdminDocIds, signedIdsLoaded, signAdminDoc } = useAppData();
   const { secondaryRoleName }                         = useTerminology();
 
   // ── Gate state ───────────────────────────────────────────────────────────────
@@ -97,7 +97,7 @@ export default function ParentTabLayout() {
     d => d.mandatorySignature && !signedAdminDocIds.includes(d.id)
   );
   const totalMandatory = legalAdminDocs.filter(d => d.mandatorySignature).length;
-  const blocked = unsignedMandatoryDocs.length > 0 && !user?.roles?.includes("super_admin");
+  const blocked = signedIdsLoaded && unsignedMandatoryDocs.length > 0 && !user?.roles?.includes("super_admin");
   const currentDoc = unsignedMandatoryDocs[currentDocIdx] ?? unsignedMandatoryDocs[0];
 
   const canSign = Boolean(
@@ -226,6 +226,19 @@ export default function ParentTabLayout() {
       <SecurityAlarmOverlay alertsRoute="/(parent)/alerts" />
       <BrandingLogoOverlay />
       <AIPageGuide />
+
+      {/* ── Signature-state loading gate (fail-safe: block access until the */}
+      {/*     current user's signed documents are known) ─────────────────────── */}
+      <Modal
+        visible={!signedIdsLoaded && !user?.roles?.includes("super_admin")}
+        transparent={false}
+        animationType="fade"
+        statusBarTranslucent
+      >
+        <View style={[styles.gateRoot, { paddingTop: insets.top, alignItems: "center", justifyContent: "center" }]}>
+          <ActivityIndicator size="large" color={colors.secondary} />
+        </View>
+      </Modal>
 
       {/* ── Mandatory Legal Signature Gate ──────────────────────────────────── */}
       <Modal visible={blocked} transparent={false} animationType="slide" statusBarTranslucent>
