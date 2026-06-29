@@ -92,12 +92,40 @@ router.post(
     // Verify member belongs to caller's org
     const { data: member } = await supabase
       .from("members")
-      .select("id, user_id, full_name, organization_id")
+      .select("id, user_id, full_name, organization_id, media_consent")
       .eq("id", memberId)
       .eq("organization_id", orgId)
       .maybeSingle();
 
     if (!member) { res.status(404).json({ error: "Member not found" }); return; }
+
+    // ── Privacy enforcement (server-side, non-bypassable) ──────────────────────
+    // 1) Hard-block filming unless the member has granted media consent.
+    const consent = (member as { media_consent?: string | null }).media_consent ?? null;
+    if (consent !== "full" && consent !== "internal") {
+      res.status(403).json({
+        error: "MEDIA_CONSENT_REQUIRED",
+        message: "This member has not granted media consent; recording is not permitted.",
+      });
+      return;
+    }
+
+    // 2) Video is only allowed within a private 1-on-1 lesson that links the
+    //    acting staff member (operator) to this member.
+    const { rows: lessonRows } = await pool.query<{ id: number }>(
+      `SELECT id FROM private_lesson_bookings
+       WHERE organization_id = $1 AND operator_user_id = $2 AND child_id = $3
+         AND status IN ('booked','confirmed','completed')
+       LIMIT 1`,
+      [orgId, parseInt(String(user.id), 10), memberId],
+    );
+    if (lessonRows.length === 0) {
+      res.status(403).json({
+        error: "PRIVATE_LESSON_REQUIRED",
+        message: "Progress video can only be recorded during a private 1-on-1 lesson with this member.",
+      });
+      return;
+    }
 
     // Author display name
     const { data: authorRow } = await supabase

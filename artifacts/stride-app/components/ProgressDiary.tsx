@@ -43,9 +43,11 @@ interface ProgressDiaryProps {
   memberId: string | number;
   memberName: string;
   canRecord: boolean;
+  recordBlockedReason?: string | null;
+  mediaConsent?: "full" | "internal" | "none";
 }
 
-export function ProgressDiary({ memberId, memberName, canRecord }: ProgressDiaryProps) {
+export function ProgressDiary({ memberId, memberName, canRecord, recordBlockedReason, mediaConsent }: ProgressDiaryProps) {
   const colors = useColors();
   const styles = make_styles(colors.primary, colors.secondary);
 
@@ -91,6 +93,13 @@ export function ProgressDiary({ memberId, memberName, canRecord }: ProgressDiary
 
   const handlePick = async (source: "camera" | "library") => {
     try {
+      if (mediaConsent === "none") {
+        Alert.alert(
+          "Filming Not Permitted",
+          "This member has not granted media consent. Recording is disabled until consent is given.",
+        );
+        return;
+      }
       if (source === "camera") {
         const perm = await ImagePicker.requestCameraPermissionsAsync();
         if (!perm.granted) {
@@ -170,7 +179,7 @@ export function ProgressDiary({ memberId, memberName, canRecord }: ProgressDiary
 
   return (
     <View style={{ flex: 1 }}>
-      {canRecord && (
+      {canRecord ? (
         <Pressable
           style={({ pressed }) => [styles.recordBtn, pressed && { opacity: 0.9 }]}
           onPress={() => { resetCompose(); setShowCompose(true); }}
@@ -178,7 +187,12 @@ export function ProgressDiary({ memberId, memberName, canRecord }: ProgressDiary
           <Ionicons name="videocam" size={20} color={colors.primary} />
           <Text style={styles.recordBtnText}>Record Progress Clip</Text>
         </Pressable>
-      )}
+      ) : recordBlockedReason ? (
+        <View style={styles.blockedBanner}>
+          <Ionicons name="lock-closed" size={16} color="#92400E" />
+          <Text style={styles.blockedText}>{recordBlockedReason}</Text>
+        </View>
+      ) : null}
 
       {loading ? (
         <View style={styles.center}>
@@ -354,6 +368,11 @@ const make_styles = (primary: string, secondary: string) => StyleSheet.create({
     backgroundColor: secondary, borderRadius: 14, paddingVertical: 14, marginBottom: 16,
   },
   recordBtnText: { color: primary, fontWeight: "800", fontSize: 15 },
+  blockedBanner: {
+    flexDirection: "row", alignItems: "center", gap: 8,
+    backgroundColor: "#FEF3C7", borderRadius: 14, paddingVertical: 12, paddingHorizontal: 14, marginBottom: 16,
+  },
+  blockedText: { flex: 1, color: "#92400E", fontWeight: "700", fontSize: 12.5, lineHeight: 17 },
   center: { alignItems: "center", justifyContent: "center", paddingVertical: 56, gap: 10 },
   emptyTitle: { fontSize: 16, fontWeight: "800", color: primary },
   emptyText: { fontSize: 13, color: "#64748B", textAlign: "center", paddingHorizontal: 24, lineHeight: 19 },
