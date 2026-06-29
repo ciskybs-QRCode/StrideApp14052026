@@ -23,7 +23,6 @@ import { useColors } from "@/hooks/useColors";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
-const FALLBACK_PIN = "4321";
 const LOGO = require("@/assets/images/stride-logo.png");
 const { width: SW, height: SH } = Dimensions.get("window");
 
@@ -221,12 +220,32 @@ export default function KioskScreen() {
   const [borderColor, setBorderColor] = useState("#10B981");
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Exit PIN (loaded from org settings on mount)
-  const exitPin = useRef<string>(FALLBACK_PIN);
+  // Exit PIN (loaded from org settings on mount).
+  // Starts as null — there is NO usable hardcoded fallback. Until the real
+  // org-configured PIN loads, the exit UI is disabled (see pinLoaded), so the
+  // kiosk can never be exited with a guessable default if the fetch fails.
+  const exitPin = useRef<string | null>(null);
+  const [pinLoaded, setPinLoaded] = useState(false);
   React.useEffect(() => {
-    getKioskPin()
-      .then(pin => { exitPin.current = pin; })
-      .catch(() => { /* keep fallback */ });
+    let cancelled = false;
+    const loadPin = (attempt = 0): void => {
+      getKioskPin()
+        .then(pin => {
+          if (cancelled) return;
+          exitPin.current = pin;
+          setPinLoaded(true);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          // Retry a few times with a short delay before giving up. While
+          // unloaded the exit UI stays disabled (fail-closed).
+          if (attempt < 4) {
+            setTimeout(() => { if (!cancelled) loadPin(attempt + 1); }, 1500);
+          }
+        });
+    };
+    loadPin();
+    return () => { cancelled = true; };
   }, []);
 
   // Hidden exit hatch
@@ -423,6 +442,12 @@ export default function KioskScreen() {
   }, []);
 
   const handlePinConfirm = useCallback(async () => {
+    // Fail-closed — never allow exit until the real PIN has loaded.
+    if (!pinLoaded || exitPin.current === null) {
+      setPinError("Exit PIN unavailable — contact admin.");
+      setPinInput("");
+      return;
+    }
     if (pinInput === exitPin.current) {
       setShowPin(false);
       await logout();
@@ -431,7 +456,7 @@ export default function KioskScreen() {
       setPinError("Incorrect PIN. Try again.");
       setPinInput("");
     }
-  }, [pinInput, logout, router]);
+  }, [pinInput, pinLoaded, logout, router]);
 
   // ── Web demo ─────────────────────────────────────────────────────────────────
 
@@ -595,27 +620,40 @@ export default function KioskScreen() {
           <View style={styles.pinCard}>
             <Ionicons name="shield-checkmark-outline" size={40} color={colors.primary} style={{ marginBottom: 12 }} />
             <Text style={styles.pinTitle}>Admin Exit</Text>
-            <Text style={styles.pinSub}>Enter the admin PIN to exit kiosk mode</Text>
-            <TextInput
-              style={styles.pinInput}
-              value={pinInput}
-              onChangeText={v => { setPinInput(v); setPinError(""); }}
-              keyboardType="number-pad"
-              maxLength={4}
-              secureTextEntry
-              placeholder="• • • •"
-              placeholderTextColor="#9CA3AF"
-              autoFocus
-            />
-            {pinError ? <Text style={styles.pinError}>{pinError}</Text> : null}
-            <View style={styles.pinButtons}>
-              <Pressable style={styles.pinCancel} onPress={() => setShowPin(false)}>
-                <Text style={styles.pinCancelText}>Cancel</Text>
-              </Pressable>
-              <Pressable style={styles.pinConfirm} onPress={handlePinConfirm}>
-                <Text style={styles.pinConfirmText}>Confirm</Text>
-              </Pressable>
-            </View>
+            {pinLoaded ? (
+              <>
+                <Text style={styles.pinSub}>Enter the admin PIN to exit kiosk mode</Text>
+                <TextInput
+                  style={styles.pinInput}
+                  value={pinInput}
+                  onChangeText={v => { setPinInput(v); setPinError(""); }}
+                  keyboardType="number-pad"
+                  maxLength={4}
+                  secureTextEntry
+                  placeholder="• • • •"
+                  placeholderTextColor="#9CA3AF"
+                  autoFocus
+                />
+                {pinError ? <Text style={styles.pinError}>{pinError}</Text> : null}
+                <View style={styles.pinButtons}>
+                  <Pressable style={styles.pinCancel} onPress={() => setShowPin(false)}>
+                    <Text style={styles.pinCancelText}>Cancel</Text>
+                  </Pressable>
+                  <Pressable style={styles.pinConfirm} onPress={handlePinConfirm}>
+                    <Text style={styles.pinConfirmText}>Confirm</Text>
+                  </Pressable>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.pinSub}>Unable to load exit PIN. Please check the connection and try again, or contact your admin.</Text>
+                <View style={styles.pinButtons}>
+                  <Pressable style={styles.pinCancel} onPress={() => setShowPin(false)}>
+                    <Text style={styles.pinCancelText}>Close</Text>
+                  </Pressable>
+                </View>
+              </>
+            )}
           </View>
         </View>
       </Modal>

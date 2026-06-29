@@ -931,7 +931,17 @@ export default function OperatorDashboard() {
           return;
         }
       } catch {
-        // Check failed — proceed with normal scan
+        // Fail-closed — verification failed (network error OR a non-2xx such as a
+        // 404 for an unrecognised QR). Do NOT proceed as authorised; show a clear
+        // error and require the operator to retry or verify manually.
+        showScanResult({
+          type: "error",
+          name: memberName,
+          subscription: "none",
+          medical: "expired",
+          payment: "pending",
+        });
+        return;
       }
 
       const foundMember = students.find(s => s.id === memberId);
@@ -976,7 +986,17 @@ export default function OperatorDashboard() {
           return;
         }
       } catch {
-        // Check failed — proceed with normal scan (graceful degradation)
+        // Fail-closed — verification failed (network error OR a non-2xx such as a
+        // 404 for an unrecognised QR). Do NOT proceed as authorised; show a clear
+        // error and require the operator to retry or verify manually.
+        showScanResult({
+          type: "error",
+          name: studentName,
+          subscription: "none",
+          medical: "expired",
+          payment: "pending",
+        });
+        return;
       }
 
       const found = students.find(s => s.id === studentId);
