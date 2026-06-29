@@ -183,6 +183,7 @@ export default function OperatorTabLayout() {
         <Tabs.Screen name="contract"           options={{ href: null }} />
         <Tabs.Screen name="resign"             options={{ href: null }} />
         <Tabs.Screen name="certificates"       options={{ href: null }} />
+        <Tabs.Screen name="progress-diary"     options={{ href: null }} />
       </Tabs>
 
       <SecurityAlarmOverlay alertsRoute="/(operator)/alerts" />

@@ -694,6 +694,15 @@ export default function ChildrenScreen() {
                 <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
               </Pressable>
 
+              <Pressable
+                style={[styles.actionBtn, { marginTop: 4, borderWidth: 1, borderColor: colors.secondary, backgroundColor: "#FFFBEB" }]}
+                onPress={() => router.push({ pathname: "/(parent)/progress-diary", params: { childId: child.id, name: child.name } })}
+              >
+                <Ionicons name="videocam-outline" size={18} color={colors.primary} />
+                <Text style={[styles.actionBtnText, { color: colors.primary }]}>Video Progress Diary</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
+              </Pressable>
+
               {/* Medical Certificate */}
               {(() => {
                 const cert = certDataByChild[child.id];

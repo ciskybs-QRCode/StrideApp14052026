@@ -127,6 +127,14 @@ export default function StudentDetail() {
           </Pressable>
         </View>
 
+        <Pressable
+          style={[styles.actionBtn, { backgroundColor: colors.secondary, marginTop: 10 }]}
+          onPress={() => router.push({ pathname: "/(operator)/progress-diary", params: { id: student.id, name: student.name } })}
+        >
+          <Ionicons name="videocam" size={20} color={colors.primary} />
+          <Text style={[styles.actionBtnText, { color: colors.primary }]}>Video Progress Diary</Text>
+        </Pressable>
+
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Medical Information</Text>
         <View style={[styles.infoCard, { backgroundColor: colors.card }]}>
           {/* Allergies */}

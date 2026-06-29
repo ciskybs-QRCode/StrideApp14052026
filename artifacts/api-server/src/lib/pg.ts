@@ -406,6 +406,26 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS mmc_org_idx    ON member_medical_certs (org_id);
   `).catch(() => {});
 
+  // Video Progress Diary — operators/admins record short clips; parents watch chronologically
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS progress_videos (
+      id              SERIAL PRIMARY KEY,
+      organization_id INTEGER NOT NULL,
+      member_id       INTEGER NOT NULL,
+      author_id       TEXT    NOT NULL,
+      author_name     TEXT    NOT NULL DEFAULT 'Staff',
+      video_url       TEXT    NOT NULL,
+      thumbnail_url   TEXT,
+      title           TEXT    NOT NULL DEFAULT '',
+      note            TEXT,
+      milestone       BOOLEAN NOT NULL DEFAULT FALSE,
+      duration_secs   INTEGER,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+    CREATE INDEX IF NOT EXISTS pv_member_idx ON progress_videos (member_id);
+    CREATE INDEX IF NOT EXISTS pv_org_idx    ON progress_videos (organization_id);
+  `).catch(() => {});
+
   // Financial audit trail — every payment request logged before any session is created
   await pool.query(`
     CREATE TABLE IF NOT EXISTS payment_audit_log (

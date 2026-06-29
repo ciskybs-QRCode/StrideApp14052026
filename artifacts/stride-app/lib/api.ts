@@ -449,6 +449,36 @@ export const api = {
     return resp.json() as Promise<{ url: string; name: string; mimeType: string }>;
   },
 
+  // Progress Diary (Video)
+  getProgressVideos: (memberId: string | number) =>
+    request<ApiProgressVideo[]>("GET", `/progress-videos?memberId=${memberId}`),
+  addProgressVideo: (data: {
+    member_id: string | number;
+    video_url: string;
+    thumbnail_url?: string | null;
+    title?: string;
+    note?: string;
+    milestone?: boolean;
+    duration_secs?: number | null;
+  }) => request<ApiProgressVideo>("POST", "/progress-videos", data),
+  deleteProgressVideo: (id: string | number) =>
+    request<void>("DELETE", `/progress-videos/${id}`),
+  uploadProgressVideo: async (uri: string, name: string, mimeType: string): Promise<{ url: string; name: string; mimeType: string }> => {
+    const token = await getToken();
+    const form = new FormData();
+    form.append("file", { uri, name, type: mimeType } as unknown as Blob);
+    const resp = await fetch(`${getBaseUrl()}/progress-videos/upload`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token ?? ""}` },
+      body: form,
+    });
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({ error: "Upload failed" }));
+      throw new Error((err as { error: string }).error ?? `HTTP ${resp.status}`);
+    }
+    return resp.json() as Promise<{ url: string; name: string; mimeType: string }>;
+  },
+
   // Users (admin)
   getUsers: () => request<ApiUser[]>("GET", "/users"),
   setUserStatus: (id: string, blocked: boolean, reason?: string) =>
@@ -1893,6 +1923,21 @@ export interface ApiMessage {
   created_at?: string;
   sender?: { id: number; name: string; role: string };
   org?: { id: number; name: string; contact_email?: string };
+}
+
+export interface ApiProgressVideo {
+  id: number;
+  organization_id: number;
+  member_id: number;
+  author_id: string;
+  author_name: string;
+  video_url: string;
+  thumbnail_url: string | null;
+  title: string;
+  note: string | null;
+  milestone: boolean;
+  duration_secs: number | null;
+  created_at: string;
 }
 
 export interface ApiDirectMessage {

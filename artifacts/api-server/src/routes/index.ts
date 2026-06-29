@@ -81,6 +81,7 @@ import courseLabelsRouter  from "./course-labels.js";
 import operatorCertsRouter from "./operator-certs.js";
 import pageGuideRouter from "./page-guide.js";
 import scheduleManagementRouter from "./schedule-management.js";
+import progressVideosRouter from "./progress-videos.js";
 
 const router: IRouter = Router();
 
@@ -166,5 +167,6 @@ router.use(courseLabelsRouter);
 router.use(operatorCertsRouter);
 router.use(pageGuideRouter);
 router.use(scheduleManagementRouter);
+router.use(progressVideosRouter);
 
 export default router;
