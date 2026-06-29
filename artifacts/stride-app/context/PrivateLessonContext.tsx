@@ -78,7 +78,7 @@ function NotificationToast({ toast, onDismiss }: { toast: ToastData; onDismiss: 
     private_lesson_approved:   { icon: "ribbon-outline",        color: "#059669" },
     private_lesson_proposed:   { icon: "calendar-outline",      color: "#1E3A8A" },
     reimbursement:             { icon: "cash-outline",          color: "#059669" },
-    achievement:               { icon: "trophy-outline",        color: "#D4AF37" },
+    achievement:               { icon: "trophy-outline",        color: "#FBBF24" },
     document:                  { icon: "document-text-outline", color: "#6366F1" },
     meeting:                   { icon: "people-outline",        color: "#0891B2" },
     promo:                     { icon: "pricetag-outline",      color: "#7C3AED" },

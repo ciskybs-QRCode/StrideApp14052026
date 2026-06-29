@@ -312,7 +312,7 @@ function PermissionGate({
           {GATE_FEATURES.map(([icon, label]) => (
             <View style={g.featureRow} key={label}>
               <View style={g.featureIconWrap}>
-                <Ionicons name={icon} size={14} color="#D4AF37" />
+                <Ionicons name={icon} size={14} color="#FBBF24" />
               </View>
               <Text style={g.featureText}>{label}</Text>
             </View>
@@ -399,7 +399,7 @@ function CriticalAlertPermissionPrompt({
           <View style={s.featureList}>
             {FEATURES.map(([icon, label]) => (
               <View style={s.featureRow} key={label}>
-                <Ionicons name={icon} size={15} color="#D4AF37" />
+                <Ionicons name={icon} size={15} color="#FBBF24" />
                 <Text style={s.featureText}>{label}</Text>
               </View>
             ))}

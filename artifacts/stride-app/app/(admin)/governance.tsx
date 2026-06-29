@@ -136,7 +136,7 @@ export default function GovernanceScreen() {
                   { backgroundColor: isOn ? "rgba(34,197,94,0.10)" : "rgba(239,68,68,0.08)" },
                 ]}
               >
-                <View style={[styles.statusDot, { backgroundColor: isOn ? "#22C55E" : "#EF4444" }]} />
+                <View style={[styles.statusDot, { backgroundColor: isOn ? "#10B981" : "#EF4444" }]} />
                 <Text style={[styles.statusText, { color: isOn ? "#16A34A" : "#DC2626" }]}>
                   {isOn ? "Active — visible to all users" : "Hidden from all admins & parents"}
                 </Text>
@@ -222,7 +222,7 @@ export default function GovernanceScreen() {
                 <View
                   style={[
                     styles.logDot,
-                    { backgroundColor: isEnableEvent ? "#22C55E" : "#EF4444" },
+                    { backgroundColor: isEnableEvent ? "#10B981" : "#EF4444" },
                   ]}
                 />
                 <View style={{ flex: 1 }}>

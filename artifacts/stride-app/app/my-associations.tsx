@@ -79,7 +79,17 @@ export default function MyAssociationsScreen() {
     <View style={[s.root, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[s.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} hitSlop={12} style={s.backBtn}>
+        <Pressable
+          onPress={() => {
+            const r = user?.activeRole ?? user?.role;
+            if (r === "operator") router.replace("/(operator)/dashboard" as never);
+            else if (r === "admin") router.replace("/(admin)/setup" as never);
+            else if (r === "super_admin") router.replace("/(super_admin)/dashboard" as never);
+            else router.replace("/(parent)/home" as never);
+          }}
+          hitSlop={12}
+          style={s.backBtn}
+        >
           <Ionicons name="arrow-back" size={22} color={colors.foreground} />
         </Pressable>
         <Text style={[s.title, { color: colors.foreground }]}>My Associations</Text>

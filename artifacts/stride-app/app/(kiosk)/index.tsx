@@ -88,9 +88,9 @@ function playKioskTone(result: "success" | "warning" | "denied"): void {
 // ── Border flash colour per feedback type ─────────────────────────────────────
 
 const BORDER_FLASH: Record<FeedbackType, string> = {
-  success:     "#22C55E",
-  clock_in:    "#22C55E",
-  ticket_ok:   "#22C55E",
+  success:     "#10B981",
+  clock_in:    "#10B981",
+  ticket_ok:   "#10B981",
   warning:     "#F59E0B",
   denied:      "#EF4444",
   blacklisted: "#EF4444",
@@ -218,7 +218,7 @@ export default function KioskScreen() {
   const [feedback, setFeedback] = useState<FeedbackState | null>(null);
   const overlayOpacity    = useRef(new Animated.Value(0)).current;
   const borderFlashOpacity = useRef(new Animated.Value(0)).current;
-  const [borderColor, setBorderColor] = useState("#22C55E");
+  const [borderColor, setBorderColor] = useState("#10B981");
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Exit PIN (loaded from org settings on mount)
@@ -670,7 +670,7 @@ const make_styles = (primary: string, secondary: string) => StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.12)",
     borderRadius: 20, paddingHorizontal: 14, paddingVertical: 5, gap: 7,
   },
-  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#22C55E" },
+  statusDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: "#10B981" },
   statusText: { color: "#FFF", fontSize: 11, fontWeight: "700", letterSpacing: 1.5 },
 
   frameWrapper: {

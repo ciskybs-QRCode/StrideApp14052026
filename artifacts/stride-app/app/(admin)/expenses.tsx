@@ -25,7 +25,7 @@ import * as Haptics from "expo-haptics";
 
 const NAVY = "#1E3A8A";
 const GOLD = "#FBBF24";
-const GREEN = "#22c55e";
+const GREEN = "#10B981";
 const RED   = "#ef4444";
 
 // ── Types ─────────────────────────────────────────────────────────────────────

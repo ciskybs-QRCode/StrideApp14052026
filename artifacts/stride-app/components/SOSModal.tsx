@@ -359,11 +359,11 @@ export function SOSModal({ visible, onClose, orgId, campusAddress = "" }: SOSMod
                         {hasConsent ? (
                           <Pressable
                             onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); Linking.openURL(`tel:${emergency.number}`); }}
-                            style={{ padding: 8, backgroundColor: "#22C55E22", borderRadius: 10, alignItems: "center" }}
+                            style={{ padding: 8, backgroundColor: "#10B98122", borderRadius: 10, alignItems: "center" }}
                             hitSlop={8}
                           >
-                            <Ionicons name="call" size={18} color="#22C55E" />
-                            <Text style={{ fontSize: 10, color: "#22C55E", fontWeight: "700", marginTop: 2 }}>{emergency.number}</Text>
+                            <Ionicons name="call" size={18} color="#10B981" />
+                            <Text style={{ fontSize: 10, color: "#10B981", fontWeight: "700", marginTop: 2 }}>{emergency.number}</Text>
                           </Pressable>
                         ) : nokPh ? (
                           <Pressable

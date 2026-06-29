@@ -50,7 +50,7 @@ export default function JoinOrgScreen() {
     <View style={[s.root, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[s.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.back()} hitSlop={12} style={s.backBtn}>
+        <Pressable onPress={() => router.replace("/my-associations" as never)} hitSlop={12} style={s.backBtn}>
           <Ionicons name="arrow-back" size={22} color={colors.foreground} />
         </Pressable>
         <Text style={[s.title, { color: colors.foreground }]}>Join Association</Text>
@@ -116,7 +116,7 @@ function CodeTab({
         result.alreadyMember
           ? `You are already a member of ${result.orgName}.`
           : `You have joined ${result.orgName} as ${result.role}.`,
-        [{ text: "OK", onPress: () => router.back() }],
+        [{ text: "OK", onPress: () => router.replace("/my-associations" as never) }],
       );
     } catch (err: unknown) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -223,7 +223,7 @@ function QrTab({
         result.alreadyMember
           ? `You are already a member of ${result.orgName}.`
           : `You have joined ${result.orgName} as member.`,
-        [{ text: "OK", onPress: () => router.back() }],
+        [{ text: "OK", onPress: () => router.replace("/my-associations" as never) }],
       );
     } catch (err: unknown) {
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);

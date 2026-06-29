@@ -408,7 +408,7 @@ export default function OperatorDashboard() {
   const [permission, requestPermission] = useCameraPermissions();
   const [cameraFacing, setCameraFacing] = useState<"back" | "front">("back");
   const borderFlashOpacity = useRef(new Animated.Value(0)).current;
-  const [borderFlashColor, setBorderFlashColor] = useState("#22C55E");
+  const [borderFlashColor, setBorderFlashColor] = useState("#10B981");
 
   const isGPS         = true;
   const currentLesson = lessons[0];
@@ -648,7 +648,7 @@ export default function OperatorDashboard() {
     if (result.type === "success") {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       playDashboardTone("success");
-      triggerBorderFlash("#22C55E");
+      triggerBorderFlash("#10B981");
       updateStudentPresence("s1", true);
       clearAlertByStudent("s1");
     } else if (result.type === "warning") {
@@ -2856,11 +2856,11 @@ export default function OperatorDashboard() {
                           {m.ambulance_consent !== false ? (
                             <Pressable
                               onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); Linking.openURL(`tel:${emergency.number}`); }}
-                              style={{ padding: 8, backgroundColor: "#22C55E22", borderRadius: 10, alignItems: "center" }}
+                              style={{ padding: 8, backgroundColor: "#10B98122", borderRadius: 10, alignItems: "center" }}
                               hitSlop={8}
                             >
-                              <Ionicons name="call" size={18} color="#22C55E" />
-                              <Text style={{ fontSize: 10, color: "#22C55E", fontWeight: "700", marginTop: 2 }}>{emergency.number}</Text>
+                              <Ionicons name="call" size={18} color="#10B981" />
+                              <Text style={{ fontSize: 10, color: "#10B981", fontWeight: "700", marginTop: 2 }}>{emergency.number}</Text>
                             </Pressable>
                           ) : callPhone ? (
                             <Pressable
