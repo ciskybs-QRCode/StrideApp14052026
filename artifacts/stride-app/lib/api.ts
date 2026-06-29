@@ -269,7 +269,7 @@ export const api = {
   resendVerification: () =>
     request<{ sent: boolean; _devCode?: string }>("POST", "/auth/resend-verification", {}),
 
-  complianceLog: (data: { signatureText: string; acceptedTerms: boolean; acceptedPrivacy: boolean }) =>
+  complianceLog: (data: { signatureText: string; acceptedTerms: boolean; acceptedPrivacy: boolean; acceptedMedia: boolean; acceptedReimbursement: boolean }) =>
     request<{ logged: boolean }>("POST", "/org/compliance-log", data),
 
   systemStatus: () =>

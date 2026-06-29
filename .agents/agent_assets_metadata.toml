@@ -53,3 +53,27 @@ id = "buhWVDtVQNNLDK6pQOGQ1"
 uri = "file://screenshots/stride-admin-stats.jpg"
 type = "image"
 title = "Admin — Statistics (48 students, €3,840 revenue, course occupancy)"
+
+[[outputs]]
+id = "lguhxdnUNNjzz-uRhH1sI"
+uri = "file://legal-documents/Stride-Terms-Conditions-DRAFT.docx"
+type = "word_document"
+title = "Terms & Conditions (BOZZA)"
+
+[[outputs]]
+id = "77gNFM0C3hBSFb-pWolDx"
+uri = "file://legal-documents/Stride-Media-Release-DRAFT.docx"
+type = "word_document"
+title = "Media Release (BOZZA)"
+
+[[outputs]]
+id = "BQkS3jvgpHeZctie6s2bZ"
+uri = "file://legal-documents/Stride-Reimbursement-Policy-DRAFT.docx"
+type = "word_document"
+title = "Reimbursement Policy (BOZZA)"
+
+[[outputs]]
+id = "4yuh2BjXpftkwPRqcClBw"
+uri = "file://legal-documents/Stride-Privacy-Policy-DRAFT.docx"
+type = "word_document"
+title = "Privacy Policy (BOZZA)"

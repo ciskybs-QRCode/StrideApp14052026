@@ -12,13 +12,15 @@
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "verify-settings-clean": "tsx ./src/verify-settings-clean.ts",
     "seed-test-users": "tsx ./src/seed-test-users.ts",
-    "full-audit": "tsx ./src/full-audit.ts"
+    "full-audit": "tsx ./src/full-audit.ts",
+    "gen:legal-docx": "tsx ./src/legal/generate-legal-docx.ts"
   },
   "devDependencies": {
     "@supabase/supabase-js": "^2.105.4",
     "@types/bcryptjs": "^3.0.0",
     "@types/node": "catalog:",
     "bcryptjs": "^3.0.3",
+    "docx": "^9.7.1",
     "tsx": "catalog:"
   }
 }

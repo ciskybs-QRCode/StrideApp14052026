@@ -929,6 +929,8 @@ export async function ensureTables(): Promise<void> {
     );
     CREATE INDEX IF NOT EXISTS ocl_user_idx ON organization_compliance_logs (user_id);
     CREATE INDEX IF NOT EXISTS ocl_org_idx  ON organization_compliance_logs (org_id);
+    ALTER TABLE organization_compliance_logs ADD COLUMN IF NOT EXISTS accepted_media         BOOLEAN NOT NULL DEFAULT FALSE;
+    ALTER TABLE organization_compliance_logs ADD COLUMN IF NOT EXISTS accepted_reimbursement BOOLEAN NOT NULL DEFAULT FALSE;
   `).catch(() => {});
 
   // Dependent-to-Member promotion tokens — email-confirmed upgrade flow

@@ -424,13 +424,15 @@ router.post("/auth/resend-verification", requireAuth, authLimiter, async (req, r
 router.post("/org/compliance-log", requireAuth, async (req, res) => {
   await ensureTables().catch(() => {});
   const authUser = (req as AuthReq).user;
-  const { signatureText, acceptedTerms, acceptedPrivacy } = req.body as {
+  const { signatureText, acceptedTerms, acceptedPrivacy, acceptedMedia, acceptedReimbursement } = req.body as {
     signatureText?: string;
     acceptedTerms?: boolean;
     acceptedPrivacy?: boolean;
+    acceptedMedia?: boolean;
+    acceptedReimbursement?: boolean;
   };
-  if (!acceptedTerms || !acceptedPrivacy) {
-    res.status(400).json({ error: "Both Terms and Privacy Policy must be accepted" });
+  if (!acceptedTerms || !acceptedPrivacy || !acceptedMedia || !acceptedReimbursement) {
+    res.status(400).json({ error: "All four legal documents must be accepted" });
     return;
   }
   if (!signatureText?.trim()) {
@@ -443,13 +445,13 @@ router.post("/org/compliance-log", requireAuth, async (req, res) => {
   const ua = (req.headers["user-agent"] as string | undefined) ?? "unknown";
   await pool.query(
     `INSERT INTO organization_compliance_logs
-     (user_id, org_id, ip_address, user_agent, accepted_terms, accepted_privacy, signature_text, signed_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())`,
+     (user_id, org_id, ip_address, user_agent, accepted_terms, accepted_privacy, accepted_media, accepted_reimbursement, signature_text, signed_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())`,
     [
       parseInt(String(authUser.id), 10),
       authUser.orgId ?? 0,
       ip, ua,
-      true, true,
+      true, true, true, true,
       signatureText.trim(),
     ],
   );

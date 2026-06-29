@@ -22,7 +22,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useBranding } from "@/context/BrandingContext";
 import { api, setToken } from "@/lib/api";
 import { getDeviceLocale } from "@/hooks/useDeviceLocale";
-import { TERMS_OF_SERVICE, PRIVACY_POLICY, DATA_PROCESSING_AGREEMENT } from "@/lib/legal-texts";
+import { ONB_TERMS_CONDITIONS, ONB_MEDIA_RELEASE, ONB_REIMBURSEMENT, ONB_PRIVACY_POLICY } from "@/lib/legal-texts";
 import { useColors } from "@/hooks/useColors";
 
 // ── Brand ─────────────────────────────────────────────────────────────────────
@@ -174,11 +174,13 @@ export default function Pioneer() {
 
   // ── Step 5 ────────────────────────────────────────────────────────────────
   const [termsScrolled,   setTermsScrolled]   = useState(false);
+  const [mediaScrolled,   setMediaScrolled]   = useState(false);
+  const [reimbScrolled,   setReimbScrolled]   = useState(false);
   const [privacyScrolled, setPrivacyScrolled] = useState(false);
-  const [dpaScrolled,     setDpaScrolled]     = useState(false);
   const [acceptTerms,     setAcceptTerms]     = useState(false);
+  const [acceptMedia,     setAcceptMedia]     = useState(false);
+  const [acceptReimb,     setAcceptReimb]     = useState(false);
   const [acceptPrivacy,   setAcceptPrivacy]   = useState(false);
-  const [acceptDpa,       setAcceptDpa]       = useState(false);
   const [signatureText,   setSignatureText]   = useState("");
   const [completing,      setCompleting]      = useState(false);
   const [s4Err,           setS4Err]           = useState("");
@@ -296,11 +298,11 @@ export default function Pioneer() {
 
   // ── Step 4: Complete ──────────────────────────────────────────────────────
   const handleComplete = async () => {
-    if (!acceptTerms || !acceptPrivacy || !acceptDpa) { setS4Err("You must accept all three agreements to continue."); return; }
+    if (!acceptTerms || !acceptMedia || !acceptReimb || !acceptPrivacy) { setS4Err("You must accept all four documents to continue."); return; }
     if (!signatureText.trim())          { setS4Err("Digital signature is required."); return; }
     setCompleting(true); setS4Err("");
     try {
-      await api.complianceLog({ signatureText: signatureText.trim(), acceptedTerms: true, acceptedPrivacy: true });
+      await api.complianceLog({ signatureText: signatureText.trim(), acceptedTerms: true, acceptedPrivacy: true, acceptedMedia: true, acceptedReimbursement: true });
       const result = await api.pioneerComplete({
         schoolName:   schoolName.trim(),
         contactPhone: phone.trim() !== cfg.phonePrefix ? phone.trim() : undefined,
@@ -324,7 +326,7 @@ export default function Pioneer() {
     }
   };
 
-  const canFinish = acceptTerms && acceptPrivacy && acceptDpa && signatureText.trim().length > 0 && !completing;
+  const canFinish = acceptTerms && acceptMedia && acceptReimb && acceptPrivacy && signatureText.trim().length > 0 && !completing;
 
   // ── Render ────────────────────────────────────────────────────────────────
   return (
@@ -903,9 +905,10 @@ export default function Pioneer() {
           <View style={st.card}>
             <Text style={st.cardTitle}>Legal Acceptance</Text>
             <Text style={st.cardSub}>
-              Scroll through each document to unlock the checkbox. All three must be accepted before
-              completing setup. Your acceptance is permanently recorded with timestamp, IP address,
-              device information, and SHA-256 document hash.
+              Scroll through each document to unlock its checkbox. All four documents must be accepted
+              and signed before your account is created. Stride provides software and services only and
+              is never responsible for your association&apos;s data or how it is used. Your acceptance is
+              permanently recorded with timestamp, IP address, device information, and SHA-256 hash.
             </Text>
 
             {/* ── Download banner ── */}
@@ -918,11 +921,10 @@ export default function Pioneer() {
               </Text>
               <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 6 }}>
                 {[
-                  { id: "terms", label: "Terms of Service" },
-                  { id: "privacy", label: "Privacy Policy" },
-                  { id: "dpa", label: "DPA" },
-                  { id: "media-consent", label: "Media Consent Template" },
-                  { id: "member-privacy", label: "Member Privacy Template" },
+                  { id: "terms-conditions", label: "Terms & Conditions" },
+                  { id: "media-release", label: "Media Release" },
+                  { id: "reimbursement", label: "Reimbursement Policy" },
+                  { id: "privacy-policy", label: "Privacy Policy" },
                 ].map(d => (
                   <Pressable
                     key={d.id}
@@ -942,7 +944,7 @@ export default function Pioneer() {
                 <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" }}>
                   <Text style={{ fontSize: 10, fontWeight: "800", color: NAVY }}>1</Text>
                 </View>
-                <Text style={st.sectionHdr}>Terms of Service</Text>
+                <Text style={st.sectionHdr}>Terms &amp; Conditions</Text>
               </View>
               {!termsScrolled && <ScrollHint />}
             </View>
@@ -951,7 +953,7 @@ export default function Pioneer() {
               onScroll={e => { if (isNearBottom(e)) setTermsScrolled(true); }}
               scrollEventThrottle={80}
             >
-              <Text style={st.legalText}>{TERMS_OF_SERVICE}</Text>
+              <Text style={st.legalText}>{ONB_TERMS_CONDITIONS}</Text>
             </ScrollView>
             <Pressable
               style={[st.checkRow, !termsScrolled && st.checkRowOff]}
@@ -961,17 +963,79 @@ export default function Pioneer() {
                 name={acceptTerms ? "checkbox" : "square-outline"} size={22}
                 color={acceptTerms ? "#10B981" : termsScrolled ? NAVY : "#D1D5DB"} />
               <Text style={[st.checkLabel, !termsScrolled && { color: "#9CA3AF" }]}>
-                I have read and accept the Terms of Service
+                I have read and accept the Terms &amp; Conditions
               </Text>
             </Pressable>
 
             <View style={st.divider} />
 
-            {/* ── 2. Privacy Policy ── */}
+            {/* ── 2. Media Release ── */}
             <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
               <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                 <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" }}>
                   <Text style={{ fontSize: 10, fontWeight: "800", color: NAVY }}>2</Text>
+                </View>
+                <Text style={st.sectionHdr}>Media Release</Text>
+              </View>
+              {!mediaScrolled && <ScrollHint />}
+            </View>
+            <ScrollView
+              style={st.legalScroll} nestedScrollEnabled
+              onScroll={e => { if (isNearBottom(e)) setMediaScrolled(true); }}
+              scrollEventThrottle={80}
+            >
+              <Text style={st.legalText}>{ONB_MEDIA_RELEASE}</Text>
+            </ScrollView>
+            <Pressable
+              style={[st.checkRow, !mediaScrolled && st.checkRowOff]}
+              onPress={() => mediaScrolled && setAcceptMedia(v => !v)}
+            >
+              <Ionicons
+                name={acceptMedia ? "checkbox" : "square-outline"} size={22}
+                color={acceptMedia ? "#10B981" : mediaScrolled ? NAVY : "#D1D5DB"} />
+              <Text style={[st.checkLabel, !mediaScrolled && { color: "#9CA3AF" }]}>
+                I accept the Media Release on behalf of my Organisation
+              </Text>
+            </Pressable>
+
+            <View style={st.divider} />
+
+            {/* ── 3. Reimbursement Policy ── */}
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ fontSize: 10, fontWeight: "800", color: NAVY }}>3</Text>
+                </View>
+                <Text style={st.sectionHdr}>Reimbursement Policy</Text>
+              </View>
+              {!reimbScrolled && <ScrollHint />}
+            </View>
+            <ScrollView
+              style={st.legalScroll} nestedScrollEnabled
+              onScroll={e => { if (isNearBottom(e)) setReimbScrolled(true); }}
+              scrollEventThrottle={80}
+            >
+              <Text style={st.legalText}>{ONB_REIMBURSEMENT}</Text>
+            </ScrollView>
+            <Pressable
+              style={[st.checkRow, !reimbScrolled && st.checkRowOff]}
+              onPress={() => reimbScrolled && setAcceptReimb(v => !v)}
+            >
+              <Ionicons
+                name={acceptReimb ? "checkbox" : "square-outline"} size={22}
+                color={acceptReimb ? "#10B981" : reimbScrolled ? NAVY : "#D1D5DB"} />
+              <Text style={[st.checkLabel, !reimbScrolled && { color: "#9CA3AF" }]}>
+                I accept the Reimbursement Policy on behalf of my Organisation
+              </Text>
+            </Pressable>
+
+            <View style={st.divider} />
+
+            {/* ── 4. Privacy Policy ── */}
+            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" }}>
+                  <Text style={{ fontSize: 10, fontWeight: "800", color: NAVY }}>4</Text>
                 </View>
                 <Text style={st.sectionHdr}>Privacy Policy</Text>
               </View>
@@ -982,7 +1046,7 @@ export default function Pioneer() {
               onScroll={e => { if (isNearBottom(e)) setPrivacyScrolled(true); }}
               scrollEventThrottle={80}
             >
-              <Text style={st.legalText}>{PRIVACY_POLICY}</Text>
+              <Text style={st.legalText}>{ONB_PRIVACY_POLICY}</Text>
             </ScrollView>
             <Pressable
               style={[st.checkRow, !privacyScrolled && st.checkRowOff]}
@@ -993,45 +1057,6 @@ export default function Pioneer() {
                 color={acceptPrivacy ? "#10B981" : privacyScrolled ? NAVY : "#D1D5DB"} />
               <Text style={[st.checkLabel, !privacyScrolled && { color: "#9CA3AF" }]}>
                 I have read and accept the Privacy Policy
-              </Text>
-            </Pressable>
-
-            <View style={st.divider} />
-
-            {/* ── 3. Data Processing Agreement ── */}
-            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-              <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
-                <View style={{ width: 20, height: 20, borderRadius: 10, backgroundColor: "#DBEAFE", alignItems: "center", justifyContent: "center" }}>
-                  <Text style={{ fontSize: 10, fontWeight: "800", color: NAVY }}>3</Text>
-                </View>
-                <Text style={st.sectionHdr}>Data Processing Agreement</Text>
-              </View>
-              {!dpaScrolled && <ScrollHint />}
-            </View>
-            <View style={{ backgroundColor: "#F0FDF4", borderRadius: 8, borderWidth: 1, borderColor: "#BBF7D0", padding: 10, marginBottom: 6 }}>
-              <Text style={{ fontSize: 11, color: "#15803D", lineHeight: 15 }}>
-                <Text style={{ fontWeight: "700" }}>GDPR Art. 28 — </Text>
-                This agreement defines Stride as your Data Processor and your Organisation as the
-                Data Controller. Stride staff do not access your member data. All technical access
-                is break-glass only, logged, and audited — identical to how Stripe and Salesforce operate.
-              </Text>
-            </View>
-            <ScrollView
-              style={st.legalScroll} nestedScrollEnabled
-              onScroll={e => { if (isNearBottom(e)) setDpaScrolled(true); }}
-              scrollEventThrottle={80}
-            >
-              <Text style={st.legalText}>{DATA_PROCESSING_AGREEMENT}</Text>
-            </ScrollView>
-            <Pressable
-              style={[st.checkRow, !dpaScrolled && st.checkRowOff]}
-              onPress={() => dpaScrolled && setAcceptDpa(v => !v)}
-            >
-              <Ionicons
-                name={acceptDpa ? "checkbox" : "square-outline"} size={22}
-                color={acceptDpa ? "#10B981" : dpaScrolled ? NAVY : "#D1D5DB"} />
-              <Text style={[st.checkLabel, !dpaScrolled && { color: "#9CA3AF" }]}>
-                I accept the Data Processing Agreement on behalf of my Organisation
               </Text>
             </Pressable>
 
@@ -1059,12 +1084,12 @@ export default function Pioneer() {
 
             {/* Progress indicator */}
             <View style={{ flexDirection: "row", gap: 6, marginTop: 8, marginBottom: 4 }}>
-              {[acceptTerms, acceptPrivacy, acceptDpa].map((done, i) => (
+              {[acceptTerms, acceptMedia, acceptReimb, acceptPrivacy].map((done, i) => (
                 <View key={i} style={{ flex: 1, height: 3, borderRadius: 2, backgroundColor: done ? "#10B981" : "#E5E7EB" }} />
               ))}
             </View>
             <Text style={{ fontSize: 11, color: "#6B7280", textAlign: "center", marginBottom: 8 }}>
-              {[acceptTerms, acceptPrivacy, acceptDpa].filter(Boolean).length}/3 agreements accepted
+              {[acceptTerms, acceptMedia, acceptReimb, acceptPrivacy].filter(Boolean).length}/4 documents accepted
             </Text>
 
             {s4Err ? <ErrorBox msg={s4Err} /> : null}
