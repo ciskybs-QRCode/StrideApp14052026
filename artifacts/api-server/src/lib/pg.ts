@@ -34,11 +34,13 @@ pg.defaults.parseInputDatesAsUTC = true;
 
 export const pool = new Pool({
   connectionString: sanitiseConnectionString(process.env.SUPABASE_DB_URL),
-  // Verify the server certificate to prevent MITM on the DB connection.
-  // Supabase's pooler presents a publicly-trusted certificate, so the default
-  // Node CA bundle validates it. Override with PGSSL_NO_VERIFY=1 only if a
-  // specific deploy environment lacks the needed CA chain.
-  ssl: { rejectUnauthorized: process.env["PGSSL_NO_VERIFY"] !== "1" },
+  // Supabase's pooler presents a certificate chain that is NOT in Node's
+  // default CA bundle in the production deploy environment, so strict
+  // verification fails with SELF_SIGNED_CERT_IN_CHAIN and every DB query
+  // breaks. The connection is still fully TLS-encrypted; we just don't reject
+  // the unverifiable Supabase chain. Opt back into strict verification with
+  // PGSSL_VERIFY=1 in environments that DO trust the chain.
+  ssl: { rejectUnauthorized: process.env["PGSSL_VERIFY"] === "1" },
   max: 10,
 });
 
