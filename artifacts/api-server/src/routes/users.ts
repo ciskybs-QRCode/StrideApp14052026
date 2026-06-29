@@ -243,6 +243,26 @@ router.patch("/users/:id/roles", requireAuth, requireRole("admin"), async (req, 
     }
   })();
 
+  // ── Self-provision role profiles so the new role grants real access ──────────
+  // POST /auth/switch-context and GET /user/roles check for an active row in
+  // operator_profiles / parent_profiles — NOT the users.roles column. Without
+  // these upserts the role change "succeeds" but the user is denied when they
+  // try to use the role. Mirrors the invite-acceptance flow in invites.ts.
+  // NOTE: this only handles GRANTING access. Revocation (setting active:false
+  // when a role is removed) is intentionally NOT handled here — flagged to owner.
+  if (cleanRoles.includes("operator")) {
+    await supabase.from("operator_profiles").upsert(
+      { user_id: targetId, organization_id: adminOrgId, active: true },
+      { onConflict: "user_id,organization_id" },
+    );
+  }
+  if (cleanRoles.includes("parent") || cleanRoles.includes("member")) {
+    await supabase.from("parent_profiles").upsert(
+      { user_id: String(targetId), organization_id: adminOrgId, active: true },
+      { onConflict: "user_id,organization_id" },
+    );
+  }
+
   logAction({ userId: admin.id, action: "USER_MULTI_ROLE_CHANGED", tableAffected: "users", recordId: targetId, details: { roles: cleanRoles, primaryRole } });
   res.json(updatedUser);
 });

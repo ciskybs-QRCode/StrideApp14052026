@@ -888,8 +888,16 @@ export default function OperatorDashboard() {
           pushLog({ time: nowTime(), action: `\u26a0 Override required: ${guardianName} \u2014 ${result.reason}`, type: "warning" });
         }
       } catch {
-        // Graceful degradation — if API call fails, show as authorized (system availability)
-        showGuardianResult({ guardianId, guardianName, relationship, childName, isAuthorized: !!guardianId, childId });
+        // Fail-closed — if verification fails (network error OR a non-2xx like a
+        // 404 for an unrecognised QR), do NOT auto-authorise. Force the operator
+        // to manually verify the guardian's identity via the override protocol.
+        setOverrideData({
+          guardianId, guardianName, childId, childName, relationship,
+          reason:     "Could not verify — manual identity check required",
+          confirming: false,
+        });
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+        pushLog({ time: nowTime(), action: `\u2717 Verification failed: ${guardianName} \u2014 manual check required`, type: "error" });
       }
 
     } else if (data.startsWith("STRIDE:MEMBER:")) {

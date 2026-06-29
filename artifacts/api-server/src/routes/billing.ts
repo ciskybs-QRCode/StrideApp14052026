@@ -282,9 +282,18 @@ router.post("/billing/webhook", async (req, res) => {
     if (webhookSecret) {
       const sig = req.headers["stripe-signature"] as string;
       event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
-    } else {
-      // Development-mode: accept without signature verification
+    } else if (process.env["NODE_ENV"] === "development") {
+      // Development-mode ONLY: accept without signature verification.
+      // In any other environment a missing STRIPE_WEBHOOK_SECRET is a hard
+      // failure — accepting unsigned webhooks would let anyone forge events
+      // (e.g. "invoice.paid") and mark an org's subscription active for free.
       event = JSON.parse(rawBody.toString()) as import("stripe").Stripe.Event;
+    } else {
+      req.log.error(
+        "STRIPE_WEBHOOK_SECRET is not set in a non-development environment — refusing to process unsigned webhook",
+      );
+      res.status(503).json({ error: "webhook_not_configured" });
+      return;
     }
 
     const getOrgId = (meta?: Record<string, string> | null): number | null => {
