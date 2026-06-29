@@ -142,50 +142,34 @@ router.post("/events/purchase", requireAuth, async (req: Request, res: Response)
       }
     }
 
-    // Determine pricing — check how many free tickets this user already used
-    let unitPriceCents = ticketType.price_cents;
-    if (ticketType.member_free_qty > 0) {
+    // Determine pricing — how many of the requested tickets fall within the
+    // member's remaining free allowance. Anything beyond it is paid.
+    let freeInOrder = 0;
+    if (ticketType.price_cents <= 0) {
+      // Free ticket type — every requested unit is free.
+      freeInOrder = quantity;
+    } else if (ticketType.member_free_qty > 0) {
+      // Count ONLY the free tickets (unit_price_cents = 0) this member has
+      // already taken for this type, so paid purchases never consume the
+      // free allowance.
       const { rows: used } = await pool.query<{ qty: string }>(
         `SELECT COALESCE(SUM(quantity),0)::text AS qty
          FROM event_tickets
-         WHERE user_id = $1 AND ticket_type_id = $2 AND status <> 'cancelled'`,
+         WHERE user_id = $1 AND ticket_type_id = $2
+           AND status <> 'cancelled' AND unit_price_cents = 0`,
         [user.id, ticket_type_id],
       );
       const usedQty = parseInt(used[0]?.qty ?? "0", 10);
       const freeRemaining = Math.max(0, ticketType.member_free_qty - usedQty);
-      const freeInOrder = Math.min(freeRemaining, quantity);
-      const paidInOrder = quantity - freeInOrder;
-      unitPriceCents = paidInOrder > 0 ? ticketType.price_cents : 0;
-      // Blended total
-      const totalCents = freeInOrder * 0 + paidInOrder * ticketType.price_cents;
-
-      if (totalCents === 0) {
-        // Fully free — insert directly
-        const qrCode = randomUUID();
-        const { rows: inserted } = await pool.query(
-          `INSERT INTO event_tickets
-             (event_id, event_date_id, ticket_type_id, user_id, org_id, quantity,
-              unit_price_cents, total_cents, status, qr_code, attendee_name)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'confirmed',$9,$10)
-           RETURNING *`,
-          [event_id, event_date_id ?? null, ticket_type_id, user.id,
-           user.orgId, quantity, 0, 0, qrCode, attendee_name ?? null],
-        );
-        if (event_date_id) {
-          await pool.query(
-            `UPDATE event_dates SET tickets_sold = tickets_sold + $1 WHERE id = $2`,
-            [quantity, event_date_id],
-          );
-        }
-        res.json({ free: true, ticket: inserted[0] });
-        return;
-      }
+      freeInOrder = Math.min(freeRemaining, quantity);
     }
+    const paidInOrder = quantity - freeInOrder;
 
-    const totalCents = unitPriceCents * quantity;
-
-    if (totalCents === 0) {
-      // Free ticket
+    // Issue the free portion immediately as its own zero-price ticket. Free and
+    // paid units are always kept as separate rows so the free-allowance count
+    // (which sums unit_price_cents = 0 rows) stays exact.
+    let freeTicket: Record<string, unknown> | null = null;
+    if (freeInOrder > 0) {
       const qrCode = randomUUID();
       const { rows: inserted } = await pool.query(
         `INSERT INTO event_tickets
@@ -194,19 +178,24 @@ router.post("/events/purchase", requireAuth, async (req: Request, res: Response)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'confirmed',$9,$10)
          RETURNING *`,
         [event_id, event_date_id ?? null, ticket_type_id, user.id,
-         user.orgId, quantity, 0, 0, qrCode, attendee_name ?? null],
+         user.orgId, freeInOrder, 0, 0, qrCode, attendee_name ?? null],
       );
+      freeTicket = inserted[0] ?? null;
       if (event_date_id) {
         await pool.query(
           `UPDATE event_dates SET tickets_sold = tickets_sold + $1 WHERE id = $2`,
-          [quantity, event_date_id],
+          [freeInOrder, event_date_id],
         );
       }
-      res.json({ free: true, ticket: inserted[0] });
+    }
+
+    // No paid remainder — the whole order was covered for free.
+    if (paidInOrder === 0) {
+      res.json({ free: true, ticket: freeTicket, free_issued: freeInOrder });
       return;
     }
 
-    // Paid — create Stripe Checkout session
+    // Paid remainder — create a Stripe Checkout session for the paid units only.
     const stripeKey = await getPlatformStripeKey();
     if (!stripeKey) { res.status(503).json({ error: "Stripe not configured" }); return; }
 
@@ -223,26 +212,31 @@ router.post("/events/purchase", requireAuth, async (req: Request, res: Response)
     const domains = (process.env["REPLIT_DOMAINS"] ?? "").split(",").filter(Boolean);
     const baseUrl = domains[0] ? `https://${domains[0]}` : "https://example.com";
 
+    const productName = freeInOrder > 0
+      ? `${event.title} — ${ticketType.name} (${freeInOrder} free included)`
+      : `${event.title} — ${ticketType.name}`;
+
     const session = await stripe.checkout.sessions.create({
       mode: "payment",
       line_items: [{
-        quantity,
+        quantity: paidInOrder,
         price_data: {
           currency: "eur",
-          unit_amount: unitPriceCents,
-          product_data: { name: `${event.title} — ${ticketType.name}` },
+          unit_amount: ticketType.price_cents,
+          product_data: { name: productName },
         },
       }],
       metadata: {
         event_id, event_date_id: event_date_id ?? "", ticket_type_id,
-        user_id: user.id, org_id: String(user.orgId), quantity: String(quantity),
+        user_id: user.id, org_id: String(user.orgId),
+        quantity: String(paidInOrder),
         attendee_name: attendee_name ?? "",
       },
       success_url: `${baseUrl}/api/events/stripe-callback?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url:  `${baseUrl}/api/events/stripe-cancel`,
     });
 
-    res.json({ free: false, checkout_url: session.url });
+    res.json({ free: false, checkout_url: session.url, free_issued: freeInOrder });
   } catch (err) {
     req.log?.error(err, "POST /events/purchase");
     res.status(500).json({ error: "Internal error" });
@@ -265,7 +259,10 @@ router.get("/events/stripe-callback", async (req: Request, res: Response) => {
     }
     const m = session.metadata ?? {};
     const { event_id, event_date_id, ticket_type_id, user_id, org_id, quantity, attendee_name } = m;
-    const qty = parseInt(quantity ?? "1", 10);
+    // metadata.quantity holds the PAID unit count; any free units were already
+    // issued as a separate zero-price ticket at request time.
+    const parsedQty = parseInt(quantity ?? "1", 10);
+    const qty = Number.isFinite(parsedQty) && parsedQty > 0 ? parsedQty : 1;
 
     // Idempotency check
     const { rows: existing } = await pool.query(

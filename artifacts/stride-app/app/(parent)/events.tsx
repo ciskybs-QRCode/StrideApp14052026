@@ -13,7 +13,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import QRCode from "react-native-qrcode-svg";
 import { useAuth } from "@/context/AuthContext";
-import { useCart } from "@/context/CartContext";
 import { useColors } from "@/hooks/useColors";
 import {
   listEvents, getEvent, getMyTickets, purchaseEventTickets,
@@ -117,8 +116,6 @@ function PurchaseModal({
 }) {
   const colors  = useColors();
   const styles = make_styles(colors.primary, colors.secondary);
-  const router  = useRouter();
-  const { addItem } = useCart();
   const [selectedDate, setSelectedDate]       = useState<EventDate | null>(null);
   const [selectedType, setSelectedType]       = useState<EventTicketType | null>(null);
   const [quantity, setQuantity]               = useState(1);
@@ -138,12 +135,14 @@ function PurchaseModal({
 
   const unitPrice = selectedType?.price_cents ?? 0;
   // Count free tickets already issued to this member for this ticket type
-  const usedFreeQty = myTickets.filter(
-    t => t.event_id === event.id &&
-         t.ticket_type_id === selectedType?.id &&
-         t.unit_price_cents === 0 &&
-         t.status !== "cancelled"
-  ).length;
+  const usedFreeQty = myTickets
+    .filter(
+      t => t.event_id === event.id &&
+           t.ticket_type_id === selectedType?.id &&
+           t.unit_price_cents === 0 &&
+           t.status !== "cancelled"
+    )
+    .reduce((sum, t) => sum + (t.quantity ?? 1), 0);
   const freePer = selectedType?.member_free_qty ?? 0;
   const freeInOrder = Math.min(Math.max(0, freePer - usedFreeQty), quantity);
   const paidInOrder = quantity - freeInOrder;
@@ -153,57 +152,38 @@ function PurchaseModal({
     if (!selectedType) { Alert.alert("Select a ticket type"); return; }
     setLoading(true);
     try {
-      // Issue free tickets immediately via API
-      if (freeInOrder > 0) {
-        await purchaseEventTickets({
-          event_id:       event.id,
-          event_date_id:  selectedDate?.id,
-          ticket_type_id: selectedType.id,
-          quantity:       freeInOrder,
-          attendee_name:  attendeeName.trim() || undefined,
-        });
-      }
-      // Add paid tickets to cart
-      if (paidInOrder > 0) {
-        addItem({
-          type:              "event_ticket",
-          courseId:          event.id,
-          courseName:        event.title,
-          courseSchedule:    selectedDate ? fmtDate(selectedDate.date) : "",
-          packageType:       "one_time",
-          label:             selectedType.name,
-          price:             unitPrice / 100,
-          participantName:   attendeeName.trim() || "Attendee",
-          quantity:          paidInOrder,
-          eventId:           event.id,
-          eventTicketTypeId: String(selectedType.id),
-        });
-      }
+      // One authoritative call for the WHOLE order. The server issues any free
+      // units immediately and returns a Stripe checkout URL for the paid units.
+      const res = await purchaseEventTickets({
+        event_id:       event.id,
+        event_date_id:  selectedDate?.id,
+        ticket_type_id: selectedType.id,
+        quantity,
+        attendee_name:  attendeeName.trim() || undefined,
+      });
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onClose();
-      if (paidInOrder === 0) {
+      const issued = res.free_issued ?? 0;
+      if (res.checkout_url) {
+        const url = res.checkout_url;
+        if (issued > 0) {
+          // Mixed order — some units issued free, the rest need payment.
+          Alert.alert(
+            "Tickets Split!",
+            `${issued} free ticket${issued > 1 ? "s" : ""} issued. Continue to payment for the remaining ${quantity - issued}.`,
+            [
+              { text: "Cancel", style: "cancel" },
+              { text: "Continue to Payment", onPress: () => { void Linking.openURL(url); } },
+            ],
+          );
+        } else {
+          void Linking.openURL(url);
+        }
+      } else {
         onSuccess();
         Alert.alert(
           "Tickets Confirmed!",
-          `${freeInOrder} free ticket${freeInOrder > 1 ? "s" : ""} issued. Check "My Tickets" to view them.`,
-        );
-      } else if (freeInOrder > 0) {
-        Alert.alert(
-          "Tickets Split!",
-          `${freeInOrder} free ticket${freeInOrder > 1 ? "s" : ""} issued + ${paidInOrder} paid added to cart.`,
-          [
-            { text: "Continue", style: "cancel" },
-            { text: "View Cart", onPress: () => router.push("/(parent)/cart") },
-          ],
-        );
-      } else {
-        Alert.alert(
-          "Added to Cart",
-          `${paidInOrder}× ${selectedType.name} added to your cart.`,
-          [
-            { text: "Continue", style: "cancel" },
-            { text: "View Cart", onPress: () => router.push("/(parent)/cart") },
-          ],
+          `${quantity} free ticket${quantity > 1 ? "s" : ""} issued. Check "My Tickets" to view them.`,
         );
       }
     } catch (e: unknown) {

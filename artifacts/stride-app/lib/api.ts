@@ -3545,7 +3545,7 @@ export function deleteEventTicketType(eventId: string, typeId: string): Promise<
 export function purchaseEventTickets(data: {
   event_id: string; event_date_id?: string; ticket_type_id: string;
   quantity: number; attendee_name?: string;
-}): Promise<{ free: boolean; ticket?: EventTicket; checkout_url?: string }> {
+}): Promise<{ free: boolean; ticket?: EventTicket; checkout_url?: string; free_issued?: number }> {
   return request("POST", "/events/purchase", data);
 }
 
