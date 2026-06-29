@@ -121,3 +121,22 @@ export const aiLimiter = rateLimit({
   },
   message: { error: "AI request limit reached. Please wait a moment and try again." },
 });
+
+/**
+ * AI chat limiter — applied to the conversational page-guide assistant.
+ * A chat naturally sends many short calls, so it gets a roomier bucket than
+ * the one-shot aiLimiter: 30 messages per minute per user. super_admin exempt.
+ */
+export const aiChatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  limit: 30,
+  standardHeaders: "draft-8",
+  legacyHeaders: false,
+  validate: { keyGeneratorIpFallback: false },
+  skip: (req) => (req as AuthReq).user?.role === "super_admin",
+  keyGenerator: (req) => {
+    const user = (req as AuthReq).user;
+    return user ? `aichat:${user.id}` : `aichat:ip:${req.ip ?? "unknown"}`;
+  },
+  message: { error: "Chat is busy. Please wait a few seconds and try again." },
+});
