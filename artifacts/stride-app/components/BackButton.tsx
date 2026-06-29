@@ -5,7 +5,7 @@ import React from "react";
 import { Platform, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-const GOLD = "#D4AF37";
+const GOLD = "#FBBF24";
 const NAVY = "#0A1128";
 
 interface BackButtonProps {

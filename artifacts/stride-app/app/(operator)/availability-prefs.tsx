@@ -107,7 +107,7 @@ export default function AvailabilityPrefsScreen() {
   if (loading) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="My Availability" onBack={() => router.back()} />
+        <ScreenHeader title="My Availability" onBack={() => router.navigate("/(operator)/workspace" as never)} />
         <View style={{ flex: 1, alignItems: "center", justifyContent: "center" }}>
           <ActivityIndicator size="large" color={colors.primary} />
         </View>
@@ -117,7 +117,7 @@ export default function AvailabilityPrefsScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="My Availability" onBack={() => router.back()} />
+      <ScreenHeader title="My Availability" onBack={() => router.navigate("/(operator)/workspace" as never)} />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 120 }]}
         showsVerticalScrollIndicator={false}

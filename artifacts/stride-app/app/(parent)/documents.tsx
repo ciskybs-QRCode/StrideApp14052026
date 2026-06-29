@@ -398,7 +398,7 @@ export default function DocumentsScreen() {
             <View style={styles.docTileBody}>
               {certAnalyzing ? (
                 <View style={styles.certAnalyzingBox}>
-                  <ActivityIndicator size="small" color="#D4AF37" />
+                  <ActivityIndicator size="small" color="#FBBF24" />
                   <Text style={[styles.certAnalyzingText, { color: colors.mutedForeground }]}>
                     AI processing your document securely...
                   </Text>

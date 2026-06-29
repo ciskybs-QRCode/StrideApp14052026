@@ -168,7 +168,7 @@ export default function SupportScreen() {
       <ScreenHeader
         title={view === "list" ? "Stride Support" : view === "chat" ? "Support Assistant" : "Open a Ticket"}
         subtitle={view === "chat" ? "AI-powered · instant help" : undefined}
-        onBack={view === "list" ? () => router.back() : () => setView(view === "ticket" ? "chat" : "list")}
+        onBack={view === "list" ? () => router.push("/(admin)/operations-hub" as never) : () => setView(view === "ticket" ? "chat" : "list")}
         right={headerRight}
       />
 

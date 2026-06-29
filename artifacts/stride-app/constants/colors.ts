@@ -30,4 +30,13 @@ const colors = {
   radius: 12,
 };
 
+export const status = {
+  success:        "#10B981",
+  successDark:    "#059669",
+  warning:        "#F59E0B",
+  warningDark:    "#D97706",
+  destructive:    "#EF4444",
+  destructiveDark:"#DC2626",
+};
+
 export default colors;

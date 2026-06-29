@@ -906,7 +906,7 @@ export default function ActivityWizard() {
     <View style={{ flex: 1, backgroundColor: colors.background }}>
       <ScreenHeader
         title="New Activity"
-        onBack={() => router.back()}
+        onBack={() => router.navigate("/(admin)/operations-hub" as never)}
       />
 
       {/* ── Progress bar */}

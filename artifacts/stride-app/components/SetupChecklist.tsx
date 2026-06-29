@@ -149,7 +149,7 @@ export function SetupChecklist() {
             />
           </View>
         </View>
-        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={16} color="#D4AF37" />
+        <Ionicons name={expanded ? "chevron-up" : "chevron-down"} size={16} color="#FBBF24" />
       </Pressable>
 
       {/* ── Expanded list ── */}
@@ -179,7 +179,7 @@ export function SetupChecklist() {
                     height: 22,
                     borderRadius: 11,
                     borderWidth: 2,
-                    borderColor: isDone ? "#10B981" : "#D4AF37",
+                    borderColor: isDone ? "#10B981" : "#FBBF24",
                     backgroundColor: isDone ? "#10B981" : "transparent",
                     alignItems: "center",
                     justifyContent: "center",
@@ -189,7 +189,7 @@ export function SetupChecklist() {
                 </Pressable>
 
                 {/* icon */}
-                <Ionicons name={item.icon as never} size={16} color={isDone ? "#9CA3AF" : "#D4AF37"} />
+                <Ionicons name={item.icon as never} size={16} color={isDone ? "#9CA3AF" : "#FBBF24"} />
 
                 {/* text */}
                 <View style={{ flex: 1 }}>

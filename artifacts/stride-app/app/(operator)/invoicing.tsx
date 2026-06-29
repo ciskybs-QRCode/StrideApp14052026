@@ -724,9 +724,7 @@ export default function OperatorInvoicing() {
   const [operatorAbsences, setOperatorAbsences] = useState<Array<{ date: string; discipline: string }>>([]);
 
   useFocusEffect(useCallback(() => {
-    AsyncStorage.getItem("stride_operator_absences").then(raw => {
-      setOperatorAbsences(raw ? JSON.parse(raw) : []);
-    }).catch(() => {});
+    api.getMyOperatorAbsences().then(setOperatorAbsences).catch(() => {});
   }, []));
 
   const isAbsent = useCallback((e: DailyEntry) =>
@@ -1459,7 +1457,7 @@ export default function OperatorInvoicing() {
           ) : stripeConfigured === null ? (
             /* Loading */
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12, backgroundColor: colors.card, borderRadius: 16, padding: 16, borderWidth: 1, borderColor: colors.border }}>
-              <ActivityIndicator size="small" color="#D4AF37" />
+              <ActivityIndicator size="small" color="#FBBF24" />
               <Text style={{ fontSize: 13, color: colors.mutedForeground }}>Checking payout status…</Text>
             </View>
           ) : (

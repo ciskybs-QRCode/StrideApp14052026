@@ -226,8 +226,8 @@ export default function ParentHome() {
   }, []);
 
   useEffect(() => {
-    AsyncStorage.getItem("stride_social_links").then(raw => {
-      if (raw) setSocial(JSON.parse(raw) as Record<string, string>);
+    api.getOrgPublicProfile().then(p => {
+      if (p.social_links) setSocial(p.social_links);
     }).catch(() => {});
   }, []);
 
@@ -1275,7 +1275,7 @@ const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   featureBannerTitle: { fontWeight: "700", fontSize: 14, marginBottom: 2 },
   featureBannerSub:   { fontSize: 12 },
   verifiedBadge:      { flexDirection: "row", alignItems: "center", gap: 3, marginRight: 2 },
-  verifiedText:       { color: "#D4AF37", fontSize: 9, fontWeight: "800", letterSpacing: 0.5 },
+  verifiedText:       { color: "#FBBF24", fontSize: 9, fontWeight: "800", letterSpacing: 0.5 },
 
   socialRow:    { flexDirection: "row", gap: 8, marginBottom: 14, marginTop: -2 },
   socialIconBtn:{ width: 32, height: 32, borderRadius: 10, alignItems: "center", justifyContent: "center" },

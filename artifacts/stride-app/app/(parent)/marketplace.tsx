@@ -271,7 +271,7 @@ export default function MarketplaceScreen() {
                 <Text style={[S.sheetTitle, { color: colors.foreground }]}>{selected.title}</Text>
                 {selected.is_stride_verified && (
                   <View style={S.verifiedBadge}>
-                    <Ionicons name="checkmark-circle" size={12} color="#D4AF37" />
+                    <Ionicons name="checkmark-circle" size={12} color="#FBBF24" />
                     <Text style={S.verifiedBadgeText}>VERIFIED</Text>
                   </View>
                 )}
@@ -346,7 +346,7 @@ function VerifiedCard({ product, colors, onPress }: {
         <View style={S.verifiedCardTitleRow}>
           <Text style={S.verifiedCardTitle} numberOfLines={1}>{product.title}</Text>
           <View style={S.verifiedBadge}>
-            <Ionicons name="checkmark-circle" size={11} color="#D4AF37" />
+            <Ionicons name="checkmark-circle" size={11} color="#FBBF24" />
             <Text style={S.verifiedBadgeText}>STRIDE</Text>
           </View>
         </View>
@@ -417,11 +417,11 @@ const make_S = (primary: string, secondary: string) => StyleSheet.create({
 
   // Stride Verified badge
   verifiedBadgeLarge:     { flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 4 },
-  verifiedBadgeLargeText: { color: "#D4AF37", fontWeight: "900", fontSize: 12, letterSpacing: 0.8 },
-  verifiedBadge:      { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#FEF9E7", borderWidth: 1, borderColor: "#D4AF3740", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
+  verifiedBadgeLargeText: { color: "#FBBF24", fontWeight: "900", fontSize: 12, letterSpacing: 0.8 },
+  verifiedBadge:      { flexDirection: "row", alignItems: "center", gap: 3, backgroundColor: "#FEF9E7", borderWidth: 1, borderColor: "#FBBF2440", borderRadius: 6, paddingHorizontal: 6, paddingVertical: 2 },
   verifiedBadgeText:  { color: "#B8960C", fontSize: 9, fontWeight: "900", letterSpacing: 0.6 },
 
-  verifiedCard:       { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: "#FFF", borderWidth: 1.5, borderColor: "#D4AF3730", borderRadius: 16, padding: 14, marginBottom: 12, shadowColor: "#D4AF37", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
+  verifiedCard:       { flexDirection: "row", alignItems: "center", gap: 14, backgroundColor: "#FFF", borderWidth: 1.5, borderColor: "#FBBF2430", borderRadius: 16, padding: 14, marginBottom: 12, shadowColor: "#FBBF24", shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.08, shadowRadius: 8, elevation: 3 },
   verifiedCardLeft:   { width: 52, height: 52, borderRadius: 14, alignItems: "center", justifyContent: "center", flexShrink: 0 },
   verifiedCardTitleRow: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
   verifiedCardTitle:  { flex: 1, fontSize: 14, fontWeight: "800", color: "#111827" },

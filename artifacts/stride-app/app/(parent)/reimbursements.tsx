@@ -175,7 +175,7 @@ export default function ParentReimbursementsScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Reimbursements" onBack={() => router.back()} />
+      <ScreenHeader title="Reimbursements" onBack={() => router.navigate("/(parent)/wallet" as never)} />
       <ScrollView
         contentContainerStyle={[
           styles.scroll,

@@ -118,4 +118,68 @@ router.post(
   },
 );
 
+// POST /absences/operator/clock-out-early — record an actual early departure at clock-out
+router.post(
+  "/absences/operator/clock-out-early",
+  requireAuth,
+  requireRole("admin", "operator"),
+  async (req, res) => {
+    const user = (req as AuthReq).user;
+    const { absence_date, discipline, scheduled_end, clocked_out } = req.body as {
+      absence_date?: string;
+      discipline?: string;
+      scheduled_end?: string;
+      clocked_out?: string;
+    };
+    if (!absence_date) {
+      res.status(400).json({ error: "absence_date is required" });
+      return;
+    }
+    try {
+      await pool.query(
+        `INSERT INTO operator_absences
+           (org_id, operator_id, operator_name, status, mode, absence_date, start_time, end_time, reason)
+         VALUES ($1, $2, $3, 'clocked_out_early', 'early_departure', $4, $5, $6, $7)`,
+        [
+          (user as { orgId?: number }).orgId ?? null,
+          user.id,
+          "",
+          absence_date,
+          scheduled_end ?? null,
+          clocked_out ?? null,
+          discipline ?? null,
+        ],
+      );
+      res.status(201).json({ ok: true });
+    } catch (err) {
+      req.log.error(err, "Failed to record early clock-out absence");
+      res.status(500).json({ error: "Failed to record absence" });
+    }
+  },
+);
+
+// GET /absences/operator/mine — this operator's early-departure absences
+router.get(
+  "/absences/operator/mine",
+  requireAuth,
+  requireRole("admin", "operator"),
+  async (req, res) => {
+    const user = (req as AuthReq).user;
+    try {
+      const { rows } = await pool.query<{ date: string; reason: string | null }>(
+        `SELECT to_char(absence_date, 'YYYY-MM-DD') AS date, reason
+           FROM operator_absences
+          WHERE operator_id = $1 AND org_id = $2 AND status = 'clocked_out_early'
+          ORDER BY absence_date DESC
+          LIMIT 200`,
+        [user.id, (user as { orgId?: number }).orgId ?? null],
+      );
+      res.json(rows.map(r => ({ date: r.date, discipline: r.reason ?? "" })));
+    } catch (err) {
+      req.log.error(err, "Failed to load operator absences");
+      res.status(500).json({ error: "Failed to load absences" });
+    }
+  },
+);
+
 export default router;

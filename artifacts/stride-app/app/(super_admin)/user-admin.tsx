@@ -336,7 +336,7 @@ export default function UserAdminScreen() {
             style={({ pressed }) => [styles.addBtn, { opacity: pressed ? 0.75 : 1 }]}
             onPress={() => { void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setAddAdminVisible(true); }}
           >
-            <Ionicons name="add" size={20} color="#D4AF37" />
+            <Ionicons name="add" size={20} color="#FBBF24" />
           </Pressable>
         }
       />
@@ -394,7 +394,7 @@ const make_em = (primary: string, secondary: string) => StyleSheet.create({
   sectionLabel: { fontSize: 10, fontWeight: "700", letterSpacing: 1.2, color: "#9CA3AF", marginTop: 20, marginBottom: 10, marginHorizontal: 24 },
   errorBox:     { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "#FEF2F2", borderRadius: 10, padding: 12, marginHorizontal: 24, marginTop: 8 },
   errorText:    { flex: 1, color: "#DC2626", fontSize: 12 },
-  ctaBtn:       { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#D4AF37", borderRadius: 16, paddingVertical: 16, marginHorizontal: 24, marginTop: 20, marginBottom: 8 },
+  ctaBtn:       { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#FBBF24", borderRadius: 16, paddingVertical: 16, marginHorizontal: 24, marginTop: 20, marginBottom: 8 },
   ctaText:      { fontSize: 15, fontWeight: "900", color: primary },
   cancelBtn:    { alignItems: "center", paddingVertical: 14, marginHorizontal: 24 },
   cancelText:   { fontSize: 15, color: "#6B7280" },

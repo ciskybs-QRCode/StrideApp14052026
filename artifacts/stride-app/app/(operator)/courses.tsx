@@ -477,7 +477,7 @@ export default function OperatorCoursesScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="My Courses" onBack={() => router.back()} />
+      <ScreenHeader title="My Courses" onBack={() => router.navigate("/(operator)/workspace" as never)} />
       <ScrollView
         contentContainerStyle={[styles.scroll, {
           paddingTop: 16,

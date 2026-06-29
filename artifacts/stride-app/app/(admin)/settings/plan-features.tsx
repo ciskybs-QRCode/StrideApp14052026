@@ -211,7 +211,7 @@ export default function PlanFeaturesScreen() {
 
   return (
     <View style={s.container}>
-      <ScreenHeader title="Plan Features" onBack={() => router.back()} />
+      <ScreenHeader title="Plan Features" onBack={() => router.navigate("/(admin)/settings" as never)} />
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}

@@ -134,7 +134,7 @@ export default function AdminQRGate() {
   if (!permission) {
     return (
       <View style={[S.root, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="QR Gate" onBack={() => router.back()} />
+        <ScreenHeader title="QR Gate" onBack={() => router.navigate("/(admin)/operations-hub" as never)} />
         <View style={S.center}><ActivityIndicator color={colors.primary} /></View>
       </View>
     );
@@ -143,7 +143,7 @@ export default function AdminQRGate() {
   if (!permission.granted) {
     return (
       <View style={[S.root, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="QR Gate" onBack={() => router.back()} />
+        <ScreenHeader title="QR Gate" onBack={() => router.navigate("/(admin)/operations-hub" as never)} />
         <View style={S.center}>
           <Ionicons name="camera-outline" size={52} color={colors.mutedForeground} />
           <Text style={[S.permTitle, { color: colors.foreground }]}>Camera Permission Required</Text>

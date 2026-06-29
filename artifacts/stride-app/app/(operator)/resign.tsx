@@ -104,7 +104,7 @@ export default function ResignScreen() {
   if (done) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="End of Contract" onBack={() => router.back()} />
+        <ScreenHeader title="End of Contract" onBack={() => router.navigate("/(operator)/settings" as never)} />
         <View style={styles.doneCenter}>
           <View style={[styles.doneIcon, { backgroundColor: colors.muted }]}>
             <Ionicons name="checkmark-circle-outline" size={52} color={colors.primary} />
@@ -129,7 +129,7 @@ export default function ResignScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="End of Contract" onBack={() => router.back()} />
+      <ScreenHeader title="End of Contract" onBack={() => router.navigate("/(operator)/settings" as never)} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 100 }]}

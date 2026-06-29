@@ -470,7 +470,7 @@ export default function ParentEventsScreen() {
 
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Events & Tickets" onBack={() => router.back()} />
+      <ScreenHeader title="Events & Tickets" onBack={() => router.navigate("/(parent)/home" as never)} />
       {/* Tab bar */}
       <View style={[styles.header, { paddingTop: 8, backgroundColor: colors.primary }]}>
         <Text style={styles.headerEyebrow}>STRIDE</Text>

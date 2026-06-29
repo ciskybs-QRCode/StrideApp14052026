@@ -578,14 +578,13 @@ export default function OperatorDashboard() {
     const isEarly    = earlyByMins >= 60;
 
     if (isEarly) {
-      // Record the absence
-      const absenceEntry = { date: dateStr, discipline: lastClass.course, scheduledEnd: lastClass.end, clockedOut: hhmm };
-      try {
-        const raw = await AsyncStorage.getItem("stride_operator_absences");
-        const list = raw ? JSON.parse(raw) : [];
-        list.unshift(absenceEntry);
-        await AsyncStorage.setItem("stride_operator_absences", JSON.stringify(list));
-      } catch { /* ignore */ }
+      // Record the absence server-side so it syncs to invoicing + admin reports
+      api.recordEarlyClockOut({
+        absence_date: dateStr,
+        discipline: lastClass.course,
+        scheduled_end: lastClass.end,
+        clocked_out: hhmm,
+      }).catch(() => {});
       setClockOutAbsent(true);
       setClockOutDetails({ discipline: lastClass.course, scheduledEnd: lastClass.end, clockedOut: hhmm });
       pushLog({ time: nowTime(), action: `⚠ Clock-out: ABSENT — left ${earlyByMins} min early (${lastClass.course})`, type: "warning" });
@@ -1437,8 +1436,8 @@ export default function OperatorDashboard() {
                 ) : null}
                 {contact.composite_score != null && (
                   <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 10 }}>
-                    <Ionicons name="sparkles" size={10} color="#D4AF37" />
-                    <Text style={{ color: "#D4AF37", fontSize: 10, fontWeight: "700" }}>
+                    <Ionicons name="sparkles" size={10} color="#FBBF24" />
+                    <Text style={{ color: "#FBBF24", fontSize: 10, fontWeight: "700" }}>
                       AI match score: {Math.round(contact.composite_score * 100)}%
                     </Text>
                   </View>

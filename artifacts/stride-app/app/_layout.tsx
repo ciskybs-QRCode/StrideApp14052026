@@ -16,6 +16,7 @@ import { SafeAreaProvider, useSafeAreaInsets } from "react-native-safe-area-cont
 
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { SyncEngine } from "@/components/SyncEngine";
+import { applyGlobalFont } from "@/lib/global-font";
 import { AppDataProvider } from "@/context/AppDataContext";
 import { AuthProvider } from "@/context/AuthContext";
 import { BrandingProvider } from "@/context/BrandingContext";
@@ -60,6 +61,9 @@ if (typeof window !== "undefined") {
 
 SplashScreen.preventAutoHideAsync();
 
+// Make Montserrat the default font for all Text / TextInput across the app.
+applyGlobalFont();
+
 const queryClient = new QueryClient();
 
 function OfflineBanner() {
@@ -76,7 +80,7 @@ function OfflineBanner() {
       <Ionicons
         name={isSyncing ? "cloud-upload-outline" : "cloud-offline-outline"}
         size={15}
-        color="#D4AF37"
+        color="#FBBF24"
       />
       <Text style={styles.offlineText}>{text}</Text>
       {pendingCount > 0 && !isSyncing && (
@@ -192,7 +196,7 @@ const styles = StyleSheet.create({
     borderBottomColor: "rgba(212,175,55,0.25)",
   },
   offlineBadge: {
-    backgroundColor: "#D4AF37",
+    backgroundColor: "#FBBF24",
     borderRadius: 10,
     minWidth: 20,
     height: 20,

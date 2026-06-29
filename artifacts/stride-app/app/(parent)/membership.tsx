@@ -153,7 +153,7 @@ export default function MembershipScreen() {
   if (loading) {
     return (
       <View style={[S.root, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="Membership" onBack={() => router.back()} />
+        <ScreenHeader title="Membership" onBack={() => router.navigate("/(parent)/account" as never)} />
         <View style={S.centerBox}>
           <ActivityIndicator size="large" color={colors.primary} />
           <Text style={[S.loaderText, { color: colors.mutedForeground }]}>Loading plans…</Text>
@@ -166,7 +166,7 @@ export default function MembershipScreen() {
   if (!plans || !plans.membershipEnabled) {
     return (
       <View style={[S.root, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="Membership" onBack={() => router.back()} />
+        <ScreenHeader title="Membership" onBack={() => router.navigate("/(parent)/account" as never)} />
         <View style={S.centerBox}>
           <Ionicons name="id-card-outline" size={52} color={colors.mutedForeground} />
           <Text style={[S.emptyTitle, { color: colors.foreground }]}>No Membership Fees</Text>
@@ -185,7 +185,7 @@ export default function MembershipScreen() {
   if (!isDonation && !hasFixedFees) {
     return (
       <View style={[S.root, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="Membership" onBack={() => router.back()} />
+        <ScreenHeader title="Membership" onBack={() => router.navigate("/(parent)/account" as never)} />
         <View style={S.centerBox}>
           <Ionicons name="id-card-outline" size={52} color={colors.mutedForeground} />
           <Text style={[S.emptyTitle, { color: colors.foreground }]}>No Fees Configured</Text>
@@ -209,7 +209,7 @@ export default function MembershipScreen() {
 
   return (
     <View style={[S.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Membership" onBack={() => router.back()} />
+      <ScreenHeader title="Membership" onBack={() => router.navigate("/(parent)/account" as never)} />
 
       <ScrollView
         contentContainerStyle={[S.scroll, { paddingBottom: insets.bottom + 100 }]}

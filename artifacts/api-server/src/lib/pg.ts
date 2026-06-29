@@ -341,6 +341,16 @@ export async function ensureTables(): Promise<void> {
   await pool.query(`ALTER TABLE IF EXISTS checkout_sessions ADD COLUMN IF NOT EXISTS batch_position INTEGER;`).catch(() => {});
   await pool.query(`ALTER TABLE IF EXISTS checkout_sessions ADD COLUMN IF NOT EXISTS checkout_url TEXT;`).catch(() => {});
 
+  // Org public profile — social links + opening hours (moved off device-local AsyncStorage)
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS org_public_profile (
+      org_id        INTEGER PRIMARY KEY,
+      social_links  JSONB NOT NULL DEFAULT '{}'::jsonb,
+      opening_hours JSONB NOT NULL DEFAULT '[]'::jsonb,
+      updated_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `).catch(() => {});
+
   // Future absence planning — operator scheduling
   await pool.query(`
     CREATE TABLE IF NOT EXISTS operator_absences (

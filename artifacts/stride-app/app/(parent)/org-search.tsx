@@ -133,7 +133,7 @@ export default function OrgSearch() {
 
   return (
     <View style={styles.root}>
-      <ScreenHeader title="Select Association" onBack={() => router.back()} />
+      <ScreenHeader title="Select Association" onBack={() => router.navigate("/(parent)/account" as never)} />
 
       {/* ── Header row ── */}
       <View style={[styles.searchRow, { paddingBottom: 12 }]}>

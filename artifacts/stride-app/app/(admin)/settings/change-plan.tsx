@@ -190,7 +190,7 @@ export default function ChangePlanScreen() {
 
   return (
     <View style={s.container}>
-      <ScreenHeader title="Change Plan" onBack={() => router.back()} />
+      <ScreenHeader title="Change Plan" onBack={() => router.navigate("/(admin)/settings" as never)} />
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 40 }]}
         showsVerticalScrollIndicator={false}

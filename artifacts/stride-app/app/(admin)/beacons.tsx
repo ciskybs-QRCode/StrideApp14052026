@@ -206,7 +206,7 @@ export default function BeaconsScreen() {
 
       <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + TAB_H + 40 }} showsVerticalScrollIndicator={false}>
 
-        {/* ── Coming Soon Toggle ────────────────────────────────────────────── */}
+        {/* ── BLE Auto Check-in Toggle ──────────────────────────────────────── */}
         <View style={[S.toggleCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <View style={[S.toggleIconWrap, { backgroundColor: "rgba(30,58,138,0.1)" }]}>
             <Ionicons name="bluetooth" size={20} color={colors.primary} />
@@ -214,22 +214,12 @@ export default function BeaconsScreen() {
           <View style={{ flex: 1 }}>
             <Text style={[S.toggleTitle, { color: colors.foreground }]}>BLE Auto Check-in</Text>
             <Text style={[S.toggleSub, { color: colors.mutedForeground }]}>
-              {bleEnabled ? "Feature enabled — connect scanners below" : "Coming soon — tap to learn more"}
+              {bleEnabled ? "Enabled — connect scanners below" : "Disabled — enable to connect scanners"}
             </Text>
           </View>
           <Switch
             value={bleEnabled}
-            onValueChange={v => {
-              if (v) {
-                Alert.alert(
-                  "Coming Soon",
-                  "BLE proximity check-in will be available in a future update. The content below is for preview only.",
-                  [{ text: "OK" }],
-                );
-              } else {
-                setBleEnabled(false);
-              }
-            }}
+            onValueChange={v => setBleEnabled(v)}
             trackColor={{ false: "#E5E7EB", true: colors.primary }}
             thumbColor={bleEnabled ? colors.secondary : "#9CA3AF"}
           />

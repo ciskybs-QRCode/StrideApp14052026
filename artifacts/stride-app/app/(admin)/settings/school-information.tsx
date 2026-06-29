@@ -146,8 +146,6 @@ const DAYS_OF_WEEK: HoursEntry[] = [
 ];
 
 const CAMPUSES_KEY = "stride_campuses_v2";
-const SOCIAL_KEY   = "stride_social_links";
-const HOURS_KEY    = "stride_opening_hours";
 
 const DEFAULT_INFO: SchoolInfo = {
   name:    "",
@@ -221,26 +219,19 @@ const DEFAULT_INFO: SchoolInfo = {
       const raw = await AsyncStorage.getItem(CAMPUSES_KEY);
       if (raw) setCampuses(JSON.parse(raw) as CampusLocation[]);
     } catch { /* keep empty */ }
-    // Load social media links from AsyncStorage
+    // Load social media links + opening hours from backend
     try {
-      const rawSocial = await AsyncStorage.getItem(SOCIAL_KEY);
-      if (rawSocial) {
-        const saved = JSON.parse(rawSocial) as SocialLinks;
-        setSocial(saved);
-        setDraftSocial(saved);
+      const profile = await api.getOrgPublicProfile();
+      if (profile.social_links && Object.keys(profile.social_links).length > 0) {
+        const merged = { ...DEFAULT_SOCIAL, ...profile.social_links } as SocialLinks;
+        setSocial(prev => ({ ...merged, whatsapp: merged.whatsapp || prev.whatsapp }));
+        setDraftSocial(prev => ({ ...merged, whatsapp: merged.whatsapp || prev.whatsapp }));
       }
-    } catch { /* keep defaults */ }
-    // Load opening hours from AsyncStorage
-    try {
-      const rawHours = await AsyncStorage.getItem(HOURS_KEY);
-      if (rawHours) {
-        const saved = JSON.parse(rawHours) as HoursEntry[];
-        if (Array.isArray(saved) && saved.length > 0) {
-          setHours(saved);
-          setHoursDraft(saved);
-        }
+      if (Array.isArray(profile.opening_hours) && profile.opening_hours.length > 0) {
+        setHours(profile.opening_hours as HoursEntry[]);
+        setHoursDraft(profile.opening_hours as HoursEntry[]);
       }
-    } catch { /* keep defaults */ }
+    } catch { /* keep defaults — API unavailable */ }
     setLoadingOrg(false);
   }, []);
 
@@ -282,15 +273,21 @@ const DEFAULT_INFO: SchoolInfo = {
   const handleSaveSocial = async () => {
     setSocial(draftSocial);
     setEditingSocial(false);
+    let apiOk = true;
     try {
-      await AsyncStorage.setItem(SOCIAL_KEY, JSON.stringify(draftSocial));
-    } catch { /* non-fatal */ }
-    // Persist the WhatsApp number server-side so all parent devices can read it
+      await api.updateOrgPublicProfile({ social_links: draftSocial });
+    } catch {
+      apiOk = false;
+    }
+    // Keep the WhatsApp number in sync on the org record (used by parent home quick-contact)
     if (draftSocial.whatsapp !== undefined) {
       api.updateOrg({ whatsapp_number: draftSocial.whatsapp || null } as Parameters<typeof api.updateOrg>[0]).catch(() => {});
     }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert("Saved", "Social media links updated.");
+    Haptics.notificationAsync(apiOk ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning);
+    Alert.alert(
+      apiOk ? "Saved" : "Sync Failed",
+      apiOk ? "Social media links updated." : "Could not reach the server. Please try again.",
+    );
   };
 
   // ── Campus handlers ───────────────────────────────────────────────────────
@@ -358,11 +355,17 @@ const DEFAULT_INFO: SchoolInfo = {
   const handleSaveHours = async () => {
     setHours(hoursDraft);
     setEditingHours(false);
+    let apiOk = true;
     try {
-      await AsyncStorage.setItem(HOURS_KEY, JSON.stringify(hoursDraft));
-    } catch { /* non-fatal */ }
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert("Saved", "Opening hours updated.");
+      await api.updateOrgPublicProfile({ opening_hours: hoursDraft });
+    } catch {
+      apiOk = false;
+    }
+    Haptics.notificationAsync(apiOk ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning);
+    Alert.alert(
+      apiOk ? "Saved" : "Sync Failed",
+      apiOk ? "Opening hours updated." : "Could not reach the server. Please try again.",
+    );
   };
 
   const updateHoursDraft = (idx: number, field: keyof HoursEntry, value: string | boolean) => {

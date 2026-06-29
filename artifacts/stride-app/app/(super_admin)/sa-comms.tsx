@@ -299,7 +299,7 @@ export default function SACommunications() {
 
   return (
     <View style={[s.root, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Platform Communications" onBack={() => router.back()} />
+      <ScreenHeader title="Platform Communications" onBack={() => router.navigate("/(super_admin)/dashboard" as never)} />
 
       {/* ── Intro banner ── */}
       <View style={[s.introBanner, { borderColor: "#E2E8F0" }]}>

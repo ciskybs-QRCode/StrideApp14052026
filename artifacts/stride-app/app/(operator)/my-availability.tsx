@@ -231,7 +231,7 @@ export default function MyAvailabilityScreen() {
 
   return (
     <View style={st.root}>
-      <ScreenHeader title="My Schedule" onBack={() => router.back()} />
+      <ScreenHeader title="My Schedule" onBack={() => router.navigate("/(operator)/workspace" as never)} />
 
       {/* ── Tabs ── */}
       <View style={st.tabRow}>

@@ -49,7 +49,7 @@ export default function DocViewScreen() {
   if (!doc) {
     return (
       <View style={[s.container, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="Document" light onBack={() => router.back()} />
+        <ScreenHeader title="Document" light onBack={() => router.navigate("/(parent)/documents" as never)} />
         <View style={s.center}>
           <Text style={{ color: colors.mutedForeground }}>Document not found.</Text>
         </View>
@@ -59,7 +59,7 @@ export default function DocViewScreen() {
 
   return (
     <View style={[s.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title={doc.title} subtitle="Signed Document — Read Only" light onBack={() => router.back()}
+      <ScreenHeader title={doc.title} subtitle="Signed Document — Read Only" light onBack={() => router.navigate("/(parent)/documents" as never)}
         right={
           <Pressable style={[s.dlBtn, { backgroundColor: colors.primary + "18" }]} onPress={handleDownload} hitSlop={8}>
             <Ionicons name="download-outline" size={20} color={colors.primary} />

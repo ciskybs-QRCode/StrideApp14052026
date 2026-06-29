@@ -479,6 +479,19 @@ export const api = {
   // Org
   getOrg: () => request<ApiOrg>("GET", "/org"),
   updateOrg: (data: Partial<ApiOrg> & { member_label?: string }) => request<ApiOrg>("PATCH", "/org", data),
+  getOrgPublicProfile: () =>
+    request<{
+      social_links: Record<string, string>;
+      opening_hours: Array<{ day: string; isOpen: boolean; openTime: string; closeTime: string }>;
+    }>("GET", "/org/public-profile"),
+  updateOrgPublicProfile: (data: {
+    social_links?: Record<string, string>;
+    opening_hours?: Array<{ day: string; isOpen: boolean; openTime: string; closeTime: string }>;
+  }) => request<{ ok: boolean }>("PUT", "/org/public-profile", data),
+  recordEarlyClockOut: (data: { absence_date: string; discipline: string; scheduled_end: string; clocked_out: string }) =>
+    request<{ ok: boolean }>("POST", "/absences/operator/clock-out-early", data),
+  getMyOperatorAbsences: () =>
+    request<Array<{ date: string; discipline: string }>>("GET", "/absences/operator/mine"),
   getTerminology: () => request<{ primaryRoleName: string; secondaryRoleName: string }>("GET", "/terminology"),
 
   // Reimbursements

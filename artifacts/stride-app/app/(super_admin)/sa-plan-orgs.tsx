@@ -198,7 +198,7 @@ export default function SAPlanOrgsScreen() {
 
   return (
     <View style={s.container}>
-      <ScreenHeader title="Associations" subtitle="Manage by plan tier" onBack={() => router.back()} />
+      <ScreenHeader title="Associations" subtitle="Manage by plan tier" onBack={() => router.navigate("/(super_admin)/dashboard" as never)} />
 
       {/* Mini stats row */}
       <MiniStats metrics={metrics} />

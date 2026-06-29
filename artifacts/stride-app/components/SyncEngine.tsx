@@ -205,7 +205,7 @@ export function SyncEngine() {
       <Ionicons
         name={toast === "syncing" ? "cloud-upload-outline" : "checkmark-circle"}
         size={15}
-        color="#D4AF37"
+        color="#FBBF24"
       />
       <Text style={styles.toastText}>
         {toast === "syncing"

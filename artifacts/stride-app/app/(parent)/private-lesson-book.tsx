@@ -244,7 +244,7 @@ export default function PrivateLessonBook() {
         step === "operator"   ? "Choose your operator" :
         step === "datetime"   ? "Preferred date & time" :
                                 "Review & pay"
-      } onBack={() => router.back()} />
+      } onBack={() => router.navigate("/(parent)/courses" as never)} />
 
       <View style={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 4 }}>
         <StepBar current={step} />
@@ -478,7 +478,7 @@ export default function PrivateLessonBook() {
             </View>
 
             <Pressable
-              style={[styles.btn, { backgroundColor: "#D4AF37", marginTop: 16 }]}
+              style={[styles.btn, { backgroundColor: "#FBBF24", marginTop: 16 }]}
               onPress={handlePay} disabled={submitting}>
               {submitting
                 ? <ActivityIndicator size="small" color="#0A192F" />

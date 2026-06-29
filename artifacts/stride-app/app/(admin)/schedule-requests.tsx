@@ -173,7 +173,7 @@ export default function ScheduleRequestsScreen() {
     <View style={st.root}>
       <ScreenHeader
         title="Schedule Requests"
-        onBack={() => router.back()}
+        onBack={() => router.navigate("/(admin)/operations-hub" as never)}
         right={
           <Pressable style={st.exportBtn} onPress={handleExportCsv}>
             <Ionicons name="download-outline" size={16} color={colors.primary} />

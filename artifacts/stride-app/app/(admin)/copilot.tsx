@@ -329,7 +329,7 @@ function MessageBubble({ msg }: { msg: Message }) {
           {/* Header: COPILOT badge + intent badge */}
           <View style={ab.header}>
             <View style={ab.copilotBadge}>
-              <Ionicons name="sparkles" size={9} color="#D4AF37" />
+              <Ionicons name="sparkles" size={9} color="#FBBF24" />
               <Text style={ab.copilotText}>COPILOT</Text>
             </View>
             <View style={[ab.intentBadge, { backgroundColor: accentColor + "18", borderColor: accentColor + "44" }]}>

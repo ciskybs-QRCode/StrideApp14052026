@@ -400,13 +400,13 @@ export default function TenantsScreen() {
       <ScreenHeader
         title="Tenant Management"
         subtitle={`${orgs.length} association${orgs.length !== 1 ? "s" : ""}`}
-        onBack={() => router.back()}
+        onBack={() => router.navigate("/(super_admin)/dashboard" as never)}
         right={
           <Pressable
             style={({ pressed }) => [styles.addBtn, { opacity: pressed ? 0.75 : 1 }]}
             onPress={() => { void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setAddTenantVisible(true); }}
           >
-            <Ionicons name="add" size={20} color="#D4AF37" />
+            <Ionicons name="add" size={20} color="#FBBF24" />
           </Pressable>
         }
       />
@@ -501,7 +501,7 @@ const make_em = (primary: string, secondary: string) => StyleSheet.create({
   suspendText:  { fontSize: 13, fontWeight: "800", color: "#DC2626" },
   resumeBtn:    { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 6, paddingVertical: 14, borderRadius: 14, backgroundColor: "#ECFDF5", borderWidth: 1.5, borderColor: "#A7F3D0" },
   resumeText:   { fontSize: 13, fontWeight: "800", color: "#059669" },
-  ctaBtn:       { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#D4AF37", borderRadius: 16, paddingVertical: 16, marginHorizontal: 24, marginTop: 20, marginBottom: 8 },
+  ctaBtn:       { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: "#FBBF24", borderRadius: 16, paddingVertical: 16, marginHorizontal: 24, marginTop: 20, marginBottom: 8 },
   ctaText:      { fontSize: 15, fontWeight: "900", color: primary },
   cancelBtn:    { alignItems: "center", paddingVertical: 14, marginHorizontal: 24 },
   cancelText:   { fontSize: 15, color: "#6B7280" },

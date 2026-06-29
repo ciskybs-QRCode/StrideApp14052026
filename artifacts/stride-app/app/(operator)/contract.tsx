@@ -193,7 +193,7 @@ export default function OperatorContract() {
   if (resigned) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="My Contract" onBack={() => router.back()} />
+        <ScreenHeader title="My Contract" onBack={() => router.navigate("/(operator)/settings" as never)} />
         <View style={styles.doneCenter}>
           <View style={[styles.doneIcon, { backgroundColor: colors.muted }]}>
             <Ionicons name="checkmark-circle-outline" size={52} color={colors.primary} />
@@ -219,7 +219,7 @@ export default function OperatorContract() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="My Contract" onBack={() => router.back()} />
+      <ScreenHeader title="My Contract" onBack={() => router.navigate("/(operator)/settings" as never)} />
 
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingBottom: insets.bottom + 40 }]}

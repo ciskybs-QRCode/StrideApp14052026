@@ -15,7 +15,7 @@ export type { PredictiveSubstitute as SmartSubstitute };
 
 // ── Design tokens ─────────────────────────────────────────────────────────────
 const NAVY   = "#0A1128";
-const GOLD   = "#D4AF37";
+const GOLD   = "#FBBF24";
 const GOLD_D = "rgba(212,175,55,0.22)";
 const GOLD_F = "rgba(212,175,55,0.08)";
 const WHITE  = "#FFFFFF";

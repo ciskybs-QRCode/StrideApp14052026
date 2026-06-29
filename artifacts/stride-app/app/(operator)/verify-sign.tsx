@@ -267,7 +267,7 @@ const styles = StyleSheet.create({
   successSub:      { fontSize: 14, color: C.mutedForeground, textAlign: "center", lineHeight: 20, marginBottom: 28 },
   hashCard:        { width: "100%", borderRadius: 14, backgroundColor: C.primary, padding: 18, marginBottom: 28 },
   hashLabel:       { fontSize: 10, fontWeight: "700", color: "rgba(255,255,255,0.5)", letterSpacing: 1, marginBottom: 6, textTransform: "uppercase" },
-  hashValue:       { fontSize: 13, fontFamily: "monospace" as const, color: "#D4AF37", marginBottom: 4, letterSpacing: 0.4 },
+  hashValue:       { fontSize: 13, fontFamily: "monospace" as const, color: "#FBBF24", marginBottom: 4, letterSpacing: 0.4 },
   hashMeta:        { fontSize: 11, color: "rgba(255,255,255,0.5)" },
   doneBtn:         { width: "100%", backgroundColor: C.primary, paddingVertical: 16, borderRadius: 14, alignItems: "center" },
   doneBtnText:     { fontSize: 16, fontWeight: "800", color: "#FFF" },

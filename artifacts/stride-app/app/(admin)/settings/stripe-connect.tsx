@@ -313,10 +313,10 @@ export default function StripeConnectScreen() {
 
               <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Accent / Secondary Colour (hex)</Text>
               <View style={[styles.inputWrap, { borderColor: colors.border, backgroundColor: colors.background }]}>
-                <View style={[styles.colourDot, { backgroundColor: secondaryCol || "#D4AF37" }]} />
+                <View style={[styles.colourDot, { backgroundColor: secondaryCol || "#FBBF24" }]} />
                 <TextInput
                   style={[styles.input, { color: colors.foreground, flex: 1 }]}
-                  placeholder="#D4AF37"
+                  placeholder="#FBBF24"
                   placeholderTextColor={colors.mutedForeground}
                   value={secondaryCol}
                   onChangeText={setSecondaryCol}
@@ -478,7 +478,7 @@ const make_styles = (primary: string, secondary: string) => StyleSheet.create({
     alignItems:     "center",
     justifyContent: "center",
     gap:            10,
-    backgroundColor: "#D4AF37",
+    backgroundColor: "#FBBF24",
     borderRadius:   14,
     paddingVertical: 14,
     marginBottom:   10,

@@ -107,7 +107,7 @@ export default function SkillPresets() {
 
   return (
     <View style={[styles.root, { paddingTop: insets.top }]}>
-      <ScreenHeader title="Skill Labels" onBack={() => router.back()} />
+      <ScreenHeader title="Skill Labels" onBack={() => router.navigate("/(admin)/operations-hub" as never)} />
 
       <View style={styles.addRow}>
         <TextInput

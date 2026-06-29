@@ -26,6 +26,7 @@ import { usePromo } from "@/context/PromoContext";
 import { useRealtime } from "@/context/RealtimeContext";
 import { api, type ApiOrg } from "@/lib/api";
 import { useColors } from "@/hooks/useColors";
+import { status } from "@/constants/colors";
 
 const POLL_INTERVAL_MS = 3000;
 const BATCH_RESUME_KEY = "stride_batch_resume_v1";
@@ -592,7 +593,7 @@ export default function CheckoutScreen() {
   if (payableItems.length === 0 && !success) {
     return (
       <View style={[styles.container, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="Checkout" light onBack={() => router.back()} />
+        <ScreenHeader title="Checkout" light onBack={() => router.navigate("/(parent)/cart" as never)} />
         <View style={styles.emptyCenter}>
           <Ionicons name="cart-outline" size={56} color={colors.mutedForeground} />
           <Text style={[styles.emptyText, { color: colors.mutedForeground }]}>No items ready for checkout.</Text>
@@ -737,7 +738,7 @@ export default function CheckoutScreen() {
   // ── Main Checkout Screen ──────────────────────────────────────────────────
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title={batchQuote ? `Checkout · ${batchCurrentPos}/${batchQuote.totalSessions}` : "Checkout"} light onBack={() => router.back()} />
+      <ScreenHeader title={batchQuote ? `Checkout · ${batchCurrentPos}/${batchQuote.totalSessions}` : "Checkout"} light onBack={() => router.navigate("/(parent)/cart" as never)} />
 
       {/* Batch progress bar */}
       {batchQuote && (
@@ -766,7 +767,7 @@ export default function CheckoutScreen() {
               <Pressable style={[styles.resumeBtn, { backgroundColor: colors.secondary }]} onPress={resumeBatch}>
                 <Text style={[styles.resumeBtnText, { color: colors.primary }]}>Resume</Text>
               </Pressable>
-              <Pressable style={[styles.resumeBtn, { backgroundColor: "transparent", borderWidth: 1, borderColor: "#D97706" }]} onPress={discardResume}>
+              <Pressable style={[styles.resumeBtn, { backgroundColor: "transparent", borderWidth: 1, borderColor: status.warningDark }]} onPress={discardResume}>
                 <Text style={[styles.resumeBtnText, { color: "#B45309" }]}>Start Fresh</Text>
               </Pressable>
             </View>
@@ -798,8 +799,8 @@ export default function CheckoutScreen() {
         {batchQuote && !waitingForReturn && (
           <>
             <View style={[styles.auditBadge, { backgroundColor: "#ECFDF5" }]}>
-              <Ionicons name="shield-checkmark" size={13} color="#059669" />
-              <Text style={[styles.auditBadgeText, { color: "#059669" }]}>
+              <Ionicons name="shield-checkmark" size={13} color={status.successDark} />
+              <Text style={[styles.auditBadgeText, { color: status.successDark }]}>
                 {batchQuote.totalSessions} separate payments · prices verified server-side
               </Text>
             </View>
@@ -828,8 +829,8 @@ export default function CheckoutScreen() {
 
             <View style={[styles.payCard, { backgroundColor: colors.card }]}>
               <View style={styles.secureRow}>
-                <Ionicons name="lock-closed" size={14} color="#059669" />
-                <Text style={[styles.secureText, { color: "#059669" }]}>Secured by Stripe · PCI DSS Level 1</Text>
+                <Ionicons name="lock-closed" size={14} color={status.successDark} />
+                <Text style={[styles.secureText, { color: status.successDark }]}>Secured by Stripe · PCI DSS Level 1</Text>
               </View>
               <Text style={[styles.payCardDesc, { color: colors.mutedForeground }]}>
                 Tapping below opens Stripe for payment {batchCurrentPos} of {batchQuote.totalSessions}. Return here after each payment to continue.
@@ -852,8 +853,8 @@ export default function CheckoutScreen() {
         {quote && !waitingForReturn && (
           <>
             <View style={[styles.auditBadge, { backgroundColor: "#ECFDF5" }]}>
-              <Ionicons name="shield-checkmark" size={13} color="#059669" />
-              <Text style={[styles.auditBadgeText, { color: "#059669" }]}>
+              <Ionicons name="shield-checkmark" size={13} color={status.successDark} />
+              <Text style={[styles.auditBadgeText, { color: status.successDark }]}>
                 Prices verified server-side · Ref {quote.auditId.slice(0, 8).toUpperCase()}
               </Text>
             </View>
@@ -892,11 +893,11 @@ export default function CheckoutScreen() {
                         {formatCurrency(item.unitPrice, quote.currency)}
                       </Text>
                     )}
-                    <Text style={[styles.lineItemFinalPrice, { color: item.discount > 0 ? "#059669" : colors.primary }]}>
+                    <Text style={[styles.lineItemFinalPrice, { color: item.discount > 0 ? status.successDark : colors.primary }]}>
                       {formatCurrency(item.finalPrice, quote.currency)}
                     </Text>
                     {item.discount > 0 && (
-                      <Text style={[styles.lineItemDiscountBadge, { color: "#059669" }]}>
+                      <Text style={[styles.lineItemDiscountBadge, { color: status.successDark }]}>
                         -{formatCurrency(item.discount, quote.currency)}
                       </Text>
                     )}
@@ -907,12 +908,12 @@ export default function CheckoutScreen() {
               {quote.discountApplied > 0 && (
                 <View style={[styles.discountRow, { borderBottomColor: colors.border }]}>
                   <View style={styles.lineItemMeta}>
-                    <Ionicons name="pricetag" size={12} color="#059669" />
-                    <Text style={[styles.discountLabel, { color: "#059669" }]}>
+                    <Ionicons name="pricetag" size={12} color={status.successDark} />
+                    <Text style={[styles.discountLabel, { color: status.successDark }]}>
                       Promo discount{activePromo?.code ? ` (${activePromo.code})` : ""}
                     </Text>
                   </View>
-                  <Text style={[styles.discountAmount, { color: "#059669" }]}>
+                  <Text style={[styles.discountAmount, { color: status.successDark }]}>
                     -{formatCurrency(quote.discountApplied, quote.currency)}
                   </Text>
                 </View>
@@ -928,8 +929,8 @@ export default function CheckoutScreen() {
 
             <View style={[styles.payCard, { backgroundColor: colors.card }]}>
               <View style={styles.secureRow}>
-                <Ionicons name="lock-closed" size={14} color="#059669" />
-                <Text style={[styles.secureText, { color: "#059669" }]}>Secured by Stripe · PCI DSS Level 1</Text>
+                <Ionicons name="lock-closed" size={14} color={status.successDark} />
+                <Text style={[styles.secureText, { color: status.successDark }]}>Secured by Stripe · PCI DSS Level 1</Text>
               </View>
 
               {/* Payment Method Selector */}
@@ -1034,7 +1035,7 @@ export default function CheckoutScreen() {
                         styles.progressDot,
                         {
                           backgroundColor:
-                            s.position < batchCurrentPos ? "#10B981" :
+                            s.position < batchCurrentPos ? status.success :
                             s.position === batchCurrentPos ? colors.secondary : colors.border,
                         },
                       ]}
@@ -1182,10 +1183,10 @@ const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   successScroll: { alignItems: "center", paddingHorizontal: 24, paddingTop: 48, paddingBottom: 40 },
 
   realtimeBadge: { flexDirection: "row", alignItems: "center", gap: 6, backgroundColor: "rgba(16,185,129,0.2)", borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7, marginBottom: 28, borderWidth: 1, borderColor: "rgba(16,185,129,0.4)" },
-  realtimeDot:   { width: 8, height: 8, borderRadius: 4, backgroundColor: "#10B981" },
-  realtimeText:  { fontSize: 12, color: "#10B981", fontWeight: "700", letterSpacing: 0.3 },
+  realtimeDot:   { width: 8, height: 8, borderRadius: 4, backgroundColor: status.success },
+  realtimeText:  { fontSize: 12, color: status.success, fontWeight: "700", letterSpacing: 0.3 },
 
-  successCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: "#10B981", alignItems: "center", justifyContent: "center", marginBottom: 20 },
+  successCircle: { width: 100, height: 100, borderRadius: 50, backgroundColor: status.success, alignItems: "center", justifyContent: "center", marginBottom: 20 },
   successTitle:  { fontSize: 28, fontWeight: "800", color: "#FFF", textAlign: "center", marginBottom: 8 },
   successSub:    { fontSize: 15, color: "rgba(255,255,255,0.7)", textAlign: "center", marginBottom: 28 },
 

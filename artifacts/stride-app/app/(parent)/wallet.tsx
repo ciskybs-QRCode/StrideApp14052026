@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
+import { status } from "@/constants/colors";
 
 // ── Bank details helpers ──────────────────────────────────────────────────────
 
@@ -271,7 +272,7 @@ export default function WalletScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <ScreenHeader title="Wallet" onBack={() => router.back()} />
+      <ScreenHeader title="Wallet" onBack={() => router.navigate("/(parent)/home" as never)} />
       <ScrollView
         contentContainerStyle={[styles.scroll, { paddingTop: 16, paddingBottom: insets.bottom + 100 }]}
         showsVerticalScrollIndicator={false}
@@ -306,8 +307,8 @@ export default function WalletScreen() {
                         {fee.payment_type === "installments" ? "  (installments)" : ""}
                       </Text>
                     </View>
-                    <View style={[feeStyles.statusBadge, { backgroundColor: fee.payment_status === "paid" ? "#22c55e22" : "#EF444422", borderColor: fee.payment_status === "paid" ? "#22c55e" : "#ef4444" }]}>
-                      <Text style={[feeStyles.statusText, { color: fee.payment_status === "paid" ? "#22c55e" : "#ef4444" }]}>
+                    <View style={[feeStyles.statusBadge, { backgroundColor: fee.payment_status === "paid" ? `${status.success}22` : `${status.destructive}22`, borderColor: fee.payment_status === "paid" ? status.success : status.destructive }]}>
+                      <Text style={[feeStyles.statusText, { color: fee.payment_status === "paid" ? status.success : status.destructive }]}>
                         {fee.payment_status.toUpperCase()}
                       </Text>
                     </View>
@@ -443,8 +444,8 @@ export default function WalletScreen() {
                 </Pressable>
               </View>
               <View style={[styles.bankSecureRow, { backgroundColor: "#F0FDF4" }]}>
-                <Ionicons name="lock-closed" size={12} color="#16A34A" />
-                <Text style={[styles.bankSecureText, { color: "#16A34A" }]}>Stored locally on your device · Never shared with third parties</Text>
+                <Ionicons name="lock-closed" size={12} color={status.success} />
+                <Text style={[styles.bankSecureText, { color: status.success }]}>Stored locally on your device · Never shared with third parties</Text>
               </View>
             </>
           ) : (
@@ -466,8 +467,8 @@ export default function WalletScreen() {
         {/* Cancel success banner */}
         {cancelSuccess && (
           <View style={[styles.successBanner, { backgroundColor: "#ECFDF5" }]}>
-            <Ionicons name="checkmark-circle" size={18} color="#10B981" />
-            <Text style={[styles.successBannerText, { color: "#10B981" }]}>
+            <Ionicons name="checkmark-circle" size={18} color={status.success} />
+            <Text style={[styles.successBannerText, { color: status.success }]}>
               Cancellation request sent. You'll receive confirmation by email within 24 hours.
             </Text>
           </View>
@@ -479,7 +480,7 @@ export default function WalletScreen() {
           style={[styles.reimbCard, { backgroundColor: colors.card, borderColor: colors.border }]}
         >
           <View style={[styles.reimbIcon, { backgroundColor: "#FEF3C710" }]}>
-            <Ionicons name="receipt-outline" size={22} color="#F59E0B" />
+            <Ionicons name="receipt-outline" size={22} color={status.warning} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.reimbTitle, { color: colors.foreground }]}>Reimbursements</Text>
@@ -525,7 +526,7 @@ export default function WalletScreen() {
                   </Text>
                   <Text style={[styles.subPrice, { color: colors.secondary }]}>{amtStr}{cycle}</Text>
                   {willEnd && (
-                    <Text style={{ fontSize: 11, color: "#EF4444", fontWeight: "600", marginTop: 2 }}>
+                    <Text style={{ fontSize: 11, color: status.destructive, fontWeight: "600", marginTop: 2 }}>
                       Cancels at period end
                     </Text>
                   )}
@@ -538,9 +539,9 @@ export default function WalletScreen() {
                   disabled={cancellingId === sub.id}
                 >
                   {cancellingId === sub.id
-                    ? <ActivityIndicator size="small" color="#EF4444" />
+                    ? <ActivityIndicator size="small" color={status.destructive} />
                     : (<>
-                        <Ionicons name="close-circle-outline" size={14} color="#EF4444" />
+                        <Ionicons name="close-circle-outline" size={14} color={status.destructive} />
                         <Text style={styles.cancelRenewalText}>Cancel</Text>
                       </>)
                   }
@@ -555,15 +556,15 @@ export default function WalletScreen() {
           <>
             <Text style={[styles.sectionTitle, { color: colors.primary }]}>Pending</Text>
             {pending.map(payment => (
-              <View key={payment.id} style={[styles.transactionCard, { backgroundColor: "#FFF7ED", borderLeftColor: "#F59E0B", borderLeftWidth: 4 }]}>
+              <View key={payment.id} style={[styles.transactionCard, { backgroundColor: "#FFF7ED", borderLeftColor: status.warning, borderLeftWidth: 4 }]}>
                 <View style={styles.transactionLeft}>
-                  <Ionicons name="time-outline" size={18} color="#F59E0B" />
+                  <Ionicons name="time-outline" size={18} color={status.warning} />
                   <View style={{ marginLeft: 10 }}>
                     <Text style={[styles.transactionDesc, { color: colors.primary }]}>{payment.description}</Text>
                     <Text style={[styles.transactionDate, { color: colors.mutedForeground }]}>{payment.date}</Text>
                   </View>
                 </View>
-                <Text style={[styles.transactionAmount, { color: "#F59E0B" }]}>{"\u20AC"}{payment.amount}</Text>
+                <Text style={[styles.transactionAmount, { color: status.warning }]}>{"\u20AC"}{payment.amount}</Text>
               </View>
             ))}
           </>
@@ -574,14 +575,14 @@ export default function WalletScreen() {
         {paid.map(payment => (
           <View key={payment.id} style={[styles.transactionCard, { backgroundColor: colors.card }]}>
             <View style={styles.transactionLeft}>
-              <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+              <Ionicons name="checkmark-circle" size={18} color={status.success} />
               <View style={{ marginLeft: 10 }}>
                 <Text style={[styles.transactionDesc, { color: colors.primary }]}>{payment.description}</Text>
                 <Text style={[styles.transactionDate, { color: colors.mutedForeground }]}>{payment.date}</Text>
               </View>
             </View>
             <View style={styles.transactionRight}>
-              <Text style={[styles.transactionAmount, { color: "#10B981" }]}>{"\u20AC"}{payment.amount}</Text>
+              <Text style={[styles.transactionAmount, { color: status.success }]}>{"\u20AC"}{payment.amount}</Text>
               <Pressable style={styles.receiptBtn} onPress={() => handleDownloadReceipt(payment)}>
                 <Ionicons name="download-outline" size={16} color={colors.primary} />
               </Pressable>
@@ -618,9 +619,9 @@ export default function WalletScreen() {
                   <Ionicons
                     name="location"
                     size={14}
-                    color={detectedFormat === "au" ? colors.primary : "#D97706"}
+                    color={detectedFormat === "au" ? colors.primary : status.warningDark}
                   />
-                  <Text style={[styles.bankGpsText, { color: detectedFormat === "au" ? colors.primary : "#D97706" }]}>
+                  <Text style={[styles.bankGpsText, { color: detectedFormat === "au" ? colors.primary : status.warningDark }]}>
                     {detectedFormat === "au" ? "Australia detected — using BSB + Account Number format"
                       : "IBAN format — select your region below"}
                   </Text>
@@ -694,7 +695,7 @@ export default function WalletScreen() {
               )}
 
               <View style={[styles.secureRow, { backgroundColor: colors.muted, marginTop: 16 }]}>
-                <Ionicons name="lock-closed" size={14} color="#10B981" />
+                <Ionicons name="lock-closed" size={14} color={status.success} />
                 <Text style={[styles.secureText, { color: colors.mutedForeground }]}>Stored only on your device · Never transmitted to third parties</Text>
               </View>
 
@@ -725,7 +726,7 @@ export default function WalletScreen() {
             {cancelStep === 1 ? (
               <>
                 <View style={[styles.warningCircle, { backgroundColor: "#FEF3C7" }]}>
-                  <Ionicons name="warning" size={32} color="#F59E0B" />
+                  <Ionicons name="warning" size={32} color={status.warning} />
                 </View>
                 <Text style={[styles.modalTitle, { color: colors.primary, textAlign: "center" }]}>Cancel Renewal?</Text>
                 <Text style={[styles.modalDesc, { color: colors.mutedForeground, textAlign: "center" }]}>
@@ -737,7 +738,7 @@ export default function WalletScreen() {
                     <Text style={[styles.modalBtnText, { color: colors.primary }]}>Back</Text>
                   </Pressable>
                   <Pressable
-                    style={[styles.modalBtn, { flex: 1, backgroundColor: "#EF4444" }]}
+                    style={[styles.modalBtn, { flex: 1, backgroundColor: status.destructive }]}
                     onPress={() => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); setCancelStep(2); }}
                   >
                     <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Yes, Cancel</Text>
@@ -747,7 +748,7 @@ export default function WalletScreen() {
             ) : (
               <>
                 <View style={[styles.warningCircle, { backgroundColor: "#FEE2E2" }]}>
-                  <Ionicons name="heart-dislike-outline" size={32} color="#EF4444" />
+                  <Ionicons name="heart-dislike-outline" size={32} color={status.destructive} />
                 </View>
                 <Text style={[styles.modalTitle, { color: colors.primary, textAlign: "center" }]}>Final Confirmation</Text>
                 <Text style={[styles.modalDesc, { color: colors.mutedForeground, textAlign: "center", marginBottom: 16 }]}>
@@ -767,7 +768,7 @@ export default function WalletScreen() {
                   <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: colors.muted }]} onPress={() => setCancelStep(1)}>
                     <Text style={[styles.modalBtnText, { color: colors.primary }]}>Back</Text>
                   </Pressable>
-                  <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: "#DC2626" }]} onPress={handleFinalCancel}>
+                  <Pressable style={[styles.modalBtn, { flex: 1, backgroundColor: status.destructiveDark }]} onPress={handleFinalCancel}>
                     <Text style={[styles.modalBtnText, { color: "#FFF" }]}>Confirm Cancellation</Text>
                   </Pressable>
                 </View>
@@ -812,7 +813,7 @@ const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   subRenewal:   { fontSize: 12, marginTop: 2 },
   subPrice:     { fontSize: 14, fontWeight: "700", marginTop: 4 },
   cancelRenewalBtn:  { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 4, borderWidth: 1, borderRadius: 10, paddingHorizontal: 10, paddingVertical: 8, alignSelf: "center" },
-  cancelRenewalText: { color: "#EF4444", fontSize: 12, fontWeight: "600" },
+  cancelRenewalText: { color: status.destructive, fontSize: 12, fontWeight: "600" },
 
   emptyCard: { borderRadius: 14, padding: 24, alignItems: "center", gap: 8, marginBottom: 10 },
   emptyText: { fontSize: 14 },

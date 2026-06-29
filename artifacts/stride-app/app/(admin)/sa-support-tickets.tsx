@@ -111,7 +111,7 @@ export default function SaSupportTickets() {
       <ScreenHeader
         title="Support Tickets"
         subtitle={openCount > 0 ? `${openCount} open` : "All clear"}
-        onBack={() => router.back()}
+        onBack={() => router.navigate("/(admin)/operations-hub" as never)}
       />
 
       {/* Filter tabs */}

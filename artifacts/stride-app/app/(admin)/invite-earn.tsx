@@ -104,7 +104,7 @@ export default function InviteEarnScreen() {
 
   return (
     <View style={s.container}>
-      <ScreenHeader title="Invite & Earn" onBack={() => router.back()} />
+      <ScreenHeader title="Invite & Earn" onBack={() => router.navigate("/(admin)/finance-hub" as never)} />
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 60 }]}
         showsVerticalScrollIndicator={false}

@@ -245,7 +245,7 @@ export default function SAOrgDetailScreen() {
   if (loading) {
     return (
       <View style={s.container}>
-        <ScreenHeader title={params.name ?? "Association"} onBack={() => router.back()} />
+        <ScreenHeader title={params.name ?? "Association"} onBack={() => router.navigate("/(super_admin)/sa-plan-orgs" as never)} />
         <View style={s.center}><ActivityIndicator size="large" color={NAVY} /></View>
       </View>
     );
@@ -253,7 +253,7 @@ export default function SAOrgDetailScreen() {
 
   return (
     <View style={s.container}>
-      <ScreenHeader title={org?.name ?? params.name ?? "Association"} subtitle={`ID #${orgId}`} onBack={() => router.back()} />
+      <ScreenHeader title={org?.name ?? params.name ?? "Association"} subtitle={`ID #${orgId}`} onBack={() => router.navigate("/(super_admin)/sa-plan-orgs" as never)} />
 
       <ScrollView
         contentContainerStyle={[s.scroll, { paddingBottom: insets.bottom + 40 }]}

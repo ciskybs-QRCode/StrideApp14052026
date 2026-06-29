@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
+import { status } from "@/constants/colors";
 import { api } from "@/lib/api";
 import type { ApiOrg } from "@/lib/api";
 
@@ -66,7 +67,7 @@ const PROTOCOLS: Protocol[] = [
     id: "fire",
     title: "Fire Protocol",
     icon: "flame",
-    color: "#EF4444",
+    color: status.destructive,
     steps: [
       { icon: "alarm-outline",      text: "Activate the fire alarm immediately." },
       { icon: "walk-outline",       text: "Evacuate the room in an orderly fashion — no running." },
@@ -79,7 +80,7 @@ const PROTOCOLS: Protocol[] = [
     id: "medical",
     title: "Medical Emergency",
     icon: "medkit",
-    color: "#F59E0B",
+    color: status.warning,
     steps: [
       { icon: "shield-outline",           letter: "D", text: "DANGER — Ensure the area is safe for you, bystanders, and the patient. Do not put yourself at risk." },
       { icon: "hand-left-outline",        letter: "R", text: "RESPONSE — Call their name and squeeze their shoulders gently. Check if they respond." },
@@ -192,13 +193,13 @@ export default function OperatorSupport() {
       >
         <View style={[styles.emergencyCard, { backgroundColor: "#FEF2F2" }]}>
           <View style={styles.emergencyHeader}>
-            <Ionicons name="warning" size={20} color="#EF4444" />
-            <Text style={[styles.emergencyTitle, { color: "#EF4444" }]}>Emergency Numbers</Text>
+            <Ionicons name="warning" size={20} color={status.destructive} />
+            <Text style={[styles.emergencyTitle, { color: status.destructive }]}>Emergency Numbers</Text>
           </View>
           {org ? (
             <View style={styles.emergencyRow}>
               <Pressable
-                style={[styles.emergencyMainBtn, { backgroundColor: "#EF4444" }]}
+                style={[styles.emergencyMainBtn, { backgroundColor: status.destructive }]}
                 onPress={() => Linking.openURL(`tel:${emergency.number}`)}
               >
                 <Ionicons name="call" size={22} color="#FFF" />
@@ -206,7 +207,7 @@ export default function OperatorSupport() {
                 <Text style={styles.emergencyMainCountry}>{emergency.country}</Text>
               </Pressable>
               <Pressable
-                style={[styles.emergencySmallBtn, { backgroundColor: "#F59E0B" }]}
+                style={[styles.emergencySmallBtn, { backgroundColor: status.warning }]}
                 onPress={() => Linking.openURL(`tel:${adminPhone}`)}
               >
                 <Ionicons name="call" size={16} color="#FFF" />
@@ -216,17 +217,17 @@ export default function OperatorSupport() {
             </View>
           ) : (
             <View style={styles.emergencyRow}>
-              <Pressable style={[styles.emergencyMainBtn, { backgroundColor: "#EF4444" }]} onPress={() => Linking.openURL("tel:000")}>
+              <Pressable style={[styles.emergencyMainBtn, { backgroundColor: status.destructive }]} onPress={() => Linking.openURL("tel:000")}>
                 <Ionicons name="call" size={22} color="#FFF" />
                 <Text style={styles.emergencyMainNumber}>000</Text>
                 <Text style={styles.emergencyMainCountry}>Emergency</Text>
               </Pressable>
-              <Pressable style={[styles.emergencySmallBtn, { backgroundColor: "#EF4444" }]} onPress={() => Linking.openURL("tel:995")}>
+              <Pressable style={[styles.emergencySmallBtn, { backgroundColor: status.destructive }]} onPress={() => Linking.openURL("tel:995")}>
                 <Ionicons name="call" size={16} color="#FFF" />
                 <Text style={styles.emergencySmallText}>995</Text>
                 <Text style={styles.emergencySmallSub}>Singapore</Text>
               </Pressable>
-              <Pressable style={[styles.emergencySmallBtn, { backgroundColor: "#F59E0B" }]} onPress={() => Linking.openURL(`tel:${adminPhone}`)}>
+              <Pressable style={[styles.emergencySmallBtn, { backgroundColor: status.warning }]} onPress={() => Linking.openURL(`tel:${adminPhone}`)}>
                 <Ionicons name="call" size={16} color="#FFF" />
                 <Text style={styles.emergencySmallText}>Admin</Text>
                 <Text style={styles.emergencySmallSub}>Office</Text>
@@ -265,7 +266,7 @@ export default function OperatorSupport() {
               </View>
               {completedProtocols.has(protocol.id) && (
                 <View style={styles.completedBadge}>
-                  <Ionicons name="checkmark-circle" size={18} color="#10B981" />
+                  <Ionicons name="checkmark-circle" size={18} color={status.success} />
                 </View>
               )}
               <Ionicons name="chevron-forward" size={16} color={colors.mutedForeground} />
@@ -284,7 +285,7 @@ export default function OperatorSupport() {
         <Text style={[styles.sectionTitle, { color: colors.primary }]}>Contact Administration</Text>
         <View style={[styles.contactCard, { backgroundColor: colors.card }]}>
           {[
-            { icon: "call" as const,          label: "Call Admin",  color: "#10B981", onPress: () => Linking.openURL(`tel:${adminPhone}`) },
+            { icon: "call" as const,          label: "Call Admin",  color: status.success, onPress: () => Linking.openURL(`tel:${adminPhone}`) },
             { icon: "logo-whatsapp" as const,  label: "WhatsApp",   color: "#25D366", onPress: () => Linking.openURL(`https://wa.me/${adminPhone.replace(/[^0-9]/g, "")}`) },
             { icon: "mail" as const,           label: "Email",      color: colors.primary, onPress: () => Linking.openURL(`mailto:${adminEmail}`) },
           ].map(item => (
@@ -370,9 +371,9 @@ export default function OperatorSupport() {
               <>
                 <View style={styles.completionBox}>
                   <View style={[styles.completionIcon, { backgroundColor: "#D1FAE5" }]}>
-                    <Ionicons name="checkmark-circle" size={48} color="#10B981" />
+                    <Ionicons name="checkmark-circle" size={48} color={status.success} />
                   </View>
-                  <Text style={[styles.completionTitle, { color: "#10B981" }]}>Protocol Complete</Text>
+                  <Text style={[styles.completionTitle, { color: status.success }]}>Protocol Complete</Text>
                   <Text style={[styles.completionSub, { color: colors.mutedForeground }]}>
                     All {wizardProtocol.steps.length} steps for "{wizardProtocol.title}" have been logged to Supabase with your operator ID and timestamps.
                   </Text>

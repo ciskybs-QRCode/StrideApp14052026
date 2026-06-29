@@ -154,7 +154,7 @@ function MetricGrid({ metrics }: { metrics: PlatformMetrics | null }) {
 
   const topItems: MetricItem[] = [
     { key: "schools", icon: "business",         label: "TOTAL ORGS",     value: metrics.totalOrgs,    accent: colors.primary, bg: "#EFF6FF" },
-    { key: "active",  icon: "checkmark-circle",  label: "ACTIVE SUBS",   value: metrics.activeCount,  accent: "#D4AF37", bg: "#FFFBEB" },
+    { key: "active",  icon: "checkmark-circle",  label: "ACTIVE SUBS",   value: metrics.activeCount,  accent: "#FBBF24", bg: "#FFFBEB" },
     { key: "members", icon: "people",            label: "GLOBAL MEMBERS", value: metrics.totalMembers, accent: colors.primary, bg: "#EFF6FF" },
     { key: "health",  icon: "pulse-outline",     label: "HEALTH",         value: health,               accent: "#059669", bg: "#ECFDF5" },
   ];
@@ -349,13 +349,13 @@ export default function SuperAdminDashboard() {
             accessibilityRole="button"
           >
             <View style={nc2.iconBox}>
-              <Ionicons name={MY_ASSOC_CARD.icon} size={22} color="#D4AF37" />
+              <Ionicons name={MY_ASSOC_CARD.icon} size={22} color="#FBBF24" />
             </View>
             <View style={nc2.textBlock}>
               <Text style={nc2.title}>{MY_ASSOC_CARD.title}</Text>
               <Text style={nc2.subtitle}>{MY_ASSOC_CARD.subtitle}</Text>
             </View>
-            <Ionicons name="chevron-forward" size={17} color="#D4AF37" />
+            <Ionicons name="chevron-forward" size={17} color="#FBBF24" />
           </Pressable>
 
           {/* Nav cards — divider */}

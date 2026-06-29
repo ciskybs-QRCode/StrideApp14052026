@@ -154,7 +154,7 @@ export default function DocConsentScreen() {
   if (alreadySubmitted === null) {
     return (
       <View style={[s.container, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="Media Release" onBack={() => router.back()} />
+        <ScreenHeader title="Media Release" onBack={() => router.navigate("/(parent)/documents" as never)} />
       </View>
     );
   }
@@ -164,7 +164,7 @@ export default function DocConsentScreen() {
     const meta    = OPTION_LABELS[current] ?? OPTION_LABELS.none;
     return (
       <View style={[s.container, { backgroundColor: colors.background }]}>
-        <ScreenHeader title="Media Release" onBack={() => router.back()} />
+        <ScreenHeader title="Media Release" onBack={() => router.navigate("/(parent)/documents" as never)} />
         <ScrollView
           style={{ flex: 1 }}
           contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 40, gap: 16 }}

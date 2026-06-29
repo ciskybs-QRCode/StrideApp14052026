@@ -202,7 +202,7 @@ export default function OperatorWorkspaceScreen() {
       desc: "Emergency SOS, staff protocols and safety procedures",
       iconBg: (colors.primary + "12"),
       iconColor: colors.primary,
-      chevronColor: "#D4AF37",
+      chevronColor: "#FBBF24",
       onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); router.push("/(operator)/support" as never); },
     },
   ];

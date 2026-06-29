@@ -1,7 +1,7 @@
 /**
  * SharedButton — Standardised primary action button.
  *
- * Defaults: Navy (colors.primary) background, Gold (#D4AF37) text/icon.
+ * Defaults: Navy (colors.primary) background, Gold (#FBBF24) text/icon.
  * Colors are overridden by BrandingContext (via useColors) if the org
  * has set custom branding — the primary/secondary cascade is preserved.
  *
