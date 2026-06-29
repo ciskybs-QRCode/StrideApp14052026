@@ -1,0 +1,16 @@
+#!/usr/bin/env bash
+# Auto-sync the GitHub mirror after every commit (incl. Replit checkpoint
+# commits). Non-fatal: always exits 0. Synchronous so the mirror is current
+# before any post-commit validation runs.
+LOG=.git/mirror-sync.log
+branch=$(git rev-parse --abbrev-ref HEAD 2>/dev/null)
+[ "$branch" = "main" ] || exit 0
+if [ -z "$GITHUB_PAT" ]; then
+  echo "$(date -u) skip: GITHUB_PAT not set" >> "$LOG"
+  exit 0
+fi
+AUTH=$(printf "x-access-token:%s" "$GITHUB_PAT" | base64 | tr -d '\n')
+timeout 90 git -c http.extraheader="Authorization: Basic $AUTH" \
+  push https://github.com/ciskybs-QRCode/StrideApp14052026.git HEAD:main >> "$LOG" 2>&1
+echo "$(date -u) push HEAD=$(git rev-parse HEAD) exit=$?" >> "$LOG"
+exit 0
