@@ -312,7 +312,7 @@ async function loadFamilyDiscountConfig(orgId: number): Promise<FamilyDiscountCo
 }
 
 // Mutates lineItems (discount/finalPrice). Returns total family discount in euros.
-async function applyFamilyDiscount(orgId: number, lineItems: CheckoutLineItem[]): Promise<number> {
+async function applyFamilyDiscount(orgId: number, userId: string, lineItems: CheckoutLineItem[]): Promise<number> {
   const cfg = await loadFamilyDiscountConfig(orgId);
   if (!cfg.enabled) return 0;
 
@@ -321,11 +321,32 @@ async function applyFamilyDiscount(orgId: number, lineItems: CheckoutLineItem[])
     ? cfg
     : { ...FAMILY_DISCOUNT_DEFAULT, enabled: true, percent: cfg.percent ?? FAMILY_DISCOUNT_DEFAULT.percent };
 
-  // Eligible = course enrolments with a payable amount. Dependant identity is
-  // childId when present, else the participant name (the cart sends a name, not
-  // an id, for course enrolments).
-  const depKey = (li: CheckoutLineItem) => String(li.childId ?? li.participantName ?? "").trim();
-  let eligible = lineItems.filter(li => li.kind === "course" && li.finalPrice > 0 && depKey(li) !== "");
+  // Server-authoritative dependant identity. We do NOT trust the client-supplied
+  // participant name (or an arbitrary childId) for grouping: only childIds that
+  // actually belong to this buyer (members.user_id = buyer) count as distinct
+  // dependants. Anything else — a missing childId (e.g. the account holder) or a
+  // childId not owned by the buyer (a crafted request) — collapses into a single
+  // account-holder group, so a tampered cart can never fabricate extra dependants
+  // to inflate the discount.
+  const ownedChildIds = new Set<string>();
+  const numericUser = parseInt(String(userId), 10);
+  if (Number.isFinite(numericUser)) {
+    const { data: memberRows } = await supabase
+      .from("members")
+      .select("id")
+      .eq("user_id", numericUser);
+    for (const r of (memberRows ?? []) as Array<{ id: number | string }>) {
+      ownedChildIds.add(String(r.id));
+    }
+  }
+  const selfKey = `self:${userId}`;
+  const depKey = (li: CheckoutLineItem) => {
+    const cid = String(li.childId ?? "").trim();
+    return cid && ownedChildIds.has(cid) ? `child:${cid}` : selfKey;
+  };
+
+  // Eligible = course enrolments with a payable amount.
+  let eligible = lineItems.filter(li => li.kind === "course" && li.finalPrice > 0);
 
   if (eff.scopeType === "courses" && eff.scopeCourseIds.length > 0) {
     const set = new Set(eff.scopeCourseIds.map(String));
@@ -487,7 +508,7 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
     );
 
     // Family/sibling discount (server-authoritative, configurable per org).
-    const familyDiscount = await applyFamilyDiscount(orgId, lineItems);
+    const familyDiscount = await applyFamilyDiscount(orgId, String(user.id), lineItems);
 
     const discountApplied = lineItems.reduce((s, i) => s + i.discount,   0);
     const calculatedTotal = lineItems.reduce((s, i) => s + i.finalPrice, 0);
@@ -1661,7 +1682,7 @@ router.post("/checkout/preview", requireAuth, async (req, res) => {
 
     const subtotal       = lineItems.reduce((s, i) => s + i.unitPrice, 0);
     const promoDiscount  = lineItems.reduce((s, i) => s + i.discount,  0);
-    const familyDiscount = await applyFamilyDiscount(orgId, lineItems);
+    const familyDiscount = await applyFamilyDiscount(orgId, String(user.id), lineItems);
     const total          = lineItems.reduce((s, i) => s + i.finalPrice, 0);
 
     res.json({ lineItems, subtotal, promoDiscount, familyDiscount, total, currency });

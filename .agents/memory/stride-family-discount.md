@@ -13,9 +13,11 @@ Engine lives in `checkout.ts` (`applyFamilyDiscount`). Server-authoritative: cou
 
 **Eligibility = line items tagged `kind: "course"`.** `CheckoutLineItem.kind` distinguishes course/private (`"course"`, discountable) from marketplace/event/membership (`"other"`, never discountable). When adding a new line-item branch in `resolveAllLineItems`, you MUST set `kind` or it silently becomes ineligible/untyped.
 
-**Dependant grouping key = `childId ?? participantName`.** The cart does NOT send `childId` — it only carries `participantName`. So grouping falls back to the participant's name.
+**Dependant grouping is server-authoritative (hardened).** `applyFamilyDiscount(orgId, userId, lineItems)` queries `members WHERE user_id = buyer` (Supabase, NOT pool) to build the set of childIds the buyer actually owns. depKey = `child:<id>` only when `li.childId` is owned, else `self:<userId>`. So a missing childId (account holder) OR an unowned/crafted childId all collapse into ONE account-holder group — a tampered cart can never fabricate extra dependants to inflate the discount. The frontend (checkout.tsx) already forwards childId via `children.find(c => c.name === participantName)?.id` for both web-session and batch groups.
 
-**Known limitation (trust model):** dependant identity comes from client-supplied `participantName`/`childId` with no server-side ownership validation. A crafted API call could split/merge dependants to alter the discount. This matches the *existing* checkout trust model (participantName + clientPrice fallback are trusted throughout). A proper fix needs childId plumbed through the whole cart→checkout flow (out of FASE 1 scope). Bounded by the org-configured percent/cap.
+**Why ownership query uses `supabase` not `pool`:** `members` is a Supabase table; the rest of the engine's config (`org_family_discount_config`, `course_extras`) is pg/pool. Don't mix them up.
+
+**Remaining gap (other phases):** `/checkout/batch-session` (multi-org split checkout) does NOT apply the family discount at all — only `/checkout/web-session` and `/checkout/preview` do.
 
 **Why `cfg.percent ?? default` not `||`:** in simple mode a configured `0%` must be respected; `||` turns 0 into the default.
 
