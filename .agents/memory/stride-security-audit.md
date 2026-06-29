@@ -24,6 +24,6 @@ description: Core security invariants for the Stride API and the recurring traps
 
 # Known remaining items (need USER action / future work)
 
-- **CRITICAL — user must still ROTATE the service_role key in the Supabase dashboard.** The old key is in git HISTORY (past commits of `.replit`), so removal alone is not enough — it must be regenerated, then the `SUPABASE_SERVICE_ROLE_KEY` secret updated and the app republished. Only the user can do this.
+- **ROTATED (2026-06-29):** the leaked legacy service_role JWT was replaced with a NEW Supabase secret key (`sb_secret_...` format) stored in `SUPABASE_SERVICE_ROLE_KEY`. supabase-js v2.105 accepts the new key format unchanged. Verified live (users count query OK). Final step is on the user: in Supabase API Keys → "Legacy anon, service_role API keys" → **Disable JWT-based API keys** to fully invalidate the old leaked key (safe because the app no longer uses any legacy key; mobile anon key is unset).
 - Dependency audit: 0 critical / ~30 high / ~21 moderate (mostly transitive build/Expo deps). Deliberately NOT mass-bumped — blind upgrades across the large Expo app risk breaking the build. Do incrementally with testing.
 - CSV exports (expenses.ts, schedule-management.ts) — consider CSV formula-injection guard (prefix leading =,+,-,@ with '). Not done; low risk.
