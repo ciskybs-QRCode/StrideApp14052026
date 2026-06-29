@@ -107,13 +107,10 @@ export default function PaymentBatch() {
   return (
     <div className="min-h-screen bg-[#0A1128] text-white flex flex-col items-center justify-center px-6 py-12">
       {/* Logo + brand */}
-      <div className="mb-8 flex items-center gap-2.5">
-        <div className="w-9 h-9 bg-amber-400/15 rounded-xl flex items-center justify-center">
-          <svg height="20" width="20" viewBox="0 0 36 36" fill="none">
-            <path d="M9 18h18M18 10l8 8-8 8" stroke="#D4AF37" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round" />
-          </svg>
+      <div className="mb-8 flex items-center justify-center">
+        <div className="bg-white rounded-2xl px-4 py-2.5 inline-flex items-center justify-center shadow-lg">
+          <img src="/stride-logo.png" alt="Stride" style={{ height: 36, width: "auto", display: "block" }} />
         </div>
-        <span className="text-lg font-bold text-white/90 tracking-wide">Stride</span>
       </div>
 
       {/* Progress bar */}

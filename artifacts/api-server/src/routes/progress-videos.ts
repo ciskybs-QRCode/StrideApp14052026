@@ -1,6 +1,5 @@
 import { Router, type Request } from "express";
 import multer from "multer";
-import { Expo } from "expo-server-sdk";
 import { supabase } from "../lib/supabase.js";
 import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
@@ -8,7 +7,6 @@ import { parseId } from "../lib/parseId.js";
 
 const router = Router();
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 100 * 1024 * 1024 } });
-const expo = new Expo();
 type AuthReq = Request & { user: TokenPayload };
 
 interface ProgressVideoRow {
@@ -129,6 +127,7 @@ router.post(
       const notifTitle = milestone ? `🏆 New milestone for ${memberName}` : `🎬 New progress video for ${memberName}`;
       const notifBody  = title || "Tap to watch the latest clip in the Progress Diary.";
 
+      // In-app notification ONLY. Push is reserved for emergencies (no expo push here).
       const { error: notifError } = await supabase.from("private_notifications").insert({
         organization_id: orgId,
         recipient_id: parentIdNum,
@@ -138,29 +137,6 @@ router.post(
         read: false,
       });
       if (notifError) req.log.error({ err: notifError }, "progress video parent notification insert failed");
-
-      void (async () => {
-        try {
-          const { rows: tokenRows } = await pool.query<{ token: string }>(
-            `SELECT token FROM device_push_tokens WHERE org_id = $1 AND user_id = $2`,
-            [orgId, String(parentIdNum)],
-          );
-          if (tokenRows.length > 0) {
-            const pushMessages = tokenRows
-              .filter(r => Expo.isExpoPushToken(r.token))
-              .map(r => ({
-                to: r.token,
-                title: notifTitle,
-                body: notifBody,
-                sound: "default" as const,
-                data: { type: "progress_video", memberId: String(memberId) },
-                badge: 1,
-              }));
-            const chunks = expo.chunkPushNotifications(pushMessages);
-            await Promise.all(chunks.map(c => expo.sendPushNotificationsAsync(c).catch(() => {})));
-          }
-        } catch { /* non-fatal */ }
-      })();
     }
 
     res.status(201).json(row);

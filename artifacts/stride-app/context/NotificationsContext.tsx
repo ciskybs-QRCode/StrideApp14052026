@@ -32,6 +32,7 @@ interface NotificationsCtx {
   markRead: (id: number) => Promise<void>;
   markOpen: (id: number) => Promise<void>;
   markAllRead: () => Promise<void>;
+  dismiss: (id: number) => Promise<void>;
 }
 
 // ── Context ───────────────────────────────────────────────────────────────────
@@ -45,6 +46,7 @@ const Ctx = createContext<NotificationsCtx>({
   markRead: async () => {},
   markOpen: async () => {},
   markAllRead: async () => {},
+  dismiss: async () => {},
 });
 
 // ── Provider ──────────────────────────────────────────────────────────────────
@@ -101,6 +103,17 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
     } catch { }
   }, []);
 
+  const dismiss = useCallback(async (id: number) => {
+    // Optimistically remove from the list, then persist.
+    setNotifications(prev => prev.filter(n => n.id !== id));
+    try {
+      await api.dismissNotification(id);
+    } catch {
+      // On failure, re-sync so the item reappears rather than silently vanishing.
+      fetch();
+    }
+  }, [fetch]);
+
   // Initial fetch + polling
   useEffect(() => {
     if (!user) { setNotifications([]); setDirectUnreadCount(0); return; }
@@ -120,7 +133,7 @@ export function NotificationsProvider({ children }: { children: React.ReactNode 
   }, [unreadCount]);
 
   return (
-    <Ctx.Provider value={{ notifications, unreadCount, unreadDirectCount: directUnreadCount, loading, refresh, markRead, markOpen, markAllRead }}>
+    <Ctx.Provider value={{ notifications, unreadCount, unreadDirectCount: directUnreadCount, loading, refresh, markRead, markOpen, markAllRead, dismiss }}>
       {children}
     </Ctx.Provider>
   );

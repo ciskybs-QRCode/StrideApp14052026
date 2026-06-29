@@ -328,6 +328,42 @@ export default function PricingPage() {
           })}
         </div>
 
+        {/* ── Dependant safety highlight ────────────────────────────────────── */}
+        <div className="mb-16 rounded-2xl overflow-hidden border-2 border-[#1E3A8A] bg-[#1E3A8A]">
+          <div className="px-6 sm:px-10 py-9">
+            <div className="inline-flex items-center gap-2 bg-[#FBBF24] rounded-full px-3.5 py-1.5 mb-4">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#0A192F" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              </svg>
+              <span className="text-[#0A192F] text-[11px] font-black uppercase tracking-wider">Dependant Safety First</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-black text-white mb-2.5 max-w-2xl">
+              Every child protected — on <span className="text-[#FBBF24]">every plan</span>, with no limits.
+            </h2>
+            <p className="text-blue-200/80 text-sm leading-relaxed max-w-2xl mb-7">
+              A child's safety is never a premium add-on. Our full guardian and emergency toolkit is included from the very first tier —
+              and children, dependants and pick-up contacts are <span className="text-white font-bold">always free and unlimited</span>,
+              no matter how many you add.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                { t: "Smart Pick-Up", d: "Only authorised guardians can collect a child — verified by secure QR at check-out." },
+                { t: "QR Guardian", d: "Single-use codes and time windows for one-off pick-ups, so access expires automatically." },
+                { t: "Emergency SOS", d: "One tap broadcasts a crisis alert to every member and operator in seconds." },
+                { t: "Private by design", d: "Dependant data is encrypted, GDPR-compliant, and never sold or shared. Ever." },
+              ].map(f => (
+                <div key={f.t} className="bg-white/8 border border-white/10 rounded-xl p-4">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="inline-flex"><IcoCheck gold /></span>
+                    <span className="text-white font-bold text-sm">{f.t}</span>
+                  </div>
+                  <p className="text-blue-200/70 text-xs leading-relaxed">{f.d}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
         {/* ── Full comparison table ─────────────────────────────────────────── */}
         <div className="mb-16">
           <h2 className="text-2xl font-black text-slate-900 text-center mb-2">Full Feature Comparison</h2>

@@ -6,6 +6,20 @@ import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
 
+// Zero-trust: confirm a notification actually belongs to this recipient before
+// allowing any state mutation (read/open/dismiss/skip). Prevents IDOR / forged
+// receipt records under another notification's id.
+async function ownsNotification(notifId: number, recipientId: number): Promise<boolean> {
+  if (Number.isNaN(notifId)) return false;
+  const { data } = await supabase
+    .from("private_notifications")
+    .select("id")
+    .eq("id", notifId)
+    .eq("recipient_id", recipientId)
+    .maybeSingle();
+  return !!data;
+}
+
 // ── GET /private-notifications — user's own notifications, with pg read state ──
 router.get("/private-notifications", requireAuth, async (req, res) => {
   const user = (req as AuthReq).user;
@@ -29,24 +43,27 @@ router.get("/private-notifications", requireAuth, async (req, res) => {
   // Merge read state from pg pool (source of truth)
   const ids = rows.map((r: { id: number }) => r.id);
   const { rows: receipts } = await pool.query(
-    `SELECT notification_id, read_at, opened_at
+    `SELECT notification_id, read_at, opened_at, dismissed_at
      FROM notification_read_receipts
      WHERE recipient_id = $1 AND notification_id = ANY($2)`,
     [recipientId, ids],
-  ).catch(() => ({ rows: [] as { notification_id: number; read_at: string; opened_at: string | null }[] }));
+  ).catch(() => ({ rows: [] as { notification_id: number; read_at: string; opened_at: string | null; dismissed_at: string | null }[] }));
 
-  const readMap = new Map<number, { read_at: string; opened_at: string | null }>();
+  const readMap = new Map<number, { read_at: string; opened_at: string | null; dismissed_at: string | null }>();
   for (const r of receipts) readMap.set(r.notification_id, r);
 
-  const merged = rows.map((n: Record<string, unknown>) => {
-    const receipt = readMap.get(n["id"] as number);
-    return {
-      ...n,
-      read:     !!receipt,
-      read_at:  receipt?.read_at ?? null,
-      opened_at: receipt?.opened_at ?? null,
-    };
-  });
+  const merged = rows
+    // Hide notifications the user has dismissed (closed)
+    .filter((n: Record<string, unknown>) => !readMap.get(n["id"] as number)?.dismissed_at)
+    .map((n: Record<string, unknown>) => {
+      const receipt = readMap.get(n["id"] as number);
+      return {
+        ...n,
+        read:     !!receipt?.read_at,
+        read_at:  receipt?.read_at ?? null,
+        opened_at: receipt?.opened_at ?? null,
+      };
+    });
 
   res.json(merged);
 });
@@ -58,6 +75,7 @@ router.post("/private-notifications/:id/read", requireAuth, async (req, res) => 
   const recipientId = parseInt(String(user.id));
 
   if (Number.isNaN(notifId)) { res.status(400).json({ error: "Invalid id" }); return; }
+  if (!(await ownsNotification(notifId, recipientId))) { res.status(404).json({ error: "Not found" }); return; }
 
   await pool.query(
     `INSERT INTO notification_read_receipts (notification_id, recipient_id, organization_id, read_at)
@@ -87,6 +105,8 @@ router.post("/private-notifications/:id/open", requireAuth, async (req, res) => 
   const notifId     = parseInt(String(req.params["id"]));
   const recipientId = parseInt(String(user.id));
 
+  if (!(await ownsNotification(notifId, recipientId))) { res.status(404).json({ error: "Not found" }); return; }
+
   await pool.query(
     `INSERT INTO notification_read_receipts (notification_id, recipient_id, organization_id, read_at, opened_at)
      VALUES ($1, $2, $3, NOW(), NOW())
@@ -100,21 +120,30 @@ router.post("/private-notifications/:id/open", requireAuth, async (req, res) => 
 });
 
 // ── POST /private-notifications/:id/dismiss ───────────────────────────────────
+// User closes a notification: it is hidden from their list (and counts as read).
 router.post("/private-notifications/:id/dismiss", requireAuth, async (req, res) => {
   const user        = (req as AuthReq).user;
   const notifId     = parseInt(String(req.params["id"]));
   const recipientId = parseInt(String(user.id));
 
+  if (Number.isNaN(notifId)) { res.status(400).json({ error: "Invalid id" }); return; }
+  if (!(await ownsNotification(notifId, recipientId))) { res.status(404).json({ error: "Not found" }); return; }
+
+  // Mark as read + dismissed in the source-of-truth receipts table → GET hides it.
+  await pool.query(
+    `INSERT INTO notification_read_receipts (notification_id, recipient_id, organization_id, read_at, dismissed_at)
+     VALUES ($1, $2, $3, NOW(), NOW())
+     ON CONFLICT (notification_id, recipient_id)
+     DO UPDATE SET read_at      = COALESCE(notification_read_receipts.read_at, NOW()),
+                   dismissed_at = COALESCE(notification_read_receipts.dismissed_at, NOW())`,
+    [notifId, recipientId, user.orgId ?? 0],
+  ).catch(() => {});
+
+  // Stamp audit logs if rows exist
   await pool.query(
     `UPDATE notification_delivery_log
      SET dismissed_at = COALESCE(dismissed_at, NOW())
-     WHERE notification_id = $1 AND recipient_id = $2 AND read_at IS NULL`,
-    [notifId, recipientId],
-  ).catch(() => {});
-  await pool.query(
-    `UPDATE message_read_log
-     SET skipped_at = COALESCE(skipped_at, NOW())
-     WHERE notification_id = $1 AND recipient_id = $2 AND skipped_at IS NULL AND read_at IS NULL`,
+     WHERE notification_id = $1 AND recipient_id = $2`,
     [notifId, recipientId],
   ).catch(() => {});
 
@@ -126,6 +155,8 @@ router.post("/private-notifications/:id/skip", requireAuth, async (req, res) => 
   const user        = (req as AuthReq).user;
   const notifId     = parseInt(String(req.params["id"]));
   const recipientId = parseInt(String(user.id));
+
+  if (!(await ownsNotification(notifId, recipientId))) { res.status(404).json({ error: "Not found" }); return; }
 
   await pool.query(
     `UPDATE message_read_log SET skipped_at = COALESCE(skipped_at, NOW())

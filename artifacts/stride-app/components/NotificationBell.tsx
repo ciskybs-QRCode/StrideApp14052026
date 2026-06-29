@@ -53,10 +53,11 @@ function notifIcon(type: string) {
 
 // ── NotifRow ──────────────────────────────────────────────────────────────────
 
-function NotifRow({ item, onRead, onOpen }: {
+function NotifRow({ item, onRead, onOpen, onDismiss }: {
   item: PrivateNotification;
   onRead: (id: number) => void;
   onOpen: (id: number) => void;
+  onDismiss: (id: number) => void;
 }) {
   const colors      = useColors();
   const icon        = notifIcon(item.type);
@@ -71,6 +72,11 @@ function NotifRow({ item, onRead, onOpen }: {
       onOpen(item.id);
       if (!item.read) onRead(item.id);
     }
+  };
+
+  const handleDismiss = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    onDismiss(item.id);
   };
 
   return (
@@ -106,9 +112,20 @@ function NotifRow({ item, onRead, onOpen }: {
           </Text>
         </View>
       </View>
-      {!item.read && (
-        <View style={[styles.unreadDot, { backgroundColor: colors.primary }]} />
-      )}
+      <View style={{ alignItems: "center", gap: 8 }}>
+        {!item.read && (
+          <View style={[styles.unreadDot, { backgroundColor: colors.primary }]} />
+        )}
+        <Pressable
+          onPress={handleDismiss}
+          hitSlop={10}
+          style={({ pressed }) => [styles.dismissBtn, { opacity: pressed ? 0.5 : 1 }]}
+          accessibilityLabel="Dismiss notification"
+          accessibilityRole="button"
+        >
+          <Ionicons name="close" size={16} color={colors.mutedForeground} />
+        </Pressable>
+      </View>
     </Pressable>
   );
 }
@@ -116,7 +133,7 @@ function NotifRow({ item, onRead, onOpen }: {
 // ── NotificationBell ──────────────────────────────────────────────────────────
 
 export function NotificationBell({ light = false }: { light?: boolean }) {
-  const { notifications, unreadCount, loading, refresh, markRead, markOpen, markAllRead } = useNotifications();
+  const { notifications, unreadCount, loading, refresh, markRead, markOpen, markAllRead, dismiss } = useNotifications();
   const [open, setOpen] = useState(false);
   const colors  = useColors();
   const insets  = useSafeAreaInsets();
@@ -224,7 +241,7 @@ export function NotificationBell({ light = false }: { light?: boolean }) {
               contentContainerStyle={styles.listContent}
               showsVerticalScrollIndicator={false}
               renderItem={({ item }) => (
-                <NotifRow item={item} onRead={markRead} onOpen={markOpen} />
+                <NotifRow item={item} onRead={markRead} onOpen={markOpen} onDismiss={dismiss} />
               )}
               ItemSeparatorComponent={() => <View style={{ height: 6 }} />}
               refreshing={loading}
@@ -358,6 +375,13 @@ const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     marginTop: 6,
+  },
+  dismissBtn: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   empty: {

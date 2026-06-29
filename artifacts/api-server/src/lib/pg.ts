@@ -1943,6 +1943,7 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_nrr_notif     ON notification_read_receipts(notification_id);
     CREATE INDEX IF NOT EXISTS idx_nrr_recipient ON notification_read_receipts(recipient_id);
     CREATE INDEX IF NOT EXISTS idx_nrr_org       ON notification_read_receipts(organization_id);
+    ALTER TABLE notification_read_receipts ADD COLUMN IF NOT EXISTS dismissed_at TIMESTAMPTZ;
   `).catch(() => {});
 
   // ── Operator profile flags (skills_completed replaces Supabase column) ──

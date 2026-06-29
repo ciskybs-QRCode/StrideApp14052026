@@ -1027,6 +1027,14 @@ export const api = {
     }
     return request<{ ok: boolean }>("POST", "/private-notifications/read-all", {});
   },
+  dismissNotification: async (id: number) => {
+    if (await isDemoSession()) {
+      const i = DEMO_PRIVATE_NOTIFICATIONS.findIndex(x => x.id === id);
+      if (i >= 0) DEMO_PRIVATE_NOTIFICATIONS.splice(i, 1);
+      return { ok: true };
+    }
+    return request<{ ok: boolean }>("POST", `/private-notifications/${id}/dismiss`, {});
+  },
 
   // Direct messages (internal messaging)
   getDirectMessageThreads: () =>

@@ -43,10 +43,7 @@ const TOTAL_BASE = 3;
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 const Logo = ({ size = 32 }: { size?: number }) => (
-  <svg height={size} width={size} viewBox="0 0 36 36" fill="none">
-    <rect width="36" height="36" rx="9" fill="#1E3A8A" />
-    <path d="M9 18h18M18 10l8 8-8 8" stroke="#D4AF37" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
-  </svg>
+  <img src="/stride-logo.png" alt="Stride" style={{ height: size, width: "auto", display: "block" }} />
 );
 
 const AppStoreBadge = ({ store, primary }: { store: "ios" | "android"; primary: string }) => {
