@@ -1961,6 +1961,15 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS idx_ce_org ON course_extras(organization_id);
   `).catch(() => {});
 
+  // ── Family / sibling discount config (per org, flexible rule engine) ────────
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS org_family_discount_config (
+      organization_id INTEGER     PRIMARY KEY,
+      config          JSONB       NOT NULL DEFAULT '{}'::jsonb,
+      updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    );
+  `).catch(() => {});
+
   // ── Operator certificates ────────────────────────────────────────────────
   await pool.query(`
     CREATE TABLE IF NOT EXISTS operator_certs (

@@ -96,6 +96,47 @@ export default function CartScreen() {
   const discountedPayableTotal = payableTotal - promoDiscount;
   const hasPendingItems = pendingItems.length > 0;
 
+  // ── Family / sibling discount live preview (server-authoritative) ──────────
+  const [familyDiscount, setFamilyDiscount] = useState(0);
+  const payableKey = payableItems.map(i => `${i.type}:${i.courseId}:${i.participantName}:${i.price}`).join("|");
+  useEffect(() => {
+    if (payableItems.length === 0) { setFamilyDiscount(0); return; }
+    let cancelled = false;
+    const t = setTimeout(async () => {
+      try {
+        const res = await api.checkoutPreview({
+          items: payableItems.map(i => ({
+            type:           i.type,
+            courseId:       i.courseId,
+            courseName:     i.courseName,
+            participantName: i.participantName,
+            packageType:    i.packageType,
+            clientPrice:    i.price,
+            quantity:       i.quantity,
+            eventTicketTypeId: i.eventTicketTypeId,
+            marketplaceProductId: i.marketplaceProductId,
+          })),
+          // Send the active promo so the family discount is computed on the same
+          // post-promo basis the real checkout charges (keeps the preview honest).
+          ...(activePromo ? {
+            promoCode:            activePromo.code,
+            promoDiscountType:    activePromo.discountType,
+            promoDiscountPercent: activePromo.discountPercent,
+            promoDiscountAmount:  activePromo.discountAmount,
+            promoTargetCourseIds: activePromo.targetCourseIds,
+          } : {}),
+        });
+        if (!cancelled) setFamilyDiscount(Math.max(0, res?.familyDiscount ?? 0));
+      } catch {
+        if (!cancelled) setFamilyDiscount(0);
+      }
+    }, 400);
+    return () => { cancelled = true; clearTimeout(t); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [payableKey]);
+
+  const finalPayableTotal = Math.max(0, discountedPayableTotal - familyDiscount);
+
   useEffect(() => {
     if (!hasPendingItems) return;
     const poll = async () => {
@@ -457,16 +498,26 @@ export default function CartScreen() {
                   )}
                 </View>
                 <View style={{ alignItems: "flex-end" }}>
-                  {promoDiscount > 0 && (
+                  {(promoDiscount > 0 || familyDiscount > 0) && (
                     <Text style={{ fontSize: 12, color: colors.mutedForeground, textDecorationLine: "line-through" }}>{cur}{payableTotal.toFixed(2)}</Text>
                   )}
-                  <Text style={[styles.totalAmount, { color: promoDiscount > 0 ? "#10B981" : colors.primary }]}>
-                    {cur}{discountedPayableTotal.toFixed(2)}
+                  <Text style={[styles.totalAmount, { color: (promoDiscount > 0 || familyDiscount > 0) ? "#10B981" : colors.primary }]}>
+                    {cur}{finalPayableTotal.toFixed(2)}
                   </Text>
-                  {promoDiscount > 0 && (
-                    <Text style={{ fontSize: 11, color: "#10B981" }}>save {cur}{promoDiscount.toFixed(2)}</Text>
+                  {(promoDiscount + familyDiscount) > 0 && (
+                    <Text style={{ fontSize: 11, color: "#10B981" }}>save {cur}{(promoDiscount + familyDiscount).toFixed(2)}</Text>
                   )}
                 </View>
+              </View>
+            )}
+
+            {hasPayable && familyDiscount > 0 && (
+              <View style={styles.familyRow}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                  <Ionicons name="people-outline" size={15} color="#10B981" />
+                  <Text style={[styles.familyLabel, { color: colors.foreground }]}>Family Discount</Text>
+                </View>
+                <Text style={[styles.familyAmount, { color: "#10B981" }]}>−{cur}{familyDiscount.toFixed(2)}</Text>
               </View>
             )}
 
@@ -689,6 +740,9 @@ const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   totalLabel: { fontSize: 14, fontWeight: "600" },
   pendingNote: { fontSize: 11, marginTop: 2 },
   totalAmount: { fontSize: 28, fontWeight: "800" },
+  familyRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 14, marginTop: -4 },
+  familyLabel: { fontSize: 13, fontWeight: "600" },
+  familyAmount: { fontSize: 14, fontWeight: "800" },
   validateBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 12, paddingVertical: 12 },
   validateBtnText: { fontWeight: "700", fontSize: 14 },
   proceedBtn: { flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 16, paddingVertical: 17 },

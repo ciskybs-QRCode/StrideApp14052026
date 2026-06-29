@@ -105,6 +105,12 @@ export default function FinanceHub() {
           onPress={() => router.push("/(admin)/settings/promo-codes" as never)}
         />
         <HubCard
+          icon="people-outline"
+          title="Family Discount"
+          description="Sibling & multi-enrolment savings for members with more than one dependant"
+          onPress={() => router.push("/(admin)/settings/family-discount" as never)}
+        />
+        <HubCard
           icon="gift-outline"
           title="Invite & Earn"
           description="Share your referral code and earn credits for every new association"

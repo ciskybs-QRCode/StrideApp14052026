@@ -1,4 +1,5 @@
 import { Router, type Request } from "express";
+import { z } from "zod";
 import { supabase } from "../lib/supabase.js";
 import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
@@ -19,6 +20,9 @@ export type CheckoutLineItem = {
   discount:          number;
   finalPrice:        number;
   priceSource:       "db" | "client_fallback";
+  // "course" = a per-dependant enrolment (eligible for family discount),
+  // "other"  = marketplace / event ticket / membership (never eligible).
+  kind:              "course" | "other";
 };
 
 type CartItemInput = {
@@ -120,6 +124,7 @@ async function resolveLineItems(
       discount,
       finalPrice,
       priceSource,
+      kind:             "course",
     };
   });
 }
@@ -199,6 +204,7 @@ async function resolveAllLineItems(
         discount:         0,
         finalPrice:       unitPrice * qty,
         priceSource,
+        kind:             "other",
       });
     } else if (itemType === "event_ticket") {
       let unitPrice: number    = item.clientPrice ?? 0;
@@ -223,6 +229,7 @@ async function resolveAllLineItems(
         discount:         0,
         finalPrice:       unitPrice * qty,
         priceSource,
+        kind:             "other",
       });
     } else if (itemType === "membership") {
       let unitPrice: number    = item.clientPrice ?? 0;
@@ -248,11 +255,177 @@ async function resolveAllLineItems(
         discount:         0,
         finalPrice:       unitPrice,
         priceSource,
+        kind:             "other",
       });
     }
   }
 
   return results;
+}
+
+// ── Family / sibling discount engine ─────────────────────────────────────────
+// Flexible, per-org rule engine. The cart of a single member IS the "family":
+// every course enrolment tied to a dependant (childId) in the same checkout is
+// grouped together and discounted per the org's rule. Server is authoritative.
+type FamilyDiscountTier = { index: number; percent: number };
+export type FamilyDiscountConfig = {
+  enabled:            boolean;
+  advancedEnabled:    boolean;   // false = simple mode (toggle + percent only)
+  fromDependantIndex: number;    // 1-based; discount starts at this dependant
+  scopeType:          "all" | "courses" | "discipline";
+  scopeCourseIds:     string[];
+  scopeDiscipline:    string | null;
+  discountType:       "percent" | "fixed" | "tiered";
+  percent:            number;    // 0-100
+  fixedCents:         number;    // per discounted dependant
+  tiers:              FamilyDiscountTier[];
+  applyTo:            "subsequent" | "cheapest" | "all";
+  capCents:           number | null;
+};
+
+const FAMILY_DISCOUNT_DEFAULT: FamilyDiscountConfig = {
+  enabled:            false,
+  advancedEnabled:    false,
+  fromDependantIndex: 2,
+  scopeType:          "all",
+  scopeCourseIds:     [],
+  scopeDiscipline:    null,
+  discountType:       "percent",
+  percent:            10,
+  fixedCents:         0,
+  tiers:              [],
+  applyTo:            "subsequent",
+  capCents:           null,
+};
+
+async function loadFamilyDiscountConfig(orgId: number): Promise<FamilyDiscountConfig> {
+  try {
+    const { rows } = await pool.query<{ config: unknown }>(
+      `SELECT config FROM org_family_discount_config WHERE organization_id = $1`,
+      [orgId],
+    );
+    const raw = (rows[0]?.config ?? {}) as Partial<FamilyDiscountConfig>;
+    return { ...FAMILY_DISCOUNT_DEFAULT, ...raw };
+  } catch {
+    return { ...FAMILY_DISCOUNT_DEFAULT };
+  }
+}
+
+// Mutates lineItems (discount/finalPrice). Returns total family discount in euros.
+async function applyFamilyDiscount(orgId: number, lineItems: CheckoutLineItem[]): Promise<number> {
+  const cfg = await loadFamilyDiscountConfig(orgId);
+  if (!cfg.enabled) return 0;
+
+  // Simple mode forces the basic behaviour regardless of stored advanced fields.
+  const eff: FamilyDiscountConfig = cfg.advancedEnabled
+    ? cfg
+    : { ...FAMILY_DISCOUNT_DEFAULT, enabled: true, percent: cfg.percent ?? FAMILY_DISCOUNT_DEFAULT.percent };
+
+  // Eligible = course enrolments with a payable amount. Dependant identity is
+  // childId when present, else the participant name (the cart sends a name, not
+  // an id, for course enrolments).
+  const depKey = (li: CheckoutLineItem) => String(li.childId ?? li.participantName ?? "").trim();
+  let eligible = lineItems.filter(li => li.kind === "course" && li.finalPrice > 0 && depKey(li) !== "");
+
+  if (eff.scopeType === "courses" && eff.scopeCourseIds.length > 0) {
+    const set = new Set(eff.scopeCourseIds.map(String));
+    eligible = eligible.filter(li => set.has(String(li.courseId)));
+  } else if (eff.scopeType === "discipline" && eff.scopeDiscipline) {
+    const ids = [...new Set(eligible.map(li => parseInt(li.courseId)).filter(n => !isNaN(n)))];
+    const disciplineByCourse = new Map<number, string>();
+    if (ids.length > 0) {
+      const { rows } = await pool.query<{ scheduled_course_id: number; discipline_name: string | null }>(
+        `SELECT scheduled_course_id, discipline_name FROM course_extras
+         WHERE organization_id = $1 AND scheduled_course_id = ANY($2)`,
+        [orgId, ids],
+      );
+      for (const r of rows) if (r.discipline_name) disciplineByCourse.set(r.scheduled_course_id, r.discipline_name);
+    }
+    const target = eff.scopeDiscipline.toLowerCase();
+    eligible = eligible.filter(li => (disciplineByCourse.get(parseInt(li.courseId)) ?? "").toLowerCase() === target);
+  }
+
+  if (eligible.length === 0) return 0;
+
+  // Group eligible items per dependant and compute each dependant's spend.
+  const byDependant = new Map<string, CheckoutLineItem[]>();
+  for (const li of eligible) {
+    const k = depKey(li);
+    const arr = byDependant.get(k);
+    if (arr) arr.push(li); else byDependant.set(k, [li]);
+  }
+  const dependants = [...byDependant.entries()].map(([childId, items]) => ({
+    childId,
+    items,
+    spend: items.reduce((s, i) => s + i.finalPrice, 0),
+  }));
+
+  // "subsequent" needs at least 2 dependants (the first always pays full).
+  if (eff.applyTo === "subsequent" && dependants.length < 2) return 0;
+
+  // Most expensive dependant first → the "first" pays full under "subsequent".
+  dependants.sort((a, b) => b.spend - a.spend);
+
+  const applied: { li: CheckoutLineItem; amount: number }[] = [];
+  dependants.forEach((dep, i) => {
+    const position = i + 1; // 1-based
+    let included: boolean;
+    if (eff.applyTo === "all")            included = true;
+    else if (eff.applyTo === "cheapest")  included = i === dependants.length - 1;
+    else                                  included = position >= eff.fromDependantIndex;
+    if (!included) return;
+
+    let percent = 0;
+    let fixedCents = 0;
+    if (eff.discountType === "percent")      percent = eff.percent;
+    else if (eff.discountType === "fixed")   fixedCents = eff.fixedCents;
+    else if (eff.discountType === "tiered") {
+      const tier = [...eff.tiers].sort((a, b) => a.index - b.index).filter(t => position >= t.index).pop();
+      percent = tier?.percent ?? 0;
+    }
+
+    if (percent > 0) {
+      for (const li of dep.items) {
+        const d = Math.round(li.finalPrice * percent) / 100;
+        if (d <= 0) continue;
+        li.discount += d;
+        li.finalPrice = Math.max(0, li.finalPrice - d);
+        applied.push({ li, amount: d });
+      }
+    } else if (fixedCents > 0) {
+      const euros = fixedCents / 100;
+      const line = [...dep.items].sort((a, b) => b.finalPrice - a.finalPrice)[0];
+      if (line) {
+        const d = Math.min(euros, line.finalPrice);
+        if (d > 0) {
+          line.discount += d;
+          line.finalPrice = Math.max(0, line.finalPrice - d);
+          applied.push({ li: line, amount: d });
+        }
+      }
+    }
+  });
+
+  let totalFamily = applied.reduce((s, a) => s + a.amount, 0);
+
+  // Optional cap on the total family discount per checkout.
+  if (eff.capCents != null && eff.capCents > 0) {
+    const cap = eff.capCents / 100;
+    let excess = Math.round((totalFamily - cap) * 100) / 100;
+    if (excess > 0) {
+      for (let i = applied.length - 1; i >= 0 && excess > 0; i--) {
+        const a = applied[i]!;
+        const refund = Math.min(excess, a.amount);
+        a.li.discount = Math.max(0, a.li.discount - refund);
+        a.li.finalPrice += refund;
+        a.amount -= refund;
+        excess = Math.round((excess - refund) * 100) / 100;
+      }
+      totalFamily = cap;
+    }
+  }
+
+  return Math.round(totalFamily * 100) / 100;
 }
 
 // ── POST /checkout/web-session ────────────────────────────────────────────────
@@ -313,6 +486,9 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
       promoDiscountAmount, promoTargetCourseIds,
     );
 
+    // Family/sibling discount (server-authoritative, configurable per org).
+    const familyDiscount = await applyFamilyDiscount(orgId, lineItems);
+
     const discountApplied = lineItems.reduce((s, i) => s + i.discount,   0);
     const calculatedTotal = lineItems.reduce((s, i) => s + i.finalPrice, 0);
     const calculatedCents = Math.round(calculatedTotal * 100);
@@ -335,6 +511,7 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
         lineItems,
         calculatedTotal: 0,
         discountApplied,
+        familyDiscount,
         currency,
       });
       return;
@@ -437,7 +614,7 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
       await supabase.from("payment_audit_log").update({ stripe_session_id: sess.id }).eq("request_id", auditId);
       res.json({
         sessionId: sess.id, checkoutUrl: sess.url, auditId,
-        lineItems, calculatedTotal, discountApplied, currency,
+        lineItems, calculatedTotal, discountApplied, familyDiscount, currency,
       });
       return;
     }
@@ -528,6 +705,7 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
       lineItems,
       calculatedTotal,
       discountApplied,
+      familyDiscount,
       currency,
     });
   } catch (err) {
@@ -1379,6 +1557,117 @@ router.post("/checkout/confirm-paypal/:sessionId", requireAuth, requireRole("adm
   } catch (err) {
     req.log.error(err);
     res.status(500).json({ error: "Failed to confirm PayPal payment" });
+  }
+});
+
+// ── Family / sibling discount config ──────────────────────────────────────────
+const FamilyTierSchema = z.object({
+  index:   z.number().int().min(2).max(20),
+  percent: z.number().min(0).max(100),
+});
+const FamilyDiscountConfigSchema = z.object({
+  enabled:            z.boolean(),
+  advancedEnabled:    z.boolean(),
+  fromDependantIndex: z.number().int().min(2).max(20),
+  scopeType:          z.enum(["all", "courses", "discipline"]),
+  scopeCourseIds:     z.array(z.string()).max(500),
+  scopeDiscipline:    z.string().max(120).nullable(),
+  discountType:       z.enum(["percent", "fixed", "tiered"]),
+  percent:            z.number().min(0).max(100),
+  fixedCents:         z.number().int().min(0).max(1_000_000),
+  tiers:              z.array(FamilyTierSchema).max(20),
+  applyTo:            z.enum(["subsequent", "cheapest", "all"]),
+  capCents:           z.number().int().min(0).max(10_000_000).nullable(),
+});
+
+router.get(
+  "/checkout/family-discount-config",
+  requireAuth,
+  requireRole("admin", "operator"),
+  async (req, res) => {
+    const user = (req as AuthReq).user;
+    const cfg  = await loadFamilyDiscountConfig(user.orgId ?? 1);
+    res.json(cfg);
+  },
+);
+
+router.put(
+  "/checkout/family-discount-config",
+  requireAuth,
+  requireRole("admin"),
+  async (req, res) => {
+    const user   = (req as AuthReq).user;
+    const parsed = FamilyDiscountConfigSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Invalid config", details: parsed.error.flatten() });
+      return;
+    }
+    try {
+      await pool.query(
+        `INSERT INTO org_family_discount_config (organization_id, config, updated_at)
+         VALUES ($1, $2::jsonb, NOW())
+         ON CONFLICT (organization_id)
+         DO UPDATE SET config = EXCLUDED.config, updated_at = NOW()`,
+        [user.orgId ?? 1, JSON.stringify(parsed.data)],
+      );
+      res.json(parsed.data);
+    } catch (err) {
+      req.log.error(err, "family-discount-config PUT: error");
+      res.status(500).json({ error: "Failed to save config" });
+    }
+  },
+);
+
+// ── POST /checkout/preview — live totals incl. family discount (no Stripe) ─────
+router.post("/checkout/preview", requireAuth, async (req, res) => {
+  const user  = (req as AuthReq).user;
+  const orgId = user.orgId ?? 1;
+
+  const {
+    items,
+    promoCode,
+    promoDiscountType,
+    promoDiscountPercent,
+    promoDiscountAmount,
+    promoTargetCourseIds,
+  } = req.body as {
+    items:                 CartItemInput[];
+    promoCode?:            string;
+    promoDiscountType?:    "percent" | "amount";
+    promoDiscountPercent?: number;
+    promoDiscountAmount?:  number;
+    promoTargetCourseIds?: string[];
+  };
+
+  if (!Array.isArray(items) || items.length === 0) {
+    res.status(400).json({ error: "No items provided" });
+    return;
+  }
+
+  try {
+    const { data: orgData } = await supabase
+      .from("organizations")
+      .select("name")
+      .eq("id", orgId)
+      .maybeSingle();
+    const orgName        = (orgData as { name?: string } | null)?.name ?? "Stride";
+    const { currency }   = await getPricingForOrg(orgId);
+
+    const lineItems = await resolveAllLineItems(
+      orgId, items, orgName,
+      promoCode, promoDiscountType, promoDiscountPercent,
+      promoDiscountAmount, promoTargetCourseIds,
+    );
+
+    const subtotal       = lineItems.reduce((s, i) => s + i.unitPrice, 0);
+    const promoDiscount  = lineItems.reduce((s, i) => s + i.discount,  0);
+    const familyDiscount = await applyFamilyDiscount(orgId, lineItems);
+    const total          = lineItems.reduce((s, i) => s + i.finalPrice, 0);
+
+    res.json({ lineItems, subtotal, promoDiscount, familyDiscount, total, currency });
+  } catch (err) {
+    req.log.error(err, "checkout preview: error");
+    res.status(500).json({ error: "preview_failed" });
   }
 });
 

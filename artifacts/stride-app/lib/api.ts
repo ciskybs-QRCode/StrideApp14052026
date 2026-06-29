@@ -212,6 +212,38 @@ const DEMO_USERS: Record<string, { token: string; user: ApiUser }> = {
   },
 };
 
+export interface FamilyDiscountTier {
+  index:   number;
+  percent: number;
+}
+export interface FamilyDiscountConfig {
+  enabled:            boolean;
+  advancedEnabled:    boolean;
+  fromDependantIndex: number;
+  scopeType:          "all" | "courses" | "discipline";
+  scopeCourseIds:     string[];
+  scopeDiscipline:    string | null;
+  discountType:       "percent" | "fixed" | "tiered";
+  percent:            number;
+  fixedCents:         number;
+  tiers:              FamilyDiscountTier[];
+  applyTo:            "subsequent" | "cheapest" | "all";
+  capCents:           number | null;
+}
+
+export interface CheckoutPreviewItem {
+  type?:            "course" | "private_lesson" | "marketplace" | "event_ticket" | "membership";
+  courseId:         string;
+  courseName:       string;
+  participantName:  string;
+  childId?:         string;
+  packageType:      string;
+  clientPrice?:     number;
+  quantity?:        number;
+  eventTicketTypeId?:    string;
+  marketplaceProductId?: string;
+}
+
 export const api = {
   // Auth
   login: async (email: string, password: string): Promise<{ token: string; user: ApiUser }> => {
@@ -628,6 +660,28 @@ export const api = {
     discountApplied:  number;
     currency:         string;
   }>("POST", "/checkout/web-session", data),
+
+  // ── Family / sibling discount ──────────────────────────────────────────────
+  getFamilyDiscountConfig: () =>
+    request<FamilyDiscountConfig>("GET", "/checkout/family-discount-config"),
+  saveFamilyDiscountConfig: (cfg: FamilyDiscountConfig) =>
+    request<FamilyDiscountConfig>("PUT", "/checkout/family-discount-config", cfg),
+  checkoutPreview: (data: {
+    items:                 CheckoutPreviewItem[];
+    promoCode?:            string;
+    promoDiscountType?:    "percent" | "amount";
+    promoDiscountPercent?: number;
+    promoDiscountAmount?:  number;
+    promoTargetCourseIds?: string[];
+  }) => request<{
+    subtotal:       number;
+    promoDiscount:  number;
+    familyDiscount: number;
+    total:          number;
+    currency:       string;
+    lineItems:      unknown[];
+  }>("POST", "/checkout/preview", data),
+
   getCheckoutSessionStatus: (sessionId: string) =>
     request<{ status: "pending" | "complete" | "expired"; invoiceNumber: string | null; invoiceId: number | null }>("GET", `/checkout/session-status/${sessionId}`),
 

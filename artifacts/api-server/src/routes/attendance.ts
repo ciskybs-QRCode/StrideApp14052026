@@ -4,7 +4,6 @@ import { supabase } from "../lib/supabase.js";
 import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { SecurityObserver } from "../lib/SecurityObserver.js";
-import { EmergencyPushService } from "../lib/EmergencyPushService.js";
 
 const AttendanceInsertSchema = z.object({
   child_id:   z.number({ required_error: "child_id is required" }).int().positive(),
@@ -69,56 +68,49 @@ async function retractNoShowAlertIfNeeded(childId: number, orgId: number): Promi
   await supabase.from("private_notifications").insert(resolutionRows);
 }
 
-// ── Parent check-in / check-out notification ──────────────────────────────────
-// Sends the REAL Expo push (best-effort) AND records the in-app notification so
-// the parent is told "your child entered/exited at HH:MM" on every scan.
+// ── Member check-in / check-out notification (IN-APP ONLY) ────────────────────
+// Records ONLY the in-app notification — NO push. Entry/exit confirmations are
+// high-frequency, so we keep them cost-free: push is reserved for no-show and
+// emergency alerts only. The member is told "<name> checked in/out at HH:MM".
 // Used by the live scan, the offline batch sync, and the sign-out flow.
-async function notifyParentAttendance(
-  childId: number,
+async function notifyMemberAttendance(
+  dependantId: number,
   orgId: number,
   kind: "checkin" | "checkout",
   whenISO?: string,
 ): Promise<void> {
   const { rows } = await pool.query<{ parent_id: number | null; first_name: string | null; last_name: string | null }>(
     `SELECT parent_id, first_name, last_name FROM children WHERE id = $1`,
-    [childId],
+    [dependantId],
   );
-  const child = rows[0];
-  if (!child?.parent_id) return;
+  const dependant = rows[0];
+  if (!dependant?.parent_id) return;
 
-  const name    = [child.first_name, child.last_name].filter(Boolean).join(" ") || "Your child";
+  const name    = [dependant.first_name, dependant.last_name].filter(Boolean).join(" ") || "Your dependant";
   const when    = whenISO ? new Date(whenISO) : new Date();
   const timeStr = when.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
   const isOut   = kind === "checkout";
   const type    = isOut ? "checkout_confirmation" : "checkin_confirmation";
-  const title   = isOut ? "Check-Out Confirmed 👋" : "Check-In Confirmed ✅";
+  const title   = isOut ? "Check-Out Confirmed" : "Check-In Confirmed";
   const body    = isOut
     ? `${name} has been checked out at ${timeStr}.`
     : `${name} has been checked in at ${timeStr}.`;
 
   const { data: notifData } = await supabase.from("private_notifications").insert({
     organization_id: orgId,
-    recipient_id:    child.parent_id,
+    recipient_id:    dependant.parent_id,
     type,
     title,
     body,
     read:            false,
   }).select("id").single();
 
-  // Fire the real push (best-effort; sendToUsers never throws)
-  await EmergencyPushService.sendToUsers({
-    orgId,
-    userIds: [child.parent_id],
-    title,
-    body,
-    data:    { kind: type, childId: String(childId) },
-  }).catch(() => {});
-
+  // In-app only — no push (cost control). Log delivery with push_sent = false.
   if (notifData?.id) {
     await pool.query(
       `INSERT INTO notification_delivery_log (notification_id, recipient_id, organization_id, source, push_sent)
-       VALUES ($1, $2, $3, $4, true)`,
-      [notifData.id, child.parent_id, orgId ?? null, isOut ? "checkout" : "checkin"],
+       VALUES ($1, $2, $3, $4, false)`,
+      [notifData.id, dependant.parent_id, orgId ?? null, isOut ? "checkout" : "checkin"],
     ).catch(() => {});
   }
 }
@@ -198,8 +190,8 @@ router.post("/attendance", requireAuth, requireRole("admin", "operator"), async 
     status,
   });
 
-  // Fire-and-forget: notify parent that check-in was recorded (push + in-app)
-  notifyParentAttendance(child_id, user.orgId, "checkin").catch(() => {});
+  // Fire-and-forget: in-app check-in confirmation to the member (no push)
+  notifyMemberAttendance(child_id, user.orgId, "checkin").catch(() => {});
 });
 
 router.patch("/attendance/:id", requireAuth, requireRole("admin", "operator"), async (req, res) => {
@@ -243,11 +235,11 @@ router.patch("/attendance/:id", requireAuth, requireRole("admin", "operator"), a
   if (error) { res.status(500).json({ error: error.message }); return; }
   res.json(data);
 
-  // ▶ If this update signed the child out, notify the parent (push + in-app)
+  // ▶ If this update signed the dependant out, send in-app check-out (no push)
   const isSignOut = patch["status"] === "signed_out" || patch["signed_out_at"] != null;
   const recChildId = (data as { child_id?: number } | null)?.child_id;
   if (isSignOut && typeof recChildId === "number") {
-    notifyParentAttendance(recChildId, user.orgId, "checkout").catch(() => {});
+    notifyMemberAttendance(recChildId, user.orgId, "checkout").catch(() => {});
   }
 });
 
@@ -463,12 +455,12 @@ router.post("/attendance/batch", requireAuth, requireRole("admin", "operator"), 
     retractNoShowAlertIfNeeded(cid, user.orgId).catch(() => {});
   }
 
-  // ▶ Notify each parent of the synced check-in/out (push + in-app, best-effort).
-  // Uses the original local scan time so the parent sees when it actually happened.
+  // ▶ In-app check-in/out for each synced dependant (no push, best-effort).
+  // Uses the original local scan time so the member sees when it actually happened.
   for (const s of scans) {
     if (s.child_id == null || !syncedChildIds.includes(s.child_id)) continue;
     const isOut = /out|sign/i.test(s.scan_type);
-    notifyParentAttendance(s.child_id, user.orgId, isOut ? "checkout" : "checkin", s.scanned_at).catch(() => {});
+    notifyMemberAttendance(s.child_id, user.orgId, isOut ? "checkout" : "checkin", s.scanned_at).catch(() => {});
   }
 });
 
