@@ -22,7 +22,6 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { getDeviceLocale } from "@/hooks/useDeviceLocale";
 import { useAuth } from "@/context/AuthContext";
-import { useSubstitution } from "@/context/SubstitutionContext";
 import { useColors } from "@/hooks/useColors";
 import { api, type ApiOperatorEarnings, type ApiEarningsYtd, type ApiPrivateLessonBooking, type PayrollDeduction, type ApiEmploymentContract } from "@/lib/api";
 import { File, Paths } from "expo-file-system";
@@ -449,8 +448,6 @@ export default function OperatorInvoicing() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const orgName = user?.schoolName ?? "Your Association";
-
-  const { alerts } = useSubstitution();
 
   // Core payroll state
   const [selectedMonth, setSelectedMonth] = useState(MONTHS[0].key);
@@ -1504,45 +1501,6 @@ export default function OperatorInvoicing() {
           )}
         </View>
 
-        {/* ── Substitution Ledger ── */}
-        {alerts.length > 0 && (
-          <View style={{ marginTop: 8 }}>
-            <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 10 }]}>Substitution Ledger</Text>
-            <View style={{ borderRadius: 16, overflow: "hidden", borderWidth: 1, borderColor: colors.border }}>
-              <View style={{ flexDirection: "row", backgroundColor: colors.primary, paddingHorizontal: 12, paddingVertical: 8 }}>
-                <Text style={{ flex: 1.5, color: colors.secondary, fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>Date</Text>
-                <Text style={{ flex: 2, color: colors.secondary, fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>Class</Text>
-                <Text style={{ flex: 1.5, color: colors.secondary, fontSize: 10, fontWeight: "800", textTransform: "uppercase" }}>Status</Text>
-                <Text style={{ flex: 1, color: colors.secondary, fontSize: 10, fontWeight: "800", textTransform: "uppercase", textAlign: "right" }}>Hours</Text>
-              </View>
-              {alerts.slice(0, 10).map((a, idx) => {
-                const isCovered = a.resolved && a.resolution === "sub_found";
-                const bgColor = idx % 2 === 0 ? colors.card : colors.background;
-                const statusLabel = a.resolved
-                  ? (a.resolution === "sub_found" ? "Covered" : a.resolution === "cancelled" ? "Cancelled" : "Rescheduled")
-                  : a.cascadeStep === 4 ? "Red Alert" : "In Progress";
-                const statusColor = isCovered ? "#059669" : a.resolved ? "#6B7280" : "#EF4444";
-                const dateStr = new Date(a.reportedAt).toLocaleDateString("en-AU", { day: "2-digit", month: "short" });
-                return (
-                  <View key={a.id} style={{ flexDirection: "row", alignItems: "center", backgroundColor: bgColor, paddingHorizontal: 12, paddingVertical: 10, borderTopWidth: idx === 0 ? 0 : 1, borderTopColor: colors.border }}>
-                    <Text style={{ flex: 1.5, fontSize: 12, color: colors.foreground }}>{dateStr}</Text>
-                    <Text style={{ flex: 2, fontSize: 12, color: colors.foreground }} numberOfLines={1}>{a.lessonName}</Text>
-                    <View style={{ flex: 1.5, flexDirection: "row", alignItems: "center", gap: 4 }}>
-                      <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: statusColor }} />
-                      <Text style={{ fontSize: 11, color: statusColor, fontWeight: "700" }}>{statusLabel}</Text>
-                    </View>
-                    <Text style={{ flex: 1, fontSize: 12, color: isCovered ? "#059669" : colors.mutedForeground, fontWeight: isCovered ? "700" : "400", textAlign: "right" }}>
-                      {isCovered ? "+1.0h" : a.type === "delay" ? "0.0h" : "−1.0h"}
-                    </Text>
-                  </View>
-                );
-              })}
-            </View>
-            <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 8, textAlign: "center" }}>
-              Ledger syncs with Admin · Covered sessions credit +1h to substitute
-            </Text>
-          </View>
-        )}
 
       </ScrollView>
 

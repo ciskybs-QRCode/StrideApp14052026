@@ -26,7 +26,6 @@ import { PrivateLessonProvider } from "@/context/PrivateLessonContext";
 import { PaidLessonsProvider } from "@/context/PaidLessonsContext";
 import { RealtimeProvider } from "@/context/RealtimeContext";
 import { PromoProvider } from "@/context/PromoContext";
-import { SubstitutionProvider } from "@/context/SubstitutionContext";
 import { SecurityEscalationProvider } from "@/context/SecurityEscalationContext";
 import { FeaturesProvider } from "@/context/FeaturesContext";
 import { TerminologyProvider } from "@/context/TerminologyContext";
@@ -148,7 +147,6 @@ export default function RootLayout() {
                 <CartProvider>
                 <PaidLessonsProvider>
                 <PromoProvider>
-                <SubstitutionProvider>
                 <PrivateLessonProvider>
                 <RealtimeProvider>
                 <SecurityEscalationProvider>
@@ -159,7 +157,6 @@ export default function RootLayout() {
                 </SecurityEscalationProvider>
                 </RealtimeProvider>
                 </PrivateLessonProvider>
-                </SubstitutionProvider>
                 </PromoProvider>
                 </PaidLessonsProvider>
                 </CartProvider>

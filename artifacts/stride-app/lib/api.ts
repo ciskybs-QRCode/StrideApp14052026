@@ -3137,9 +3137,15 @@ export interface CascadeContact {
   skill_score:      number | null;
   reliability_score: number | null;
   composite_score:  number | null;
-  status:           "pending" | "accepted" | "declined" | "expired";
-  contacted_at:     string;
+  status:           "pending" | "waiting" | "accepted" | "declined" | "expired";
+  contacted_at:     string | null;
   responded_at:     string | null;
+  // fields joined from rescue_cascades (populated by /rescue/pending)
+  course_name?:          string | null;
+  class_datetime?:       string | null;
+  absent_operator_name?: string | null;
+  discipline_id?:        number | null;
+  org_id?:               number | null;
 }
 
 export interface RescueCascade {
@@ -3189,6 +3195,10 @@ export async function cancelRescueCascade(id: number): Promise<void> {
 
 export async function getRescuePending(): Promise<CascadeContact[]> {
   return request<CascadeContact[]>("GET", "/rescue/pending");
+}
+
+export async function getMyAbsenceCascade(): Promise<(RescueCascade & { contacts: CascadeContact[] }) | null> {
+  return request<(RescueCascade & { contacts: CascadeContact[] }) | null>("GET", "/rescue/my-cascade");
 }
 
 export async function acknowledgeRescue(cascade_contact_id: number, accept: boolean): Promise<{ success: boolean; cascadeStatus: string }> {

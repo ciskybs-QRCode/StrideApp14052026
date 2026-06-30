@@ -18,9 +18,8 @@ import {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
-import { useSubstitution, type RescheduleAction, MOCK_SUBS } from "@/context/SubstitutionContext";
 import { ScreenHeader } from "@/components/ScreenHeader";
-import { api, type ApiDiscipline, type ApiOperatorProfile, request } from "@/lib/api";
+import { api, getRescueCascades, type RescueCascade, type ApiDiscipline, type ApiOperatorProfile, request } from "@/lib/api";
 import { CalendarPicker, TimePickerSheet, NumberPickerSheet } from "@/components/WizardPickers";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -430,7 +429,6 @@ export default function ActivityScreen() {
   const styles = make_styles(colors.primary, colors.secondary);
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { alerts, activeAlert, cascadeCountdown, respondToSub, rescheduleLesson, dismissAlert, clearAll } = useSubstitution();
 
   const [tab, setTab]           = useState<"courses" | "admin">("courses");
   const [typeFilter, setTypeFilter] = useState<ActivityType | "all">("all");
@@ -639,9 +637,13 @@ export default function ActivityScreen() {
   const [makeupTime, setMakeupTime]   = useState("17:00");
   const [showMakeupDatePicker, setShowMakeupDatePicker] = useState(false);
   const [showMakeupTimePicker, setShowMakeupTimePicker] = useState(false);
-  const focusedAlertId = activeAlert?.id ?? alerts[0]?.id ?? null;
-  const focusedAlert   = focusedAlertId ? (alerts.find(a => a.id === focusedAlertId) ?? null) : null;
-  const unresolved = alerts.filter(a => !a.resolved);
+  // real cascade data (admin sees these in Smart Roster; alert banner hidden until loaded)
+  const [activeCascades, setActiveCascades] = useState<RescueCascade[]>([]);
+  useEffect(() => {
+    getRescueCascades().then(data => setActiveCascades(data.filter(c => c.status === "pending"))).catch(() => {});
+  }, []);
+  const unresolved = activeCascades;
+  const focusedAlert = activeCascades[0] ?? null;
 
   const { user } = useAuth();
   const isPrivileged = user?.role === "admin" || user?.role === "operator";
@@ -711,28 +713,19 @@ export default function ActivityScreen() {
 
   const doReschedule = () => {
     if (!focusedAlert) return;
-    let action: RescheduleAction;
     let notifyMsg = "";
     if (rescheduleKind === "shift") {
       const mins = parseInt(shiftMinutes, 10) || 30;
-      action = { kind: "shift", shiftMinutes: mins };
-      notifyMsg = `The lesson "${focusedAlert.lessonName}" has been shifted by ${mins} minutes.`;
+      notifyMsg = `Cascade ${focusedAlert.id} — lesson shifted by ${mins} minutes.`;
     } else if (rescheduleKind === "cancel") {
-      action = { kind: "cancel" };
-      notifyMsg = `The lesson "${focusedAlert.lessonName}" has been cancelled. We apologise for the inconvenience.`;
+      notifyMsg = `Cascade ${focusedAlert.id} — lesson cancelled.`;
     } else {
-      action = { kind: "makeup", makeupDate, makeupTime };
-      notifyMsg = `The lesson "${focusedAlert.lessonName}" has been rescheduled to ${makeupDate} at ${makeupTime}.`;
+      notifyMsg = `Cascade ${focusedAlert.id} — make-up set to ${makeupDate} at ${makeupTime}.`;
     }
-    rescheduleLesson(focusedAlert.id, action);
     setShowReschedule(false);
     setShowAlertDetail(false);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert(
-      "Decision Applied — Participants Notified",
-      `In-app notification sent to all enrolled participants:\n\n"${notifyMsg}"\n\nMembers with enrolled dependent members have also been notified.`,
-      [{ text: "OK" }],
-    );
+    Alert.alert("Decision Noted", notifyMsg, [{ text: "OK" }]);
   };
 
   // ── Filtered activities ──
@@ -1354,22 +1347,17 @@ export default function ActivityScreen() {
         <Pressable
           style={[
             styles.smartAlertBanner,
-            { backgroundColor: unresolved.some(a => a.cascadeStep === 4) ? "#DC2626" : "#F59E0B" }
+            { backgroundColor: "#F59E0B" }
           ]}
           onPress={() => setShowAlertDetail(true)}
         >
-          <Ionicons
-            name={unresolved.some(a => a.cascadeStep === 4) ? "warning" : "alert-circle"}
-            size={20} color="#FFF"
-          />
+          <Ionicons name="alert-circle" size={20} color="#FFF" />
           <View style={{ flex: 1 }}>
             <Text style={styles.smartAlertBannerTitle}>
-              {unresolved.some(a => a.cascadeStep === 4)
-                ? `🔴 RED ALERT — ${unresolved.length} alert${unresolved.length > 1 ? "s" : ""} need attention`
-                : `⚡ ${unresolved.length} Active Substitution Alert${unresolved.length > 1 ? "s" : ""}`}
+              {"\u26A1"} {unresolved.length} Active Cascade{unresolved.length > 1 ? "s" : ""} {"\u2014"} action needed
             </Text>
             <Text style={styles.smartAlertBannerSub}>
-              {unresolved[0]?.lessonName} · {unresolved[0]?.teacherName} · Tap to manage
+              {unresolved[0]?.course_name ?? "Class"} {"\u00B7"} {unresolved[0]?.absent_operator_name ?? "Instructor"} {"\u00B7"} Tap to manage
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color="#FFF" />
@@ -1536,12 +1524,10 @@ export default function ActivityScreen() {
           <View style={styles.saCard}>
             <View style={styles.saCardHeader}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.saCardTitle}>
-                  {focusedAlert?.cascadeStep === 4 ? "🔴 RED ALERT" : "⚡ Substitution Alert"}
-                </Text>
+                <Text style={styles.saCardTitle}>{"\u26A1"} Active Cascades</Text>
                 {focusedAlert && (
                   <Text style={styles.saCardSub}>
-                    {focusedAlert.lessonName} · {focusedAlert.teacherName}
+                    {focusedAlert.course_name ?? "Class"} {"\u00B7"} {focusedAlert.absent_operator_name ?? "Instructor"}
                   </Text>
                 )}
               </View>
@@ -1550,77 +1536,39 @@ export default function ActivityScreen() {
               </Pressable>
             </View>
 
-            {focusedAlert && !focusedAlert.resolved && (
-              <View style={[styles.saInfoRow, { backgroundColor: focusedAlert.cascadeStep === 4 ? "#FEE2E2" : "#FEF3C7" }]}>
-                <Ionicons name={focusedAlert.cascadeStep === 4 ? "warning" : "time-outline"} size={16} color={focusedAlert.cascadeStep === 4 ? "#DC2626" : "#F59E0B"} />
-                <Text style={[styles.saInfoText, { color: focusedAlert.cascadeStep === 4 ? "#DC2626" : "#92400E" }]}>
-                  {focusedAlert.cascadeStep === 4
-                    ? "All substitutes unavailable — Admin must act now"
-                    : `Sub ${focusedAlert.cascadeStep} being contacted · Cascade active`}
+            {focusedAlert && focusedAlert.status === "pending" && (
+              <View style={[styles.saInfoRow, { backgroundColor: "#FEF3C7" }]}>
+                <Ionicons name="time-outline" size={16} color="#F59E0B" />
+                <Text style={[styles.saInfoText, { color: "#92400E" }]}>
+                  Cascade in progress {"\u00B7"} {focusedAlert.pending_count ?? 0} pending, {focusedAlert.accepted_count ?? 0} accepted
                 </Text>
               </View>
             )}
 
-            {/* Sub responses */}
-            {focusedAlert?.type === "absent" && MOCK_SUBS.map((sub, i) => {
-              const sr = focusedAlert.subResponses[i];
-              if (!sr) return null;
-              const col = sr.status === "accepted" ? "#10B981" : sr.status === "declined" || sr.status === "timeout" ? "#EF4444" : sr.status === "notified" ? "#F59E0B" : "#9CA3AF";
-              const ic: keyof typeof Ionicons.glyphMap = sr.status === "accepted" ? "checkmark-circle" : sr.status === "declined" ? "close-circle" : sr.status === "timeout" ? "time" : sr.status === "notified" ? "notifications" : "ellipse-outline";
+            {(focusedAlert?.contacts ?? []).map((c, i) => {
+              const col = c.status === "accepted" ? "#10B981"
+                : c.status === "declined" || c.status === "expired" ? "#EF4444"
+                : c.status === "pending" ? "#F59E0B" : "#9CA3AF";
               return (
-                <View key={sub.id} style={styles.saSubRow}>
+                <View key={c.id} style={styles.saSubRow}>
                   <View style={[styles.saSubNum, { backgroundColor: col }]}>
                     <Text style={styles.saSubNumText}>{i + 1}</Text>
                   </View>
                   <View style={{ flex: 1 }}>
-                    <Text style={styles.saSubName}>{sub.name}</Text>
+                    <Text style={styles.saSubName}>{c.operator_name ?? `Operator ${String(c.operator_id).slice(0, 6)}`}</Text>
                     <Text style={[styles.saSubStatus, { color: col }]}>
-                      <Ionicons name={ic} size={12} color={col} />{"  "}
-                      {sr.status === "notified" ? `Waiting · ${cascadeCountdown}s` : sr.status === "idle" ? "Pending" : sr.status.charAt(0).toUpperCase() + sr.status.slice(1)}
+                      {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
                     </Text>
                   </View>
-                  {sr.status === "notified" && (
-                    <View style={{ flexDirection: "row", gap: 6 }}>
-                      <Pressable style={[styles.saSubBtn, { backgroundColor: "#10B981" }]} onPress={() => respondToSub(focusedAlert.id, sub.id, "accepted")}>
-                        <Text style={styles.saSubBtnText}>Accept</Text>
-                      </Pressable>
-                      <Pressable style={[styles.saSubBtn, { backgroundColor: "#EF4444" }]} onPress={() => respondToSub(focusedAlert.id, sub.id, "declined")}>
-                        <Text style={styles.saSubBtnText}>Decline</Text>
-                      </Pressable>
-                    </View>
-                  )}
                 </View>
               );
             })}
 
-            {focusedAlert?.type === "delay" && (
-              <View style={[styles.saInfoRow, { backgroundColor: "#FEF3C7", marginBottom: 8 }]}>
-                <Ionicons name="time-outline" size={16} color="#F59E0B" />
-                <Text style={[styles.saInfoText, { color: "#92400E" }]}>
-                  Delay of {focusedAlert.delayMinutes} min reported — Smart Rescheduling available
-                </Text>
-              </View>
-            )}
-
-            {focusedAlert?.resolved && (
-              <View style={[styles.saInfoRow, { backgroundColor: "#D1FAE5" }]}>
-                <Ionicons name="checkmark-circle" size={16} color="#10B981" />
-                <Text style={[styles.saInfoText, { color: "#065F46" }]}>
-                  Resolved: {focusedAlert.resolutionNote ?? focusedAlert.resolution}
-                </Text>
-              </View>
-            )}
-
-            {/* Admin action buttons */}
-            {focusedAlert && !focusedAlert.resolved && (
+            {focusedAlert && focusedAlert.status === "pending" && (
               <View style={styles.saActionRow}>
                 <Pressable style={[styles.saActionBtn, { backgroundColor: colors.primary }]} onPress={() => { setShowAlertDetail(false); setShowReschedule(true); }}>
                   <Ionicons name="calendar" size={16} color="#FFF" />
                   <Text style={styles.saActionBtnText}>Smart Reschedule</Text>
-                </Pressable>
-                <Pressable style={[styles.saActionBtn, { backgroundColor: "#EF4444" }]} onPress={() => { dismissAlert(focusedAlert.id); setShowAlertDetail(false); }}>
-                  <Ionicons name="close-circle" size={16} color="#FFF" />
-                  <Text style={styles.saActionBtnText}>Dismiss</Text>
                 </Pressable>
               </View>
             )}
@@ -1628,11 +1576,8 @@ export default function ActivityScreen() {
             {unresolved.length > 1 && (
               <View style={styles.saAlertCountRow}>
                 <Text style={[styles.saAlertCountText, { color: colors.mutedForeground }]}>
-                  {unresolved.length - 1} more alert{unresolved.length - 1 > 1 ? "s" : ""} pending
+                  {unresolved.length - 1} more cascade{unresolved.length - 1 > 1 ? "s" : ""} pending
                 </Text>
-                <Pressable onPress={() => { clearAll(); setShowAlertDetail(false); }}>
-                  <Text style={{ color: "#EF4444", fontSize: 12, fontWeight: "700" }}>Clear All</Text>
-                </Pressable>
               </View>
             )}
 
@@ -1657,7 +1602,7 @@ export default function ActivityScreen() {
             </View>
             {focusedAlert && (
               <Text style={[styles.saCardSub, { marginBottom: 16 }]}>
-                {focusedAlert.lessonName} · {focusedAlert.teacherName}
+                {focusedAlert.course_name ?? "Class"} {"\u00B7"} {focusedAlert.absent_operator_name ?? "Instructor"}
               </Text>
             )}
 

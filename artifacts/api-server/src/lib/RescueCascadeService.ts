@@ -360,6 +360,61 @@ export class RescueCascadeService {
       })();
     }
 
+    // On decline: immediately promote next waiting contact (don't wait for scheduler tick)
+    if (!accept) {
+      const { rows: nextRows } = await pool.query<{
+        id: number; operator_id: string; operator_name: string;
+      }>(
+        `SELECT id, operator_id, operator_name
+         FROM cascade_contacts
+         WHERE cascade_id = $1 AND status = 'waiting'
+         ORDER BY rank ASC
+         LIMIT 1`,
+        [contact.cascade_id],
+      );
+      const next = nextRows[0];
+      if (next) {
+        await pool.query(
+          `UPDATE cascade_contacts
+              SET status = 'pending', contacted_at = NOW()
+            WHERE id = $1`,
+          [next.id],
+        );
+        // Notify the promoted candidate via configured channel
+        const { rows: cascadeOrgRows } = await pool.query<{ org_id: number; course_name: string | null }>(
+          `SELECT org_id, course_name FROM rescue_cascades WHERE id = $1`,
+          [contact.cascade_id],
+        );
+        const cascadeOrg = cascadeOrgRows[0];
+        if (cascadeOrg) {
+          const ch = await RescueCascadeService.getNotifyChannel(cascadeOrg.org_id);
+          const title = "Substitute Request";
+          const body = `You are needed as a substitute for ${cascadeOrg.course_name ?? "a class"}. Please respond promptly.`;
+          if (ch === "push" || ch === "both") {
+            void EmergencyPushService.sendCascadePush(next.operator_id, cascadeOrg.org_id, title, body).catch(() => {});
+          }
+          if (ch === "in_app" || ch === "both") {
+            await supabase.from("private_notifications").insert({
+              organization_id: cascadeOrg.org_id,
+              recipient_id:    parseInt(next.operator_id, 10),
+              type:            "cascade_substitute_request",
+              title,
+              body,
+              read:            false,
+            }).then(undefined, () => {});
+          }
+        }
+      } else {
+        // No more candidates — escalate to admins
+        await pool.query(
+          `UPDATE rescue_cascades SET status = 'no_qualified_substitute' WHERE id = $1`,
+          [contact.cascade_id],
+        );
+        cascadeStatus = "no_qualified_substitute";
+        void RescueCascadeService.notifyAdminsNoSubstitute(contact.cascade_id, orgId, null, "all_candidates_expired").catch(() => {});
+      }
+    }
+
     // Fire-and-forget reliability update
     void ReliabilityService.updateScore(String(operatorUserId), orgId);
 

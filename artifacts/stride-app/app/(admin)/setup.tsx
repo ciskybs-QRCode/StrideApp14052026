@@ -26,7 +26,6 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAuth } from "@/context/AuthContext";
 import { useBranding } from "@/context/BrandingContext";
 import { useColors } from "@/hooks/useColors";
-import { useSubstitution } from "@/context/SubstitutionContext";
 
 // ── SOS Emergency (mirrored from Operator dashboard) ─────────────────────────
 
@@ -226,7 +225,6 @@ export default function AdminSetup() {
   const router = useRouter();
   const { user, updateUser } = useAuth();
   const { branding, saveBranding } = useBranding();
-  const { activeAlert } = useSubstitution();
   const insets = useSafeAreaInsets();
   const colors = useColors();
   const styles = make_styles(colors.primary, colors.secondary);
@@ -470,18 +468,6 @@ export default function AdminSetup() {
           <Text style={[styles.subtitle, { color: colors.mutedForeground }]}>Branding & Customization</Text>
         </View>
 
-        {/* ── Red Alert Banner (from Operator substitution cascade) ── */}
-        {activeAlert && !activeAlert.resolved && activeAlert.cascadeStep >= 4 && (
-          <View style={{ backgroundColor: "#DC2626", borderRadius: 16, padding: 16, marginBottom: 20, flexDirection: "row", alignItems: "center", gap: 12 }}>
-            <Ionicons name="warning" size={24} color="#FFF" />
-            <View style={{ flex: 1 }}>
-              <Text style={{ color: "#FFF", fontWeight: "800", fontSize: 15 }}>🔴 RED ALERT — No Subs Available</Text>
-              <Text style={{ color: "rgba(255,255,255,0.85)", fontSize: 12, marginTop: 3 }}>
-                {activeAlert.lessonName} · {activeAlert.teacherName} — All substitutes unavailable. Admin action required.
-              </Text>
-            </View>
-          </View>
-        )}
 
         {/* Logo Area */}
         <View style={[styles.logoCard, { backgroundColor: "#FFFFFF" }]}>

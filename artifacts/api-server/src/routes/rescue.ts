@@ -183,6 +183,38 @@ router.get(
   },
 );
 
+// ── GET /rescue/my-cascade — absent operator's active cascade ─────────────────
+router.get(
+  "/rescue/my-cascade",
+  requireAuth,
+  requireRole("operator", "admin"),
+  async (req, res) => {
+    const user  = (req as AuthReq).user;
+    const orgId = user.orgId ?? 1;
+
+    try {
+      const { rows: cascadeRows } = await pool.query(
+        `SELECT * FROM rescue_cascades
+         WHERE absent_operator_id = $1 AND org_id = $2 AND status = 'pending'
+         ORDER BY created_at DESC LIMIT 1`,
+        [String(user.id), orgId],
+      );
+      if (cascadeRows.length === 0) { res.json(null); return; }
+      const cascade = cascadeRows[0];
+
+      const { rows: contacts } = await pool.query(
+        `SELECT * FROM cascade_contacts WHERE cascade_id = $1 ORDER BY rank`,
+        [cascade.id],
+      );
+
+      res.json({ ...cascade, contacts });
+    } catch (err) {
+      req.log.error(err, "rescue/my-cascade: error");
+      res.status(500).json({ error: "Failed to load cascade" });
+    }
+  },
+);
+
 // ── POST /rescue/acknowledge ───────────────────────────────────────────────────
 router.post(
   "/rescue/acknowledge",

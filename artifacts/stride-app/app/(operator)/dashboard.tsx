@@ -32,18 +32,17 @@ import { useSecurityEscalation } from "@/context/SecurityEscalationContext";
 import { useColors } from "@/hooks/useColors";
 import { useFeatures } from "@/context/FeaturesContext";
 import { useOrgCurrency } from "@/hooks/useOrgCurrency";
-import { api, request, listEvents, type ApiScheduledCourse, getRescuePending, acknowledgeRescue, type CascadeContact, type ChildTransitWarning } from "@/lib/api";
+import { api, request, listEvents, type ApiScheduledCourse, getRescuePending, acknowledgeRescue, getMyAbsenceCascade, type CascadeContact, type RescueCascade, type ChildTransitWarning } from "@/lib/api";
 import { usePlanFeatures } from "@/hooks/usePlanFeatures";
-import {
-  CASCADE_TIMEOUT_SECS,
-  MOCK_SUBS,
-  useSubstitution,
-} from "@/context/SubstitutionContext";
+
 import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 import { QRScanButton } from "@/components/QRScanButton";
 import { SOSButton } from "@/components/SOSButton";
 import { HubCard } from "@/components/HubCard";
+
 import { CalendarPicker } from "@/components/WizardPickers";
+
+const CASCADE_TIMEOUT_SECS = 300;
 
 // ── Web Audio tone synthesiser ────────────────────────────────────────────────
 function playDashboardTone(result: "success" | "warning" | "denied"): void {
@@ -317,7 +316,6 @@ const make_inboxStyles = (primary: string, secondary: string) => StyleSheet.crea
 export default function OperatorDashboard() {
   const { user, updateUser } = useAuth();
   const { lessons, students, updateStudentPresence } = useAppData();
-  const { reportAbsence, reportDelay, respondToSub, activeAlert, cascadeCountdown } = useSubstitution();
   const { unreadCount, notifications, markAllRead, markRead, myBookings } = usePrivateLessons();
   const { triggerCheckinAlert, clearAlertByStudent, activeAlerts: secAlerts, triggerAccessAlert } = useSecurityEscalation();
   const { isOnline, enqueue, pendingCount: offlinePendingCount } = useOfflineSync();
@@ -405,6 +403,15 @@ export default function OperatorDashboard() {
   // ── Cascade viewer modal ────────────────────────────────────────────────────
   const [showCascade, setShowCascade] = useState(false);
 
+  // ── My absence cascade (I reported absent; system found subs for me) ─────────
+  const [myCascade, setMyCascade] = useState<(RescueCascade & { contacts: CascadeContact[] }) | null>(null);
+  const loadMyCascade = useCallback(async () => {
+    try { setMyCascade(await getMyAbsenceCascade()); } catch { /* silent */ }
+  }, []);
+
+  // ── Countdown ticker ─────────────────────────────────────────────────────────
+  const [, setTick] = useState(0);
+
   // ── Camera ─────────────────────────────────────────────────────────────────
   const [scanResult, setScanResult]     = useState<ScanResult | null>(null);
   const [permission, requestPermission] = useCameraPermissions();
@@ -442,14 +449,12 @@ export default function OperatorDashboard() {
     ).start();
   }, []);
 
-  useEffect(() => {
-    if (activeAlert && activeAlert.type === "absent" && !activeAlert.resolved) {
-      setShowCascade(true);
-    }
-  }, [activeAlert?.id]);
-
   // ── Rescue cascade pending requests ────────────────────────────────────
   const [rescuePending, setRescuePending] = useState<CascadeContact[]>([]);
+
+  useEffect(() => {
+    if (rescuePending.length > 0) setShowCascade(true);
+  }, [rescuePending.length]);
   const [rescueAcking,  setRescueAcking]  = useState<number | null>(null);
 
   const loadRescuePending = useCallback(async () => {
@@ -461,9 +466,26 @@ export default function OperatorDashboard() {
 
   useEffect(() => {
     loadRescuePending();
-    const interval = setInterval(loadRescuePending, 30_000);
-    return () => clearInterval(interval);
-  }, [loadRescuePending]);
+    loadMyCascade();
+    const intervalPending = setInterval(loadRescuePending, 30_000);
+    const intervalMine    = setInterval(loadMyCascade, 30_000);
+    return () => { clearInterval(intervalPending); clearInterval(intervalMine); };
+  }, [loadRescuePending, loadMyCascade]);
+
+  // tick every second while there are pending requests
+  useEffect(() => {
+    if (rescuePending.length === 0) return;
+    const t = setInterval(() => setTick(n => n + 1), 1000);
+    return () => clearInterval(t);
+  }, [rescuePending.length]);
+
+  const cascadeCountdown = (() => {
+    const pc = rescuePending[0];
+    if (!pc?.contacted_at) return 0;
+    return Math.max(0, Math.floor(
+      (new Date(pc.contacted_at).getTime() + CASCADE_TIMEOUT_SECS * 1000 - Date.now()) / 1000
+    ));
+  })();
 
   // ── Safe-Zone transit warnings polling (every 60 s) ──────────────────────────
   const loadTransitWarnings = useCallback(async () => {
@@ -1186,14 +1208,14 @@ export default function OperatorDashboard() {
       // Full-absence path — triggered by one of the two big absence buttons
       setAbsenceType("absent");
       setAbsenceScope(scope);
-      reportAbsence(lessonId, lessonName, myName, myName, scope);
       const scopeLabel = scope === "single_class" ? "first lesson only" : "entire day";
       pushLog({ time: nowTime(), action: `Full absence (${scopeLabel}) reported: ${myName} — ${lessonName}`, type: "error" });
+      // reload cascade data after short delay (admin or auto-trigger may create it)
+      setTimeout(() => { void loadMyCascade(); void loadRescuePending(); }, 3000);
     } else {
       // Delay path
       const selected = DELAY_OPTIONS.find(o => o.value === absenceType);
       if (!selected) return;
-      reportDelay(lessonId, lessonName, myName, myName, selected.delayMins);
       pushLog({ time: nowTime(), action: `Delay (${selected.delayMins}min) reported: ${myName}`, type: "warning" });
     }
 
@@ -1338,8 +1360,8 @@ export default function OperatorDashboard() {
         {/* ── ROLE SWITCHER ── */}
         <RoleSwitcherRow />
 
-        {/* ── Active Alert Banner (substitution cascade only — red alert goes to Admin) ── */}
-        {activeAlert && !activeAlert.resolved && activeAlert.cascadeStep < 4 && (
+        {/* ── Cover-request banner (someone needs this operator to substitute) ── */}
+        {rescuePending.length > 0 && (
           <Pressable
             style={[styles.alertBanner, { backgroundColor: "#F59E0B" }]}
             onPress={() => setShowCascade(true)}
@@ -1347,10 +1369,10 @@ export default function OperatorDashboard() {
             <Ionicons name="alert-circle" size={20} color="#FFF" />
             <View style={{ flex: 1 }}>
               <Text style={styles.alertBannerTitle}>
-                ⚡ Substitution in progress — {activeAlert.lessonName}
+                {"\u26A1"} Cover request — {rescuePending[0]?.course_name ?? "Class"}
               </Text>
               <Text style={styles.alertBannerSub}>
-                Sub {activeAlert.cascadeStep} notified · Tap to view
+                {rescuePending.length} pending · {cascadeCountdown}s remaining · Tap to respond
               </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color="#FFF" />
@@ -2164,78 +2186,98 @@ export default function OperatorDashboard() {
           <View style={styles.cascadeCard}>
             <View style={styles.cascadeHeader}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.cascadeTitle}>
-                  {activeAlert?.cascadeStep === 4 ? "🔴 RED ALERT" : "⚡ Substitution Cascade"}
-                </Text>
-                <Text style={styles.cascadeSubtitle}>
-                  {activeAlert?.lessonName} · {activeAlert?.teacherName}
-                </Text>
+                <Text style={styles.cascadeTitle}>{"\u26A1"} Cascade Dashboard</Text>
               </View>
               <Pressable onPress={() => setShowCascade(false)}>
                 <Ionicons name="close" size={24} color="#6B7BA4" />
               </Pressable>
             </View>
 
-            {activeAlert && activeAlert.type === "absent" && !activeAlert.resolved && activeAlert.cascadeStep < 4 && (
-              <View style={[styles.cascadeTimer, { borderColor: "#F59E0B" }]}>
-                <Ionicons name="time-outline" size={16} color="#F59E0B" />
-                <Text style={[styles.cascadeTimerText, { color: "#F59E0B" }]}>
-                  Auto-advance in {cascadeCountdown}s
-                </Text>
-              </View>
-            )}
-
-            {activeAlert?.cascadeStep === 4 && (
-              <View style={styles.redAlertBanner}>
-                <Ionicons name="warning" size={20} color="#FFF" />
-                <Text style={styles.redAlertText}>All substitutes unavailable — Admin action required</Text>
-              </View>
-            )}
-
-            {activeAlert && MOCK_SUBS.map((sub, i) => {
-              const sr = activeAlert.subResponses[i];
-              if (!sr) return null;
-              const isActive = activeAlert.cascadeStep === i + 1 && !activeAlert.resolved;
-              const statusCol = subStatusColor(sr.status);
-              return (
-                <View key={sub.id} style={[styles.subRow, { backgroundColor: isActive ? "#FEF3C7" : "#F8FAFF" }]}>
-                  <View style={[styles.subNumBadge, { backgroundColor: isActive ? "#F59E0B" : sr.status === "accepted" ? "#10B981" : sr.status === "idle" ? "#E5E7EB" : "#EF4444" }]}>
-                    <Text style={styles.subNumText}>{i + 1}</Text>
-                  </View>
-                  <View style={{ flex: 1 }}>
-                    <Text style={styles.subName}>{sub.name}</Text>
-                    <Text style={[styles.subSpecialty, { color: "#6B7BA4" }]}>{sub.specialty}</Text>
-                    <Text style={[styles.subStatus, { color: statusCol }]}>
-                      <Ionicons name={subStatusIcon(sr.status)} size={12} color={statusCol} /> {subStatusLabel(sr.status)}
-                    </Text>
-                  </View>
-                  {isActive && (
-                    <View style={styles.subBtns}>
-                      <Pressable style={[styles.subBtn, { backgroundColor: "#10B981" }]} onPress={() => { if (activeAlert) respondToSub(activeAlert.id, sub.id, "accepted"); }}>
-                        <Text style={styles.subBtnText}>✓ Accept</Text>
-                      </Pressable>
-                      <Pressable style={[styles.subBtn, { backgroundColor: "#EF4444" }]} onPress={() => { if (activeAlert) respondToSub(activeAlert.id, sub.id, "declined"); }}>
-                        <Text style={styles.subBtnText}>✗ Decline</Text>
-                      </Pressable>
+            {/* ── Cover requests: this operator is being asked to substitute ── */}
+            {rescuePending.length > 0 && (
+              <>
+                <Text style={[styles.cascadeSubtitle, { marginBottom: 8 }]}>Cover Requests — respond before time runs out</Text>
+                {rescuePending.map(contact => {
+                  const isAcking = rescueAcking === contact.id;
+                  const secs = contact.contacted_at
+                    ? Math.max(0, Math.floor((new Date(contact.contacted_at).getTime() + CASCADE_TIMEOUT_SECS * 1000 - Date.now()) / 1000))
+                    : 0;
+                  return (
+                    <View key={contact.id} style={[styles.subRow, { backgroundColor: "#FEF3C7" }]}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.subName}>{contact.course_name ?? "Class"}</Text>
+                        <Text style={[styles.subSpecialty, { color: "#6B7BA4" }]}>
+                          Absent: {contact.absent_operator_name ?? "Instructor"}
+                        </Text>
+                        <View style={styles.cascadeTimer}>
+                          <Ionicons name="time-outline" size={13} color="#F59E0B" />
+                          <Text style={[styles.cascadeTimerText, { color: "#F59E0B" }]}>{secs}s remaining</Text>
+                        </View>
+                      </View>
+                      <View style={styles.subBtns}>
+                        <Pressable
+                          style={[styles.subBtn, { backgroundColor: "#10B981", opacity: isAcking ? 0.5 : 1 }]}
+                          disabled={isAcking}
+                          onPress={async () => {
+                            setRescueAcking(contact.id);
+                            try { await acknowledgeRescue(contact.id, true); await loadRescuePending(); } catch { /* silent */ }
+                            setRescueAcking(null);
+                          }}
+                        >
+                          <Text style={styles.subBtnText}>{isAcking ? "..." : "\u2713 Accept"}</Text>
+                        </Pressable>
+                        <Pressable
+                          style={[styles.subBtn, { backgroundColor: "#EF4444", opacity: isAcking ? 0.5 : 1 }]}
+                          disabled={isAcking}
+                          onPress={async () => {
+                            setRescueAcking(contact.id);
+                            try { await acknowledgeRescue(contact.id, false); await loadRescuePending(); } catch { /* silent */ }
+                            setRescueAcking(null);
+                          }}
+                        >
+                          <Text style={styles.subBtnText}>{isAcking ? "..." : "\u2717 Decline"}</Text>
+                        </Pressable>
+                      </View>
                     </View>
-                  )}
-                </View>
-              );
-            })}
+                  );
+                })}
+              </>
+            )}
 
-            {!activeAlert && (
+            {/* ── My absence cascade: contacts found for my own absence ── */}
+            {myCascade && (
+              <>
+                <Text style={[styles.cascadeSubtitle, { marginTop: rescuePending.length > 0 ? 16 : 0, marginBottom: 8 }]}>
+                  Your Absence — substitute search
+                </Text>
+                <Text style={[styles.subSpecialty, { color: "#6B7BA4", marginBottom: 8 }]}>
+                  {myCascade.course_name ?? "Class"} · {myCascade.status === "resolved" ? "Covered" : "Searching..."}
+                </Text>
+                {(myCascade.contacts ?? []).map((c, i) => {
+                  const col = c.status === "accepted" ? "#10B981"
+                    : c.status === "declined" || c.status === "expired" ? "#EF4444"
+                    : c.status === "pending" ? "#F59E0B" : "#9CA3AF";
+                  return (
+                    <View key={c.id} style={[styles.subRow, { backgroundColor: "#F8FAFF" }]}>
+                      <View style={[styles.subNumBadge, { backgroundColor: col }]}>
+                        <Text style={styles.subNumText}>{i + 1}</Text>
+                      </View>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.subName}>{c.operator_name ?? `Operator ${String(c.operator_id).slice(0, 6)}`}</Text>
+                        <Text style={[styles.subStatus, { color: col }]}>
+                          {c.status.charAt(0).toUpperCase() + c.status.slice(1)}
+                        </Text>
+                      </View>
+                    </View>
+                  );
+                })}
+              </>
+            )}
+
+            {rescuePending.length === 0 && !myCascade && (
               <View style={{ padding: 20, alignItems: "center" }}>
                 <Ionicons name="checkmark-circle" size={48} color="#10B981" />
-                <Text style={{ color: "#10B981", fontWeight: "700", marginTop: 8 }}>No active alerts</Text>
-              </View>
-            )}
-
-            {activeAlert?.resolved && (
-              <View style={[styles.resolvedBanner, { backgroundColor: "#D1FAE5" }]}>
-                <Ionicons name="checkmark-circle" size={20} color="#10B981" />
-                <Text style={[styles.resolvedText, { color: "#10B981" }]}>
-                  Resolved: {activeAlert.resolutionNote ?? activeAlert.resolution}
-                </Text>
+                <Text style={{ color: "#10B981", fontWeight: "700", marginTop: 8 }}>No active cascade requests</Text>
               </View>
             )}
 
