@@ -202,18 +202,6 @@ const DEMO_USERS: Record<string, { token: string; user: ApiUser }> = {
     token: "demo-token-super",
     user: { id: "145", name: "Francesco", email: "ciskybs@gmail.com", role: "super_admin", orgId: 1 },
   },
-  "genitore@test.com": {
-    token: "demo-token-parent",
-    user: { id: "1", name: "John Smith", email: "genitore@test.com", role: "parent", orgId: 1 },
-  },
-  "operatore@test.com": {
-    token: "demo-token-operator",
-    user: { id: "2", name: "Sara Wilson", email: "operatore@test.com", role: "operator", orgId: 1 },
-  },
-  "admin@test.com": {
-    token: "demo-token-admin",
-    user: { id: "3", name: "Admin Stride", email: "admin@test.com", role: "admin", orgId: 1 },
-  },
 };
 
 export interface FamilyDiscountTier {
