@@ -72,7 +72,7 @@ export function PromoProvider({ children }: { children: React.ReactNode }) {
       }
 
       if (activePromo.discountType === "percent" && activePromo.discountPercent != null) {
-        return Math.round(item.price * activePromo.discountPercent) / 100;
+        return Math.round(item.price * activePromo.discountPercent / 100 * 100) / 100;
       }
       if (activePromo.discountType === "amount" && activePromo.discountAmount != null) {
         return Math.min(activePromo.discountAmount, item.price);

@@ -131,7 +131,7 @@ export function computeFamilyDiscount(
 
     if (percent > 0) {
       for (const li of dep.items) {
-        const d = Math.round(li.finalPrice * percent) / 100;
+        const d = Math.round(li.finalPrice * percent / 100 * 100) / 100;
         if (d <= 0) continue;
         li.discount += d;
         li.finalPrice = Math.max(0, li.finalPrice - d);
