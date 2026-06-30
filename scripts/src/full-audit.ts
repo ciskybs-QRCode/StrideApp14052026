@@ -339,7 +339,7 @@ async function main() {
   const member   = await login("genitore@test.com",  "password");
   const operator = await login("operatore@test.com", "password");
   const admin    = await login("admin@test.com",     "password");
-  const super_   = await login("ciskybs@gmail.com",  "password");
+  const super_   = await login("ciskybs@gmail.com",  "Stride2026!");
 
   if (member)   await testMember(member.token);
   if (operator) await testOperator(operator.token);
