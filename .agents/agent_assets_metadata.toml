@@ -83,3 +83,9 @@ id = "teo-fHMnveoOzAk30XTVb"
 uri = "file://exports/StrideApp29062026.zip"
 type = "unspecified"
 title = "Stride App — codice completo (44.7 MB)"
+
+[[outputs]]
+id = "9GrQQ2FviJBQYvBsfLQV2"
+uri = "file://StrideApp_source.zip"
+type = "unspecified"
+title = "StrideApp — Codice Sorgente (Batch 2+3 applicati)"
