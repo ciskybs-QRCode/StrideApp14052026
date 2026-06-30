@@ -19,6 +19,8 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as Localization from "expo-localization";
 import { useColors } from "@/hooks/useColors";
+import { useDeviceLocale } from "@/hooks/useDeviceLocale";
+import { getBankConfig } from "@/lib/payment-regions";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { request } from "@/lib/api";
 import { CalendarPicker, NumberPickerSheet, isoToCal, calToIso } from "@/components/WizardPickers";
@@ -255,6 +257,7 @@ export default function ExpensesScreen() {
   const insets  = useSafeAreaInsets();
 
   const [deviceCurrency] = useState(getDeviceCurrency);
+  const deviceLocale = useDeviceLocale();
 
   const [expenses, setExpenses]   = useState<Expense[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -715,12 +718,31 @@ export default function ExpensesScreen() {
               </View>
 
               {/* RECIPIENT */}
-              <SLabel label="RECIPIENT" />
-              <SInput label="NAME" value={fRecipient} onChange={setFRecipient} placeholder="Company or person name" />
-              <SInput label="IBAN" value={fIban} onChange={setFIban} placeholder="e.g. GB29 NWBK 6016 1331 9268 19" />
-              <SInput label="BIC / SWIFT" value={fBic} onChange={setFBic} placeholder="e.g. NWBKGB2L" />
-              <SInput label="STRIPE PAYMENT LINK (optional)" value={fStripe} onChange={setFStripe}
-                placeholder="https://buy.stripe.com/…" keyboardType="url" />
+              {(() => {
+                const bc = getBankConfig(deviceLocale.countryCode, fCurrency);
+                return (
+                  <>
+                    <SLabel label="RECIPIENT" />
+                    <SInput label="NAME" value={fRecipient} onChange={setFRecipient} placeholder="Company or person name" />
+                    <SInput
+                      label={bc.accountLabel.toUpperCase()}
+                      value={fIban}
+                      onChange={setFIban}
+                      placeholder={bc.accountPlaceholder}
+                    />
+                    {bc.bicLabel ? (
+                      <SInput
+                        label={bc.bicLabel.toUpperCase()}
+                        value={fBic}
+                        onChange={setFBic}
+                        placeholder="e.g. NWBKGB2L"
+                      />
+                    ) : null}
+                    <SInput label="STRIPE PAYMENT LINK (optional)" value={fStripe} onChange={setFStripe}
+                      placeholder="https://buy.stripe.com/..." keyboardType="url" />
+                  </>
+                );
+              })()}
 
               {/* PAYMENT METHOD */}
               <SLabel label="PAYMENT METHOD" />
