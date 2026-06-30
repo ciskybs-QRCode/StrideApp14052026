@@ -56,3 +56,5 @@ Thumbs.db
 # Replit
 .cache/
 .local/
+StrideApp_source.zip
+artifacts/stride-landing/public/StrideApp_source.zip
