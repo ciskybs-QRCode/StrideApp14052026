@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, type ApiOperatorCert } from "@/lib/api";
 import { useColors } from "@/hooks/useColors";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { CalendarPicker, isoToCal, calToIso } from "@/components/WizardPickers";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
@@ -63,6 +64,7 @@ function UploadSheet({ visible, onClose, onUploaded, colors }: UploadSheetProps)
   const [imageMime,  setImageMime]  = useState("image/jpeg");
   const [fileName,   setFileName]   = useState("");
   const [uploading,  setUploading]  = useState(false);
+  const [calPicker, setCalPicker] = useState<{ value: string; set: (v: string) => void; yearRange?: [number, number] } | null>(null);
 
   const reset = () => { setCertType("first_aid"); setCertName(""); setExpiry(""); setNotes(""); setImageB64(null); };
 
@@ -112,6 +114,7 @@ function UploadSheet({ visible, onClose, onUploaded, colors }: UploadSheetProps)
   };
 
   return (
+    <>
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.55)", justifyContent: "flex-end" }}>
         <View style={{ backgroundColor: colors.card, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 24, paddingBottom: 40 }}>
@@ -154,14 +157,15 @@ function UploadSheet({ visible, onClose, onUploaded, colors }: UploadSheetProps)
 
           {/* Expiry date */}
           <Text style={{ fontSize: 13, fontWeight: "600", color: colors.primary, marginBottom: 6 }}>Expiry Date (optional)</Text>
-          <TextInput
-            style={{ borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 11, fontSize: 14, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background, marginBottom: 14 }}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={colors.mutedForeground}
-            value={expiry}
-            onChangeText={setExpiry}
-            keyboardType="numbers-and-punctuation"
-          />
+          <Pressable
+            style={{ borderWidth: 1.5, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 13, borderColor: colors.border, backgroundColor: colors.background, marginBottom: 14, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
+            onPress={() => setCalPicker({ value: isoToCal(expiry), set: v => setExpiry(calToIso(v)) })}
+          >
+            <Text style={{ fontSize: 14, color: expiry ? colors.foreground : colors.mutedForeground }}>
+              {expiry || "YYYY-MM-DD"}
+            </Text>
+            <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+          </Pressable>
 
           {/* Notes */}
           <Text style={{ fontSize: 13, fontWeight: "600", color: colors.primary, marginBottom: 6 }}>Notes (optional)</Text>
@@ -206,6 +210,21 @@ function UploadSheet({ visible, onClose, onUploaded, colors }: UploadSheetProps)
         </View>
       </View>
     </Modal>
+
+    <Modal visible={!!calPicker} transparent animationType="fade">
+      <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" }} onPress={() => setCalPicker(null)}>
+        <Pressable onPress={() => {}}>
+          {calPicker && (
+            <CalendarPicker
+              value={calPicker.value}
+              yearRange={calPicker.yearRange}
+              onConfirm={(v) => { calPicker.set(v); setCalPicker(null); }}
+            />
+          )}
+        </Pressable>
+      </Pressable>
+    </Modal>
+    </>
   );
 }
 

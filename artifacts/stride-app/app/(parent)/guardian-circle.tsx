@@ -19,6 +19,7 @@ import { useAppData } from "@/context/AppDataContext";
 import { api } from "@/lib/api";
 import { useColors } from "@/hooks/useColors";
 import defaultColors from "@/constants/colors";
+import { CalendarPicker, TimePickerSheet, NumberPickerSheet, isoToCal, calToIso } from "@/components/WizardPickers";
 
 const C = defaultColors.light;
 
@@ -93,6 +94,11 @@ export default function GuardianCircle() {
   const [windowStart,   setWindowStart]   = useState("15:30");
   const [windowEnd,     setWindowEnd]     = useState("16:30");
   const [toleranceMins, setToleranceMins] = useState("30");
+
+  // ── Shared pickers ───────────────────────────────────────────────────────────
+  const [calPicker,  setCalPicker]  = useState<{ value: string; set: (v: string) => void; yearRange?: [number, number] } | null>(null);
+  const [timePicker, setTimePicker] = useState<{ value: string; set: (v: string) => void } | null>(null);
+  const [numPicker,  setNumPicker]  = useState<{ label: string; val: string; min: number; max: number; set: (v: string) => void } | null>(null);
 
   useEffect(() => {
     if (children.length > 0 && !selectedChild) setSelectedChild(children[0].id);
@@ -338,13 +344,17 @@ export default function GuardianCircle() {
                 />
               </View>
               {hasExpiry && (
-                <TextInput
-                  style={styles.input}
-                  value={expiry}
-                  onChangeText={setExpiry}
-                  placeholder="YYYY-MM-DD"
-                  placeholderTextColor={C.mutedForeground}
-                />
+                <Pressable
+                  style={[styles.input, { justifyContent: "center" }]}
+                  onPress={() => setCalPicker({
+                    value: isoToCal(expiry),
+                    set: (v) => setExpiry(calToIso(v)),
+                  })}
+                >
+                  <Text style={{ color: expiry ? C.foreground : C.mutedForeground, fontSize: 14 }}>
+                    {expiry ? isoToCal(expiry) : "Select expiry date"}
+                  </Text>
+                </Pressable>
               )}
 
               {/* ── Intelligent QR section ──────────────────────────────────── */}
@@ -408,39 +418,39 @@ export default function GuardianCircle() {
                   <View style={styles.timeRow}>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.fieldLabel}>Window Start</Text>
-                      <TextInput
-                        style={styles.input}
-                        value={windowStart}
-                        onChangeText={setWindowStart}
-                        placeholder="15:30"
-                        placeholderTextColor={C.mutedForeground}
-                        keyboardType="numbers-and-punctuation"
-                      />
+                      <Pressable
+                        style={[styles.input, { justifyContent: "center" }]}
+                        onPress={() => setTimePicker({ value: windowStart, set: setWindowStart })}
+                      >
+                        <Text style={{ color: windowStart ? C.foreground : C.mutedForeground, fontSize: 14 }}>
+                          {windowStart || "15:30"}
+                        </Text>
+                      </Pressable>
                     </View>
                     <Text style={styles.timeSep}>to</Text>
                     <View style={{ flex: 1 }}>
                       <Text style={styles.fieldLabel}>Window End</Text>
-                      <TextInput
-                        style={styles.input}
-                        value={windowEnd}
-                        onChangeText={setWindowEnd}
-                        placeholder="16:30"
-                        placeholderTextColor={C.mutedForeground}
-                        keyboardType="numbers-and-punctuation"
-                      />
+                      <Pressable
+                        style={[styles.input, { justifyContent: "center" }]}
+                        onPress={() => setTimePicker({ value: windowEnd, set: setWindowEnd })}
+                      >
+                        <Text style={{ color: windowEnd ? C.foreground : C.mutedForeground, fontSize: 14 }}>
+                          {windowEnd || "16:30"}
+                        </Text>
+                      </Pressable>
                     </View>
                   </View>
 
                   {/* Tolerance */}
                   <Text style={styles.fieldLabel}>Tolerance (minutes)</Text>
-                  <TextInput
-                    style={[styles.input, { width: 90 }]}
-                    value={toleranceMins}
-                    onChangeText={setToleranceMins}
-                    placeholder="30"
-                    placeholderTextColor={C.mutedForeground}
-                    keyboardType="number-pad"
-                  />
+                  <Pressable
+                    style={[styles.input, { width: 90, justifyContent: "center" }]}
+                    onPress={() => setNumPicker({ label: "Tolerance (minutes)", val: toleranceMins || "30", min: 0, max: 120, set: setToleranceMins })}
+                  >
+                    <Text style={{ color: toleranceMins ? C.foreground : C.mutedForeground, fontSize: 14 }}>
+                      {toleranceMins || "30"}
+                    </Text>
+                  </Pressable>
                   <Text style={[styles.fieldLabel, { color: C.mutedForeground, fontWeight: "400", marginTop: 4 }]}>
                     Allow scans up to {toleranceMins || "30"} min before/after window
                   </Text>
@@ -462,6 +472,46 @@ export default function GuardianCircle() {
             </ScrollView>
           </View>
         </View>
+      </Modal>
+
+      <Modal visible={!!calPicker} transparent animationType="fade">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" }} onPress={() => setCalPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {calPicker && (
+              <CalendarPicker
+                value={calPicker.value}
+                yearRange={calPicker.yearRange}
+                onConfirm={(v) => { calPicker.set(v); setCalPicker(null); }}
+              />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={!!timePicker} transparent animationType="slide">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setTimePicker(null)}>
+          <Pressable onPress={() => {}}>
+            {timePicker && (
+              <TimePickerSheet value={timePicker.value} onConfirm={(v) => { timePicker.set(v); setTimePicker(null); }} />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={!!numPicker} transparent animationType="slide">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setNumPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {numPicker && (
+              <NumberPickerSheet
+                label={numPicker.label}
+                value={numPicker.val}
+                min={numPicker.min}
+                max={numPicker.max}
+                onConfirm={(v) => { numPicker.set(v); setNumPicker(null); }}
+              />
+            )}
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );

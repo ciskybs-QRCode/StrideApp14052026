@@ -27,6 +27,7 @@ import { useColors } from "@/hooks/useColors";
 import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { NumberPickerSheet, TimePickerSheet } from "@/components/WizardPickers";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -417,6 +418,8 @@ export default function OperatorCoursesScreen() {
   const [myProposals, setMyProposals]       = useState<WorkshopProposal[]>([]);
   const [showProposeModal, setShowProposeModal] = useState(false);
   const [propDraft, setPropDraft]           = useState(BLANK_PROPOSAL(user?.name ?? "Operator"));
+  const [timePicker, setTimePicker] = useState<{ value: string; set: (v: string) => void } | null>(null);
+  const [numPicker, setNumPicker] = useState<{ label: string; val: string; min: number; max: number; set: (v: string) => void } | null>(null);
   const DAYS: WDay[] = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
   const DURATION_OPTS = [30, 45, 60, 90, 120];
 
@@ -678,23 +681,23 @@ export default function OperatorCoursesScreen() {
 
             <Text style={{ fontSize: 12, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6 }}>Age Range</Text>
             <View style={{ flexDirection: "row", alignItems: "center", gap: 12, marginBottom: 12 }}>
-              <TextInput
-                style={{ borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, borderWidth: 1, backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, width: 70, textAlign: "center" }}
-                placeholder="Min"
-                placeholderTextColor={colors.mutedForeground}
-                keyboardType="numeric"
-                value={propDraft.ageMin > 0 ? String(propDraft.ageMin) : ""}
-                onChangeText={v => setPropDraft(d => ({ ...d, ageMin: Number(v) || 0 }))}
-              />
-              <Text style={{ color: colors.mutedForeground, fontSize: 16, fontWeight: "600" }}>–</Text>
-              <TextInput
-                style={{ borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, borderWidth: 1, backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, width: 70, textAlign: "center" }}
-                placeholder="Max"
-                placeholderTextColor={colors.mutedForeground}
-                keyboardType="numeric"
-                value={propDraft.ageMax < 99 ? String(propDraft.ageMax) : ""}
-                onChangeText={v => setPropDraft(d => ({ ...d, ageMax: Number(v) || 99 }))}
-              />
+              <Pressable
+                style={{ borderRadius: 12, paddingHorizontal: 13, paddingVertical: 13, borderWidth: 1, backgroundColor: colors.card, borderColor: colors.border, width: 70, alignItems: "center" }}
+                onPress={() => setNumPicker({ label: "Min Age", val: String(propDraft.ageMin || 0), min: 0, max: 100, set: v => setPropDraft(d => ({ ...d, ageMin: Number(v) || 0 })) })}
+              >
+                <Text style={{ fontSize: 14, color: propDraft.ageMin > 0 ? colors.foreground : colors.mutedForeground }}>
+                  {propDraft.ageMin > 0 ? String(propDraft.ageMin) : "Min"}
+                </Text>
+              </Pressable>
+              <Text style={{ color: colors.mutedForeground, fontSize: 16, fontWeight: "600" }}>-</Text>
+              <Pressable
+                style={{ borderRadius: 12, paddingHorizontal: 13, paddingVertical: 13, borderWidth: 1, backgroundColor: colors.card, borderColor: colors.border, width: 70, alignItems: "center" }}
+                onPress={() => setNumPicker({ label: "Max Age", val: String(propDraft.ageMax < 99 ? propDraft.ageMax : 0), min: 0, max: 100, set: v => setPropDraft(d => ({ ...d, ageMax: Number(v) || 99 })) })}
+              >
+                <Text style={{ fontSize: 14, color: propDraft.ageMax < 99 ? colors.foreground : colors.mutedForeground }}>
+                  {propDraft.ageMax < 99 ? String(propDraft.ageMax) : "Max"}
+                </Text>
+              </Pressable>
               <Text style={{ fontSize: 12, color: colors.mutedForeground }}>years</Text>
             </View>
 
@@ -709,13 +712,15 @@ export default function OperatorCoursesScreen() {
               ))}
             </View>
             <Text style={{ fontSize: 12, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6 }}>Start Time</Text>
-            <TextInput
-              style={{ borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, borderWidth: 1, backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, marginBottom: 12, width: 120 }}
-              placeholder="HH:MM"
-              placeholderTextColor={colors.mutedForeground}
-              value={propDraft.startTime}
-              onChangeText={v => setPropDraft(d => ({ ...d, startTime: v }))}
-            />
+            <Pressable
+              style={{ borderRadius: 12, paddingHorizontal: 13, paddingVertical: 13, borderWidth: 1, backgroundColor: colors.card, borderColor: colors.border, marginBottom: 12, width: 120, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
+              onPress={() => setTimePicker({ value: propDraft.startTime || "", set: v => setPropDraft(d => ({ ...d, startTime: v })) })}
+            >
+              <Text style={{ fontSize: 14, color: propDraft.startTime ? colors.foreground : colors.mutedForeground }}>
+                {propDraft.startTime || "HH:MM"}
+              </Text>
+              <Ionicons name="time-outline" size={16} color={colors.primary} />
+            </Pressable>
             <Text style={{ fontSize: 12, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6 }}>Duration</Text>
             <View style={{ flexDirection: "row", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
               {DURATION_OPTS.map(m => (
@@ -738,14 +743,15 @@ export default function OperatorCoursesScreen() {
               onChangeText={v => setPropDraft(d => ({ ...d, room: v }))}
             />
             <Text style={{ fontSize: 12, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6 }}>Max Capacity</Text>
-            <TextInput
-              style={{ borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, borderWidth: 1, backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, marginBottom: 12, width: 100 }}
-              placeholder="e.g. 20"
-              placeholderTextColor={colors.mutedForeground}
-              keyboardType="numeric"
-              value={propDraft.capacity > 0 ? String(propDraft.capacity) : ""}
-              onChangeText={v => setPropDraft(d => ({ ...d, capacity: Number(v) || 0 }))}
-            />
+            <Pressable
+              style={{ borderRadius: 12, paddingHorizontal: 13, paddingVertical: 13, borderWidth: 1, backgroundColor: colors.card, borderColor: colors.border, marginBottom: 12, width: 100, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}
+              onPress={() => setNumPicker({ label: "Max Capacity", val: String(propDraft.capacity || 0), min: 0, max: 1000, set: v => setPropDraft(d => ({ ...d, capacity: Number(v) || 0 })) })}
+            >
+              <Text style={{ fontSize: 14, color: propDraft.capacity > 0 ? colors.foreground : colors.mutedForeground }}>
+                {propDraft.capacity > 0 ? String(propDraft.capacity) : "e.g. 20"}
+              </Text>
+              <Ionicons name="people-outline" size={16} color={colors.primary} />
+            </Pressable>
             <Text style={{ fontSize: 12, fontWeight: "700", color: colors.mutedForeground, marginBottom: 6 }}>Notes for Admin</Text>
             <TextInput
               style={{ borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, borderWidth: 1, backgroundColor: colors.card, color: colors.foreground, borderColor: colors.border, minHeight: 80, textAlignVertical: "top" }}
@@ -757,6 +763,32 @@ export default function OperatorCoursesScreen() {
             />
           </ScrollView>
         </View>
+      </Modal>
+
+      <Modal visible={!!timePicker} transparent animationType="slide">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setTimePicker(null)}>
+          <Pressable onPress={() => {}}>
+            {timePicker && (
+              <TimePickerSheet value={timePicker.value} onConfirm={(v) => { timePicker.set(v); setTimePicker(null); }} />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={!!numPicker} transparent animationType="slide">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setNumPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {numPicker && (
+              <NumberPickerSheet
+                label={numPicker.label}
+                value={numPicker.val}
+                min={numPicker.min}
+                max={numPicker.max}
+                onConfirm={(v) => { numPicker.set(v); setNumPicker(null); }}
+              />
+            )}
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );

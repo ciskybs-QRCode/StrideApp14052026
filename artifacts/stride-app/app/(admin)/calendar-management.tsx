@@ -29,6 +29,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { CalendarPicker, isoToCal, calToIso } from "@/components/WizardPickers";
 import { useColors } from "@/hooks/useColors";
 import {
   getCalendarEvents,
@@ -137,6 +138,9 @@ export default function CalendarManagementScreen() {
   const [editingEvent,    setEditingEvent]    = useState<ApiCalendarEvent | null>(null);
   const [form,            setForm]            = useState(emptyForm());
   const [saving,          setSaving]          = useState(false);
+
+  // Shared picker state
+  const [calPicker, setCalPicker] = useState<{ value: string; set: (v: string) => void; yearRange?: [number, number] } | null>(null);
 
   // AI Roster / Waitlist Reorganization
   const [showRosterModal, setShowRosterModal] = useState(false);
@@ -642,12 +646,18 @@ export default function CalendarManagementScreen() {
             {/* Date */}
             <View>
               <Text style={[styles.fieldLabel, { color: colors.mutedForeground }]}>Date *</Text>
-              <TextInput
-                style={[styles.input, { borderColor: colors.border, backgroundColor: colors.background, color: colors.foreground }]}
-                value={form.event_date} onChangeText={v => setForm(f => ({ ...f, event_date: v }))}
-                placeholder="YYYY-MM-DD" placeholderTextColor={colors.mutedForeground}
-                keyboardType="numbers-and-punctuation"
-              />
+              <Pressable
+                style={[styles.input, { borderColor: colors.border, backgroundColor: colors.background, flexDirection: "row", alignItems: "center", gap: 8 }]}
+                onPress={() => setCalPicker({
+                  value: isoToCal(form.event_date),
+                  set: (v) => setForm(f => ({ ...f, event_date: calToIso(v) })),
+                })}
+              >
+                <Ionicons name="calendar-outline" size={16} color={colors.mutedForeground} />
+                <Text style={{ fontSize: 15, color: form.event_date ? colors.foreground : colors.mutedForeground }}>
+                  {form.event_date ? isoToCal(form.event_date) : "DD/MM/YYYY"}
+                </Text>
+              </Pressable>
             </View>
 
             {/* All day toggle */}
@@ -1007,6 +1017,21 @@ export default function CalendarManagementScreen() {
 
           </ScrollView>
         </View>
+      </Modal>
+
+      {/* ══ CALENDAR PICKER MODAL ═══════════════════════════════════════════════ */}
+      <Modal visible={!!calPicker} transparent animationType="fade" onRequestClose={() => setCalPicker(null)}>
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" }} onPress={() => setCalPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {calPicker && (
+              <CalendarPicker
+                value={calPicker.value}
+                yearRange={calPicker.yearRange}
+                onConfirm={(v) => { calPicker.set(v); setCalPicker(null); }}
+              />
+            )}
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );

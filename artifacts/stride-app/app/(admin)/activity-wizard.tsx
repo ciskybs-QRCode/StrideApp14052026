@@ -539,7 +539,18 @@ export default function ActivityWizard() {
       </View>
       <View style={{ marginBottom: 14 }}>
         <Text style={st.fieldLabel}>Session duration (minutes)</Text>
-        <TextInput value={privDuration} onChangeText={setPrivDuration} placeholder="60" keyboardType="numeric" placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+        <Pressable
+          style={[ps.pickerBtn, { backgroundColor: colors.card, borderColor: privDuration ? colors.primary : colors.border }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setNumPicker({ label: "Session duration (minutes)", val: privDuration || "60", set: setPrivDuration, min: 0, max: 240 });
+          }}
+        >
+          <Ionicons name="time-outline" size={15} color={privDuration ? colors.primary : colors.mutedForeground} />
+          <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: privDuration ? "600" : "400", color: privDuration ? colors.foreground : colors.mutedForeground }}>
+            {privDuration || "60"}
+          </Text>
+        </Pressable>
       </View>
     </View>
   );

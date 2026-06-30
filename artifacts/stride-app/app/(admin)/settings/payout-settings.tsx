@@ -25,6 +25,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { CalendarPicker, isoToCal, calToIso } from "@/components/WizardPickers";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { api, type ApiOperatorInvoice } from "@/lib/api";
@@ -71,6 +72,9 @@ export default function PayoutSettingsScreen() {
   const [nextDate,       setNextDate]       = useState("");
   const [saving,         setSaving]         = useState(false);
   const [saved,          setSaved]          = useState(false);
+
+  // Shared picker state
+  const [calPicker, setCalPicker] = useState<{ value: string; set: (v: string) => void; yearRange?: [number, number] } | null>(null);
 
   // ── Invoice state ──────────────────────────────────────────────────────────
   const [invoices,       setInvoices]       = useState<ApiOperatorInvoice[]>([]);
@@ -229,16 +233,18 @@ export default function PayoutSettingsScreen() {
           <Text style={[styles.cardSub, { color: colors.mutedForeground }]}>
             Date of the next payout cycle (YYYY-MM-DD)
           </Text>
-          <View style={[styles.inputRow, { borderColor: colors.border, backgroundColor: colors.background }]}>
+          <Pressable
+            style={[styles.inputRow, { borderColor: colors.border, backgroundColor: colors.background }]}
+            onPress={() => setCalPicker({
+              value: isoToCal(nextDate),
+              set: (v) => setNextDate(calToIso(v)),
+            })}
+          >
             <Ionicons name="calendar-outline" size={18} color={colors.mutedForeground} />
-            <TextInput
-              value={nextDate}
-              onChangeText={setNextDate}
-              style={[styles.thresholdInput, { color: colors.foreground }]}
-              placeholder="2025-02-01"
-              placeholderTextColor={colors.mutedForeground}
-            />
-          </View>
+            <Text style={[styles.thresholdInput, { color: nextDate ? colors.foreground : colors.mutedForeground }]}>
+              {nextDate ? isoToCal(nextDate) : "DD/MM/YYYY"}
+            </Text>
+          </Pressable>
         </View>
 
         {/* ── SAVE ── */}
@@ -360,6 +366,21 @@ export default function PayoutSettingsScreen() {
             )}
           </View>
         </View>
+      </Modal>
+
+      {/* ── CALENDAR PICKER MODAL ── */}
+      <Modal visible={!!calPicker} transparent animationType="fade" onRequestClose={() => setCalPicker(null)}>
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" }} onPress={() => setCalPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {calPicker && (
+              <CalendarPicker
+                value={calPicker.value}
+                yearRange={calPicker.yearRange}
+                onConfirm={(v) => { calPicker.set(v); setCalPicker(null); }}
+              />
+            )}
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );

@@ -20,6 +20,7 @@ import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { api } from "@/lib/api";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { TimePickerSheet } from "@/components/WizardPickers";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -194,6 +195,9 @@ const DEFAULT_INFO: SchoolInfo = {
   const [hours, setHours] = useState<HoursEntry[]>(DAYS_OF_WEEK);
   const [editingHours, setEditingHours] = useState(false);
   const [hoursDraft, setHoursDraft] = useState<HoursEntry[]>(DAYS_OF_WEEK);
+
+  // Shared picker state
+  const [timePicker, setTimePicker] = useState<{ value: string; set: (v: string) => void } | null>(null);
 
   // ── Org data load ─────────────────────────────────────────────────────────
 
@@ -684,25 +688,23 @@ const DEFAULT_INFO: SchoolInfo = {
                 {editingHours && entry.isOpen && (
                   <View style={styles.hoursTimeEdit}>
                     <Ionicons name="time-outline" size={15} color={colors.mutedForeground} />
-                    <TextInput
-                      style={[styles.timeInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
-                      value={entry.openTime}
-                      onChangeText={v => updateHoursDraft(i, "openTime", v)}
-                      placeholder="09:00"
-                      placeholderTextColor={colors.mutedForeground}
-                      maxLength={5}
-                      keyboardType="numbers-and-punctuation"
-                    />
+                    <Pressable
+                      style={[styles.timeInput, { borderColor: colors.border, backgroundColor: colors.background, justifyContent: "center" }]}
+                      onPress={() => setTimePicker({ value: entry.openTime || "09:00", set: (v) => updateHoursDraft(i, "openTime", v) })}
+                    >
+                      <Text style={{ fontSize: 14, color: entry.openTime ? colors.foreground : colors.mutedForeground, textAlign: "center" }}>
+                        {entry.openTime || "09:00"}
+                      </Text>
+                    </Pressable>
                     <Text style={[styles.timeSep, { color: colors.mutedForeground }]}>–</Text>
-                    <TextInput
-                      style={[styles.timeInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
-                      value={entry.closeTime}
-                      onChangeText={v => updateHoursDraft(i, "closeTime", v)}
-                      placeholder="18:00"
-                      placeholderTextColor={colors.mutedForeground}
-                      maxLength={5}
-                      keyboardType="numbers-and-punctuation"
-                    />
+                    <Pressable
+                      style={[styles.timeInput, { borderColor: colors.border, backgroundColor: colors.background, justifyContent: "center" }]}
+                      onPress={() => setTimePicker({ value: entry.closeTime || "18:00", set: (v) => updateHoursDraft(i, "closeTime", v) })}
+                    >
+                      <Text style={{ fontSize: 14, color: entry.closeTime ? colors.foreground : colors.mutedForeground, textAlign: "center" }}>
+                        {entry.closeTime || "18:00"}
+                      </Text>
+                    </Pressable>
                     <Text style={[{ fontSize: 12, color: colors.mutedForeground }]}>HH:MM</Text>
                   </View>
                 )}
@@ -814,6 +816,19 @@ const DEFAULT_INFO: SchoolInfo = {
             </View>
           </ScrollView>
         </View>
+      </Modal>
+
+      {/* ════════════════════════════════════════════════════
+          TIME PICKER MODAL
+      ════════════════════════════════════════════════════ */}
+      <Modal visible={!!timePicker} transparent animationType="slide" onRequestClose={() => setTimePicker(null)}>
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setTimePicker(null)}>
+          <Pressable onPress={() => {}}>
+            {timePicker && (
+              <TimePickerSheet value={timePicker.value} onConfirm={(v) => { timePicker.set(v); setTimePicker(null); }} />
+            )}
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );

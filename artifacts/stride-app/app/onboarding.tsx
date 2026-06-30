@@ -20,6 +20,7 @@ import { SignaturePad } from "@/components/SignaturePad";
 import { api, type ApiDocument } from "@/lib/api";
 import { pickAvatarDataUri } from "@/lib/avatar";
 import { useColors } from "@/hooks/useColors";
+import { CalendarPicker, isoToCal, calToIso } from "@/components/WizardPickers";
 import { Image } from "expo-image";
 
 // ── Country / dial-code list ───────────────────────────────────────────────────
@@ -179,6 +180,9 @@ export default function OnboardingScreen() {
   const [signatures,    setSignatures]    = useState<Record<number, string>>({});
   const [docsLoaded,    setDocsLoaded]    = useState(false);
   const [signingDocId,  setSigningDocId]  = useState<number | null>(null);
+
+  // Shared pickers
+  const [calPicker, setCalPicker] = useState<{ value: string; set: (v: string) => void; yearRange?: [number, number] } | null>(null);
 
   // Guard: send non-parent or already-onboarded users away
   useEffect(() => {
@@ -499,7 +503,21 @@ export default function OnboardingScreen() {
                     <Text style={styles.addMemberFormTitle}>New Member</Text>
                     <Field label="First Name" value={newFn} onChange={setNewFn} placeholder="e.g. Giulia" autoCapitalize="words" />
                     <Field label="Last Name" value={newLn} onChange={setNewLn} placeholder="e.g. Rossi" autoCapitalize="words" />
-                    <Field label="Date of Birth (optional)" value={newDob} onChange={setNewDob} placeholder="YYYY-MM-DD" last />
+                    <View style={fieldSt.wrap}>
+                      <Text style={fieldSt.label}>Date of Birth (optional)</Text>
+                      <Pressable
+                        style={[fieldSt.input, { justifyContent: "center" }]}
+                        onPress={() => setCalPicker({
+                          value: isoToCal(newDob),
+                          yearRange: [1920, new Date().getFullYear()],
+                          set: (v) => setNewDob(calToIso(v)),
+                        })}
+                      >
+                        <Text style={{ fontSize: 15, color: newDob ? "#0F172A" : "#94A3B8" }}>
+                          {newDob ? isoToCal(newDob) : "Select date of birth"}
+                        </Text>
+                      </Pressable>
+                    </View>
                     <View style={styles.addMemberBtns}>
                       <Pressable style={styles.cancelBtn} onPress={() => { setAddingMember(false); setNewFn(""); setNewLn(""); setNewDob(""); }}>
                         <Text style={styles.cancelBtnText}>Cancel</Text>
@@ -660,6 +678,20 @@ export default function OnboardingScreen() {
             ))}
           </ScrollView>
         </View>
+      </Modal>
+
+      <Modal visible={!!calPicker} transparent animationType="fade">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" }} onPress={() => setCalPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {calPicker && (
+              <CalendarPicker
+                value={calPicker.value}
+                yearRange={calPicker.yearRange}
+                onConfirm={(v) => { calPicker.set(v); setCalPicker(null); }}
+              />
+            )}
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );

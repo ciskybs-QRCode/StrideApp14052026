@@ -3,7 +3,7 @@ import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator, Alert, Pressable, RefreshControl,
+  ActivityIndicator, Alert, Modal, Pressable, RefreshControl,
   ScrollView, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -15,6 +15,7 @@ import {
 } from "@/lib/api";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
+import { NumberPickerSheet } from "@/components/WizardPickers";
 
 const NAVY = "#1E3A8A";
 const GOLD = "#FBBF24";
@@ -284,6 +285,7 @@ export default function SAPaymentsScreen() {
   const [trialDays,      setTrialDays]      = useState("30");
   const [trialSaving,    setTrialSaving]    = useState<number | null>(null); // orgId being saved
   const [trialMsg,       setTrialMsg]       = useState<{ orgId: number; msg: string; ok: boolean } | null>(null);
+  const [numPicker,      setNumPicker]      = useState<{ label: string; val: string; min: number; max: number; set: (v: string) => void } | null>(null);
 
   const load = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
@@ -493,18 +495,18 @@ export default function SAPaymentsScreen() {
             {/* Days input — shared across all orgs */}
             <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 14 }}>
               <Text style={{ fontSize: 12, color: "rgba(255,255,255,0.6)", flex: 1 }}>Trial duration (days):</Text>
-              <TextInput
-                value={trialDays}
-                onChangeText={setTrialDays}
-                keyboardType="number-pad"
+              <Pressable
+                onPress={() => setNumPicker({ label: "Trial days", val: trialDays || "1", min: 1, max: 365, set: setTrialDays })}
                 style={{
                   backgroundColor: "rgba(255,255,255,0.1)", borderRadius: 10,
-                  paddingHorizontal: 12, paddingVertical: 8, color: GOLD,
-                  fontSize: 16, fontWeight: "800", width: 80, textAlign: "center",
+                  paddingHorizontal: 12, paddingVertical: 8, width: 80,
+                  alignItems: "center", justifyContent: "center",
                 }}
-                placeholder="30"
-                placeholderTextColor="rgba(255,255,255,0.25)"
-              />
+              >
+                <Text style={{ color: trialDays ? GOLD : "rgba(255,255,255,0.25)", fontSize: 16, fontWeight: "800" }}>
+                  {trialDays || "30"}
+                </Text>
+              </Pressable>
             </View>
 
             {trialOrgsData.length === 0 && (
@@ -577,6 +579,25 @@ export default function SAPaymentsScreen() {
           </View>
 
         </ScrollView>
+      )}
+
+      {numPicker && (
+        <Modal visible transparent animationType="slide" onRequestClose={() => setNumPicker(null)}>
+          <Pressable
+            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }}
+            onPress={() => setNumPicker(null)}
+          >
+            <Pressable onPress={() => {}}>
+              <NumberPickerSheet
+                label={numPicker.label}
+                value={numPicker.val}
+                min={numPicker.min}
+                max={numPicker.max}
+                onConfirm={(v) => { numPicker.set(v); setNumPicker(null); }}
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
       )}
     </View>
   );

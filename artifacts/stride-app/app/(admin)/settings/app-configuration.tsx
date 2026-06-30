@@ -374,15 +374,20 @@ export default function AppConfigurationPage() {
               From the day after account creation, reminders are sent 7, 3 and 1 day before the deadline. After the deadline access is suspended.
             </Text>
             <View style={{ flexDirection: "row", gap: 10, alignItems: "center" }}>
-              <TextInput
-                style={[styles.termInput, { flex: 1, color: colors.foreground, borderColor: colors.border, backgroundColor: colors.background }]}
-                value={settings.cert_grace_days_input}
-                onChangeText={v => setSettings(prev => ({ ...prev, cert_grace_days_input: v }))}
-                keyboardType="numeric"
-                placeholder="30"
-                placeholderTextColor={colors.mutedForeground}
-                returnKeyType="done"
-              />
+              <Pressable
+                style={[styles.termInput, { flex: 1, borderColor: colors.border, backgroundColor: colors.background, justifyContent: "center" }]}
+                onPress={() => setNumPicker({
+                  label: "Grace Period (days)",
+                  val: settings.cert_grace_days_input || "30",
+                  min: 0,
+                  max: 90,
+                  set: (v) => setSettings(prev => ({ ...prev, cert_grace_days_input: v })),
+                })}
+              >
+                <Text style={{ fontSize: 15, color: settings.cert_grace_days_input ? colors.foreground : colors.mutedForeground }}>
+                  {settings.cert_grace_days_input || "30"}
+                </Text>
+              </Pressable>
               <Pressable
                 style={[styles.saveBtn, { backgroundColor: colors.primary, paddingHorizontal: 20, marginTop: 0, flex: 0 }]}
                 onPress={saveCertGraceDays}

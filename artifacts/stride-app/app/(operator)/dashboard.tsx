@@ -43,6 +43,7 @@ import { RoleSwitcherRow } from "@/components/RoleSwitcher";
 import { QRScanButton } from "@/components/QRScanButton";
 import { SOSButton } from "@/components/SOSButton";
 import { HubCard } from "@/components/HubCard";
+import { CalendarPicker } from "@/components/WizardPickers";
 
 // ── Web Audio tone synthesiser ────────────────────────────────────────────────
 function playDashboardTone(result: "success" | "warning" | "denied"): void {
@@ -399,6 +400,7 @@ export default function OperatorDashboard() {
   const [futureAbsEndYear, setFutureAbsEndYear] = useState("");
   const [futureAbsNote, setFutureAbsNote]       = useState("");
   const [futureAbsSent, setFutureAbsSent]       = useState(false);
+  const [calPicker, setCalPicker] = useState<{ value: string; set: (v: string) => void; yearRange?: [number, number] } | null>(null);
 
   // ── Cascade viewer modal ────────────────────────────────────────────────────
   const [showCascade, setShowCascade] = useState(false);
@@ -2100,23 +2102,33 @@ export default function OperatorDashboard() {
                           ))}
                         </View>
                         <Text style={[styles.fieldLabel, { color: colors.primary }]}>{futureAbsRangeMode === "range" ? "Start Date" : "Absence Date"}</Text>
-                        <View style={styles.absDateRow}>
-                          <TextInput style={[styles.absDateCell, { borderColor: "#D1D9F0", color: colors.primary }]} value={futureAbsDay} onChangeText={t => setFutureAbsDay(t.replace(/\D/g, "").slice(0, 2))} placeholder="DD" placeholderTextColor="#9CA3AF" keyboardType="number-pad" maxLength={2} />
-                          <Text style={[styles.absDateSep, { color: "#9CA3AF" }]}>/</Text>
-                          <TextInput style={[styles.absDateCell, { borderColor: "#D1D9F0", color: colors.primary }]} value={futureAbsMonth} onChangeText={t => setFutureAbsMonth(t.replace(/\D/g, "").slice(0, 2))} placeholder="MM" placeholderTextColor="#9CA3AF" keyboardType="number-pad" maxLength={2} />
-                          <Text style={[styles.absDateSep, { color: "#9CA3AF" }]}>/</Text>
-                          <TextInput style={[styles.absDateCellWide, { borderColor: "#D1D9F0", color: colors.primary }]} value={futureAbsYear} onChangeText={t => setFutureAbsYear(t.replace(/\D/g, "").slice(0, 4))} placeholder="YYYY" placeholderTextColor="#9CA3AF" keyboardType="number-pad" maxLength={4} />
-                        </View>
+                        <Pressable
+                          style={[styles.absDateTrigger, { borderColor: colors.border }]}
+                          onPress={() => setCalPicker({
+                            value: futureAbsDay && futureAbsMonth && futureAbsYear ? `${futureAbsDay.padStart(2, "0")}/${futureAbsMonth.padStart(2, "0")}/${futureAbsYear}` : "",
+                            set: (v) => { const [d, m, y] = v.split("/"); setFutureAbsDay(d ?? ""); setFutureAbsMonth(m ?? ""); setFutureAbsYear(y ?? ""); },
+                          })}
+                        >
+                          <Text style={{ color: futureAbsDay && futureAbsMonth && futureAbsYear ? colors.foreground : colors.mutedForeground, fontSize: 14 }}>
+                            {futureAbsDay && futureAbsMonth && futureAbsYear ? `${futureAbsDay.padStart(2, "0")}/${futureAbsMonth.padStart(2, "0")}/${futureAbsYear}` : "DD/MM/YYYY"}
+                          </Text>
+                          <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+                        </Pressable>
                         {futureAbsRangeMode === "range" && (
                           <>
                             <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>End Date</Text>
-                            <View style={styles.absDateRow}>
-                              <TextInput style={[styles.absDateCell, { borderColor: "#D1D9F0", color: colors.primary }]} value={futureAbsEndDay} onChangeText={t => setFutureAbsEndDay(t.replace(/\D/g, "").slice(0, 2))} placeholder="DD" placeholderTextColor="#9CA3AF" keyboardType="number-pad" maxLength={2} />
-                              <Text style={[styles.absDateSep, { color: "#9CA3AF" }]}>/</Text>
-                              <TextInput style={[styles.absDateCell, { borderColor: "#D1D9F0", color: colors.primary }]} value={futureAbsEndMonth} onChangeText={t => setFutureAbsEndMonth(t.replace(/\D/g, "").slice(0, 2))} placeholder="MM" placeholderTextColor="#9CA3AF" keyboardType="number-pad" maxLength={2} />
-                              <Text style={[styles.absDateSep, { color: "#9CA3AF" }]}>/</Text>
-                              <TextInput style={[styles.absDateCellWide, { borderColor: "#D1D9F0", color: colors.primary }]} value={futureAbsEndYear} onChangeText={t => setFutureAbsEndYear(t.replace(/\D/g, "").slice(0, 4))} placeholder="YYYY" placeholderTextColor="#9CA3AF" keyboardType="number-pad" maxLength={4} />
-                            </View>
+                            <Pressable
+                              style={[styles.absDateTrigger, { borderColor: colors.border }]}
+                              onPress={() => setCalPicker({
+                                value: futureAbsEndDay && futureAbsEndMonth && futureAbsEndYear ? `${futureAbsEndDay.padStart(2, "0")}/${futureAbsEndMonth.padStart(2, "0")}/${futureAbsEndYear}` : "",
+                                set: (v) => { const [d, m, y] = v.split("/"); setFutureAbsEndDay(d ?? ""); setFutureAbsEndMonth(m ?? ""); setFutureAbsEndYear(y ?? ""); },
+                              })}
+                            >
+                              <Text style={{ color: futureAbsEndDay && futureAbsEndMonth && futureAbsEndYear ? colors.foreground : colors.mutedForeground, fontSize: 14 }}>
+                                {futureAbsEndDay && futureAbsEndMonth && futureAbsEndYear ? `${futureAbsEndDay.padStart(2, "0")}/${futureAbsEndMonth.padStart(2, "0")}/${futureAbsEndYear}` : "DD/MM/YYYY"}
+                              </Text>
+                              <Ionicons name="calendar-outline" size={18} color={colors.primary} />
+                            </Pressable>
                           </>
                         )}
                         <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 12 }]}>Note (Optional)</Text>
@@ -3056,6 +3068,20 @@ export default function OperatorDashboard() {
           </View>
         </View>
       </Modal>
+
+      <Modal visible={!!calPicker} transparent animationType="fade">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" }} onPress={() => setCalPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {calPicker && (
+              <CalendarPicker
+                value={calPicker.value}
+                yearRange={calPicker.yearRange}
+                onConfirm={(v) => { calPicker.set(v); setCalPicker(null); }}
+              />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }
@@ -3172,6 +3198,7 @@ const make_styles = (primary: string, secondary: string) => StyleSheet.create({
   absSegTab: { flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 5, paddingVertical: 9, borderRadius: 10 },
   absSegTabText: { fontSize: 13, fontWeight: "700" },
   absDateRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", width: "100%", gap: 4, marginBottom: 4 },
+  absDateTrigger: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", borderWidth: 1, borderRadius: 12, paddingHorizontal: 13, paddingVertical: 13, marginBottom: 4 },
   absDateCell: { width: "22%", borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 6, paddingVertical: 10, fontSize: 14, textAlign: "center" as const },
   absDateCellWide: { width: "45%", borderWidth: 1.5, borderRadius: 10, paddingHorizontal: 6, paddingVertical: 10, fontSize: 14, textAlign: "center" as const },
   absDateSep: { fontSize: 14, fontWeight: "700" },

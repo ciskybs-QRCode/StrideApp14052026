@@ -20,6 +20,7 @@ import { useColors } from "@/hooks/useColors";
 import { useRealtime } from "@/context/RealtimeContext";
 
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { NumberPickerSheet } from "@/components/WizardPickers";
 
 type DiscountType = "percent" | "lessons" | "gift";
 
@@ -66,6 +67,7 @@ export default function OperatorPromoCodesScreen() {
   const [discountType, setDiscountType] = useState<"percent" | "lessons">("percent");
   const [discountValue, setDiscountValue] = useState("");
   const [maxUses, setMaxUses] = useState("1");
+  const [numPicker, setNumPicker] = useState<{ label: string; val: string; min: number; max: number; set: (v: string) => void } | null>(null);
   const [memberSearch, setMemberSearch] = useState("");
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [selectedCourses, setSelectedCourses] = useState<string[]>([]);
@@ -309,27 +311,29 @@ export default function OperatorPromoCodesScreen() {
                   <Text style={[styles.fieldLabel, { color: colors.foreground }]}>
                     {discountType === "percent" ? "Discount %" : "Number of Free Lessons"}
                   </Text>
-                  <TextInput
-                    style={[styles.textInput, { backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border }]}
-                    value={discountValue}
-                    onChangeText={setDiscountValue}
-                    placeholder={discountType === "percent" ? "e.g. 20" : "e.g. 2"}
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType="numeric"
-                  />
+                  <Pressable
+                    style={[styles.textInput, { backgroundColor: colors.muted, borderColor: colors.border, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}
+                    onPress={() => setNumPicker({ label: "Value", val: discountValue || "0", min: 0, max: 999, set: setDiscountValue })}
+                  >
+                    <Text style={{ color: discountValue ? colors.foreground : colors.mutedForeground, fontSize: 15 }}>
+                      {discountValue || (discountType === "percent" ? "e.g. 20" : "e.g. 2")}
+                    </Text>
+                    <Ionicons name="chevron-down" size={16} color={colors.mutedForeground} />
+                  </Pressable>
                 </>
               )}
 
               {/* Max uses */}
               <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Max Uses</Text>
-              <TextInput
-                style={[styles.textInput, { backgroundColor: colors.muted, color: colors.foreground, borderColor: colors.border }]}
-                value={maxUses}
-                onChangeText={setMaxUses}
-                placeholder="1"
-                placeholderTextColor={colors.mutedForeground}
-                keyboardType="numeric"
-              />
+              <Pressable
+                style={[styles.textInput, { backgroundColor: colors.muted, borderColor: colors.border, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}
+                onPress={() => setNumPicker({ label: "Max Uses", val: maxUses || "0", min: 0, max: 1000, set: setMaxUses })}
+              >
+                <Text style={{ color: maxUses ? colors.foreground : colors.mutedForeground, fontSize: 15 }}>
+                  {maxUses || "1"}
+                </Text>
+                <Ionicons name="chevron-down" size={16} color={colors.mutedForeground} />
+              </Pressable>
 
               {/* Dependent Member selector */}
               <Text style={[styles.fieldLabel, { color: colors.foreground }]}>Dependent Member</Text>
@@ -478,6 +482,23 @@ export default function OperatorPromoCodesScreen() {
           </View>
         </Modal>
       )}
+
+      {/* Number Picker */}
+      <Modal visible={!!numPicker} transparent animationType="slide">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setNumPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {numPicker && (
+              <NumberPickerSheet
+                label={numPicker.label}
+                value={numPicker.val}
+                min={numPicker.min}
+                max={numPicker.max}
+                onConfirm={(v) => { numPicker.set(v); setNumPicker(null); }}
+              />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }

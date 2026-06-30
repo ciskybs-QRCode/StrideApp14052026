@@ -13,7 +13,6 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -21,6 +20,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAuth } from "@/context/AuthContext";
 import { listAssociations, extendTrial, type AssociationRecord } from "@/lib/api";
 import { useColors } from "@/hooks/useColors";
+import { NumberPickerSheet } from "@/components/WizardPickers";
 
 const { height: SCREEN_H } = Dimensions.get("window");
 
@@ -179,6 +179,7 @@ function ExtendModal({
   const [customMonths, setCustomMonths] = useState("");
   const [extending, setExtending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [numPicker, setNumPicker] = useState<{ label: string; val: string; min: number; max: number; set: (v: string) => void } | null>(null);
   const insets = useSafeAreaInsets();
 
   const status = org ? getTrialStatus(org.trial_ends_at) : null;
@@ -279,19 +280,15 @@ function ExtendModal({
               {/* Custom input */}
               <Text style={styles.presetsLabel}>CUSTOM DURATION</Text>
               <View style={styles.customRow}>
-                <View style={styles.customInputWrapper}>
-                  <TextInput
-                    style={styles.customInput}
-                    value={customMonths}
-                    onChangeText={setCustomMonths}
-                    keyboardType="number-pad"
-                    placeholder="e.g. 18"
-                    placeholderTextColor="#9CA3AF"
-                    maxLength={3}
-                    editable={!extending}
-                  />
+                <Pressable
+                  style={styles.customInputWrapper}
+                  onPress={() => !extending && setNumPicker({ label: "Months", val: customMonths || "1", min: 1, max: 60, set: setCustomMonths })}
+                >
+                  <Text style={[styles.customInput, { color: customMonths ? "#111827" : "#9CA3AF" }]}>
+                    {customMonths || "e.g. 18"}
+                  </Text>
                   <Text style={styles.customUnit}>months</Text>
-                </View>
+                </Pressable>
                 <Pressable
                   style={({ pressed }) => [
                     styles.customApplyBtn,
@@ -322,6 +319,25 @@ function ExtendModal({
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
+
+      {numPicker && (
+        <Modal visible transparent animationType="slide" onRequestClose={() => setNumPicker(null)}>
+          <Pressable
+            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }}
+            onPress={() => setNumPicker(null)}
+          >
+            <Pressable onPress={() => {}}>
+              <NumberPickerSheet
+                label={numPicker.label}
+                value={numPicker.val}
+                min={numPicker.min}
+                max={numPicker.max}
+                onConfirm={(v) => { numPicker.set(v); setNumPicker(null); }}
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
+      )}
     </Modal>
   );
 }

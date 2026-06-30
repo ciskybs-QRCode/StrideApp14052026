@@ -42,6 +42,7 @@ import {
   reminderMessage,
   frequencyLabel,
 } from "@/lib/strideChannel";
+import { CalendarPicker, isoToCal, calToIso } from "@/components/WizardPickers";
 
 // ── Bank field types & locale config ─────────────────────────────────────────
 
@@ -487,6 +488,7 @@ export default function OperatorInvoicing() {
   const [csvFrom,    setCsvFrom]    = useState("");
   const [csvTo,      setCsvTo]      = useState("");
   const [csvGenning, setCsvGenning] = useState(false);
+  const [calPicker, setCalPicker] = useState<{ value: string; set: (v: string) => void; yearRange?: [number, number] } | null>(null);
 
   // ── Payment Details (bank fields, locale-aware) ───────────────────────────
   const bankFields = getBankFieldsForLocale();
@@ -1191,20 +1193,30 @@ export default function OperatorInvoicing() {
               Export your earnings to CSV for your accountant. Enter the month range (YYYY-MM).
             </Text>
             <View style={{ flexDirection: "row", gap: 8, marginBottom: 10 }}>
-              <TextInput
-                style={{ flex: 1, borderWidth: 1, borderColor: "#93C5FD", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7,
-                  fontSize: 12, backgroundColor: "#FFF", color: colors.foreground }}
-                placeholder="From (YYYY-MM)"
-                value={csvFrom}
-                onChangeText={setCsvFrom}
-              />
-              <TextInput
-                style={{ flex: 1, borderWidth: 1, borderColor: "#93C5FD", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 7,
-                  fontSize: 12, backgroundColor: "#FFF", color: colors.foreground }}
-                placeholder="To (YYYY-MM)"
-                value={csvTo}
-                onChangeText={setCsvTo}
-              />
+              <Pressable
+                style={{ flex: 1, borderWidth: 1, borderColor: "#93C5FD", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 9,
+                  backgroundColor: "#FFF" }}
+                onPress={() => setCalPicker({
+                  value: csvFrom ? isoToCal(csvFrom + "-01") : "",
+                  set: (v) => setCsvFrom(calToIso(v).slice(0, 7)),
+                })}
+              >
+                <Text style={{ fontSize: 12, color: csvFrom ? colors.foreground : colors.mutedForeground }}>
+                  {csvFrom || "From (YYYY-MM)"}
+                </Text>
+              </Pressable>
+              <Pressable
+                style={{ flex: 1, borderWidth: 1, borderColor: "#93C5FD", borderRadius: 8, paddingHorizontal: 10, paddingVertical: 9,
+                  backgroundColor: "#FFF" }}
+                onPress={() => setCalPicker({
+                  value: csvTo ? isoToCal(csvTo + "-01") : "",
+                  set: (v) => setCsvTo(calToIso(v).slice(0, 7)),
+                })}
+              >
+                <Text style={{ fontSize: 12, color: csvTo ? colors.foreground : colors.mutedForeground }}>
+                  {csvTo || "To (YYYY-MM)"}
+                </Text>
+              </Pressable>
             </View>
             <Pressable onPress={() => { void handleContractorCsvExport(); }}
               style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, borderRadius: 10,
@@ -1645,6 +1657,23 @@ export default function OperatorInvoicing() {
         </View>
       </Modal>
 
+      {/* Calendar Picker (CSV month range) */}
+      <Modal visible={!!calPicker} transparent animationType="fade">
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "center", alignItems: "center" }}
+          onPress={() => setCalPicker(null)}
+        >
+          <Pressable onPress={() => {}}>
+            {calPicker && (
+              <CalendarPicker
+                value={calPicker.value}
+                yearRange={calPicker.yearRange}
+                onConfirm={(v) => { calPicker.set(v); setCalPicker(null); }}
+              />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
     </View>
   );

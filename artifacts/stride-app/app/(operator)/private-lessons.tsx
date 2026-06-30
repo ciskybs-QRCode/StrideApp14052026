@@ -162,6 +162,7 @@ export default function OperatorPrivateLessonsScreen() {
   const [showSlotCal,      setShowSlotCal]      = useState(false);
   const [showSlotFromTime, setShowSlotFromTime] = useState(false);
   const [showSlotToTime,   setShowSlotToTime]   = useState(false);
+  const [timePicker, setTimePicker] = useState<{ value: string; set: (v: string) => void } | null>(null);
   // Recurring mode
   const [slotRecurring, setSlotRecurring] = useState(false);
   const [recurringDays, setRecurringDays] = useState<number[]>([]); // 0=Sun…6=Sat
@@ -873,13 +874,6 @@ export default function OperatorPrivateLessonsScreen() {
                     {recurringDays.slice().sort((a, b) => (a === 0 ? 7 : a) - (b === 0 ? 7 : b)).map(dow => {
                       const DAYS_EN = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
                       const ts = dayTimeSlots[dow] ?? { start: "", end: "" };
-                      const parseHH = (t: string) => t ? t.split(":")[0] ?? "" : "";
-                      const parseMM = (t: string) => t ? t.split(":")[1] ?? "" : "";
-                      const buildTime = (hh: string, mm: string) => {
-                        const h = hh.padStart(2, "0");
-                        const m = mm.padStart(2, "0");
-                        return `${h}:${m}`;
-                      };
                       return (
                         <View key={dow} style={{ flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 10,
                           backgroundColor: colors.card, borderRadius: 14, padding: 12,
@@ -891,57 +885,27 @@ export default function OperatorPrivateLessonsScreen() {
                           {/* FROM */}
                           <View style={{ flex: 1 }}>
                             <Text style={{ fontSize: 9, color: colors.mutedForeground, marginBottom: 3, textTransform: "uppercase", textAlign: "center" }}>From</Text>
-                            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 2 }}>
-                              <TextInput
-                                style={{ width: 36, borderWidth: 1, borderColor: colors.border, borderRadius: 7, paddingVertical: 6,
-                                  fontSize: 15, fontWeight: "700", color: colors.foreground, backgroundColor: colors.background, textAlign: "center" }}
-                                value={parseHH(ts.start)}
-                                onChangeText={h => setDayTimeSlots(s => ({ ...s, [dow]: { ...(s[dow] ?? { start: "", end: "" }), start: buildTime(h.replace(/\D/g,"").slice(0,2), parseMM(s[dow]?.start ?? "")) } }))}
-                                placeholder="HH"
-                                placeholderTextColor={colors.mutedForeground}
-                                keyboardType="number-pad"
-                                maxLength={2}
-                              />
-                              <Text style={{ fontSize: 14, fontWeight: "700", color: colors.mutedForeground }}>:</Text>
-                              <TextInput
-                                style={{ width: 36, borderWidth: 1, borderColor: colors.border, borderRadius: 7, paddingVertical: 6,
-                                  fontSize: 15, fontWeight: "700", color: colors.foreground, backgroundColor: colors.background, textAlign: "center" }}
-                                value={parseMM(ts.start)}
-                                onChangeText={m => setDayTimeSlots(s => ({ ...s, [dow]: { ...(s[dow] ?? { start: "", end: "" }), start: buildTime(parseHH(s[dow]?.start ?? ""), m.replace(/\D/g,"").slice(0,2)) } }))}
-                                placeholder="MM"
-                                placeholderTextColor={colors.mutedForeground}
-                                keyboardType="number-pad"
-                                maxLength={2}
-                              />
-                            </View>
+                            <Pressable
+                              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 13, paddingHorizontal: 12, backgroundColor: colors.background, alignItems: "center" }}
+                              onPress={() => setTimePicker({ value: ts.start || "", set: v => setDayTimeSlots(s => ({ ...s, [dow]: { ...(s[dow] ?? { start: "", end: "" }), start: v } })) })}
+                            >
+                              <Text style={{ fontSize: 15, fontWeight: "700", color: ts.start ? colors.foreground : colors.mutedForeground }}>
+                                {ts.start || "HH:MM"}
+                              </Text>
+                            </Pressable>
                           </View>
                           <Text style={{ fontSize: 14, color: colors.mutedForeground, marginTop: 14 }}>-</Text>
                           {/* TO */}
                           <View style={{ flex: 1 }}>
                             <Text style={{ fontSize: 9, color: colors.mutedForeground, marginBottom: 3, textTransform: "uppercase", textAlign: "center" }}>To</Text>
-                            <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 2 }}>
-                              <TextInput
-                                style={{ width: 36, borderWidth: 1, borderColor: colors.border, borderRadius: 7, paddingVertical: 6,
-                                  fontSize: 15, fontWeight: "700", color: colors.foreground, backgroundColor: colors.background, textAlign: "center" }}
-                                value={parseHH(ts.end)}
-                                onChangeText={h => setDayTimeSlots(s => ({ ...s, [dow]: { ...(s[dow] ?? { start: "", end: "" }), end: buildTime(h.replace(/\D/g,"").slice(0,2), parseMM(s[dow]?.end ?? "")) } }))}
-                                placeholder="HH"
-                                placeholderTextColor={colors.mutedForeground}
-                                keyboardType="number-pad"
-                                maxLength={2}
-                              />
-                              <Text style={{ fontSize: 14, fontWeight: "700", color: colors.mutedForeground }}>:</Text>
-                              <TextInput
-                                style={{ width: 36, borderWidth: 1, borderColor: colors.border, borderRadius: 7, paddingVertical: 6,
-                                  fontSize: 15, fontWeight: "700", color: colors.foreground, backgroundColor: colors.background, textAlign: "center" }}
-                                value={parseMM(ts.end)}
-                                onChangeText={m => setDayTimeSlots(s => ({ ...s, [dow]: { ...(s[dow] ?? { start: "", end: "" }), end: buildTime(parseHH(s[dow]?.end ?? ""), m.replace(/\D/g,"").slice(0,2)) } }))}
-                                placeholder="MM"
-                                placeholderTextColor={colors.mutedForeground}
-                                keyboardType="number-pad"
-                                maxLength={2}
-                              />
-                            </View>
+                            <Pressable
+                              style={{ borderWidth: 1, borderColor: colors.border, borderRadius: 12, paddingVertical: 13, paddingHorizontal: 12, backgroundColor: colors.background, alignItems: "center" }}
+                              onPress={() => setTimePicker({ value: ts.end || "", set: v => setDayTimeSlots(s => ({ ...s, [dow]: { ...(s[dow] ?? { start: "", end: "" }), end: v } })) })}
+                            >
+                              <Text style={{ fontSize: 15, fontWeight: "700", color: ts.end ? colors.foreground : colors.mutedForeground }}>
+                                {ts.end || "HH:MM"}
+                              </Text>
+                            </Pressable>
                           </View>
                         </View>
                       );
@@ -1794,6 +1758,17 @@ export default function OperatorPrivateLessonsScreen() {
               value={slotEnd || "10:00"}
               onConfirm={v => { setSlotEnd(v); setShowSlotToTime(false); }}
             />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ══ Recurring Day Time Picker ═══════════════════════════════════════════ */}
+      <Modal visible={!!timePicker} transparent animationType="slide">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setTimePicker(null)}>
+          <Pressable onPress={() => {}}>
+            {timePicker && (
+              <TimePickerSheet value={timePicker.value} onConfirm={(v) => { timePicker.set(v); setTimePicker(null); }} />
+            )}
           </Pressable>
         </Pressable>
       </Modal>

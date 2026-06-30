@@ -14,6 +14,7 @@ import {
 } from "@/lib/api";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
+import { NumberPickerSheet } from "@/components/WizardPickers";
 
 const { height: SCREEN_H } = Dimensions.get("window");
 
@@ -104,6 +105,7 @@ function ExtendModal({ org, visible, onClose, onSuccess }: { org: AssociationRec
   const [error, setError]               = useState<string | null>(null);
   const [suspending, setSuspending]     = useState(false);
   const [suspendError, setSuspendError] = useState<string | null>(null);
+  const [numPicker, setNumPicker]       = useState<{ label: string; val: string; min: number; max: number; set: (v: string) => void } | null>(null);
   const insets = useSafeAreaInsets();
 
   useEffect(() => { if (!visible) { setCustomMonths(""); setError(null); setSuspendError(null); } }, [visible]);
@@ -163,10 +165,10 @@ function ExtendModal({ org, visible, onClose, onSuccess }: { org: AssociationRec
             </View>
             <Text style={em.sectionLabel}>CUSTOM DURATION</Text>
             <View style={em.customRow}>
-              <View style={em.customWrap}>
-                <TextInput style={em.customInput} value={customMonths} onChangeText={setCustomMonths} keyboardType="number-pad" placeholder="e.g. 18" placeholderTextColor="#9CA3AF" maxLength={3} editable={!extending} />
+              <Pressable style={em.customWrap} onPress={() => !extending && setNumPicker({ label: "Months", val: customMonths || "1", min: 1, max: 60, set: setCustomMonths })}>
+                <Text style={[em.customInput, { color: customMonths ? "#111827" : "#9CA3AF" }]}>{customMonths || "e.g. 18"}</Text>
                 <Text style={em.customUnit}>months</Text>
-              </View>
+              </Pressable>
               <Pressable style={({ pressed }) => [em.applyBtn, { opacity: pressed || extending ? 0.8 : 1 }]} onPress={handleCustom} disabled={extending}>
                 {extending ? <ActivityIndicator size="small" color={colors.primary} /> : <Text style={em.applyText}>Apply</Text>}
               </Pressable>
@@ -193,6 +195,25 @@ function ExtendModal({ org, visible, onClose, onSuccess }: { org: AssociationRec
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
+
+      {numPicker && (
+        <Modal visible transparent animationType="slide" onRequestClose={() => setNumPicker(null)}>
+          <Pressable
+            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }}
+            onPress={() => setNumPicker(null)}
+          >
+            <Pressable onPress={() => {}}>
+              <NumberPickerSheet
+                label={numPicker.label}
+                value={numPicker.val}
+                min={numPicker.min}
+                max={numPicker.max}
+                onConfirm={(v) => { numPicker.set(v); setNumPicker(null); }}
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
+      )}
     </Modal>
   );
 }
@@ -220,6 +241,7 @@ function AddTenantModal({ visible, onClose, onSuccess }: { visible: boolean; onC
   const [saving, setSaving] = useState(false);
   const [error,  setError]  = useState<string | null>(null);
   const [result, setResult] = useState<{ tempPassword?: string; trialSummary?: string; promoCode?: string } | null>(null);
+  const [numPicker, setNumPicker] = useState<{ label: string; val: string; min: number; max: number; set: (v: string) => void } | null>(null);
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -306,7 +328,9 @@ function AddTenantModal({ visible, onClose, onSuccess }: { visible: boolean; onC
                 </View>
                 <Text style={em.sectionLabel}>TRIAL DURATION</Text>
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginHorizontal: 24 }}>
-                  <TextInput style={[inp.field, { width: 70, textAlign: "center", fontSize: 18, fontWeight: "700" }]} value={trialValue} onChangeText={setTrialValue} keyboardType="number-pad" maxLength={3} />
+                  <Pressable style={[inp.field, { width: 70, alignItems: "center", justifyContent: "center" }]} onPress={() => setNumPicker({ label: "Trial days", val: trialValue || "1", min: 1, max: 365, set: setTrialValue })}>
+                    <Text style={{ fontSize: 18, fontWeight: "700", color: trialValue ? "#111827" : "#9CA3AF" }}>{trialValue || "0"}</Text>
+                  </Pressable>
                   <View style={{ flexDirection: "row", flex: 1, gap: 6 }}>
                     {TRIAL_UNITS.map(u => (
                       <Pressable key={u} style={[inp.unitChip, trialUnit === u && inp.unitChipActive]} onPress={() => setTrialUnit(u)}>
@@ -357,6 +381,25 @@ function AddTenantModal({ visible, onClose, onSuccess }: { visible: boolean; onC
           </ScrollView>
         </View>
       </KeyboardAvoidingView>
+
+      {numPicker && (
+        <Modal visible transparent animationType="slide" onRequestClose={() => setNumPicker(null)}>
+          <Pressable
+            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }}
+            onPress={() => setNumPicker(null)}
+          >
+            <Pressable onPress={() => {}}>
+              <NumberPickerSheet
+                label={numPicker.label}
+                value={numPicker.val}
+                min={numPicker.min}
+                max={numPicker.max}
+                onConfirm={(v) => { numPicker.set(v); setNumPicker(null); }}
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
+      )}
     </Modal>
   );
 }

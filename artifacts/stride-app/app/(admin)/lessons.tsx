@@ -410,6 +410,7 @@ export default function AdminLessonsScreen() {
   const [scEndTime,            setScEndTime]            = useState("10:00");
   const [showStartPicker,      setShowStartPicker]      = useState(false);
   const [showEndPicker,        setShowEndPicker]        = useState(false);
+  const [numPicker, setNumPicker] = useState<{ label: string; val: string; min: number; max: number; set: (v: string) => void } | null>(null);
 
   // Preset time slots 07:00–22:00 every 30 min
   const SC_TIME_SLOTS: string[] = Array.from({ length: 31 }, (_, i) => {

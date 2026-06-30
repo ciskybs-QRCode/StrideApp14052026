@@ -634,6 +634,7 @@ export default function ActivityScreen() {
   const [showReschedule, setShowReschedule] = useState(false);
   const [rescheduleKind, setRescheduleKind] = useState<"shift" | "cancel" | "makeup">("shift");
   const [shiftMinutes, setShiftMinutes] = useState("30");
+  const [showShiftPicker, setShowShiftPicker] = useState(false);
   const [makeupDate, setMakeupDate]   = useState("28/05/2026");
   const [makeupTime, setMakeupTime]   = useState("17:00");
   const [showMakeupDatePicker, setShowMakeupDatePicker] = useState(false);
@@ -1695,14 +1696,15 @@ export default function ActivityScreen() {
                     </Pressable>
                   ))}
                 </View>
-                <TextInput
-                  style={[styles.rsTextInput, { borderColor: colors.border, color: colors.foreground }]}
-                  value={shiftMinutes}
-                  onChangeText={setShiftMinutes}
-                  keyboardType="numeric"
-                  placeholder="Custom minutes"
-                  placeholderTextColor={colors.mutedForeground}
-                />
+                <Pressable
+                  style={[styles.rsTextInput, { borderColor: colors.border, flexDirection: "row", alignItems: "center", gap: 8 }]}
+                  onPress={() => { Haptics.selectionAsync(); setShowShiftPicker(true); }}
+                >
+                  <Ionicons name="time-outline" size={15} color={shiftMinutes ? colors.primary : colors.mutedForeground} />
+                  <Text style={{ fontSize: 15, color: shiftMinutes ? colors.foreground : colors.mutedForeground }}>
+                    {shiftMinutes ? `${shiftMinutes} min` : "Custom minutes"}
+                  </Text>
+                </Pressable>
               </View>
             )}
 
@@ -1766,6 +1768,21 @@ export default function ActivityScreen() {
             <TimePickerSheet
               value={makeupTime || "17:00"}
               onConfirm={v => { setMakeupTime(v); setShowMakeupTimePicker(false); }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ── Shift-by (minutes) picker ── */}
+      <Modal visible={showShiftPicker} transparent animationType="slide" onRequestClose={() => setShowShiftPicker(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setShowShiftPicker(false)}>
+          <Pressable onPress={() => {}}>
+            <NumberPickerSheet
+              label="Postpone by (minutes)"
+              value={shiftMinutes || "30"}
+              min={0}
+              max={240}
+              onConfirm={v => { setShiftMinutes(v); setShowShiftPicker(false); }}
             />
           </Pressable>
         </Pressable>

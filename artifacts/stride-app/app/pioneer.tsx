@@ -7,6 +7,7 @@ import {
   Alert,
   KeyboardAvoidingView,
   Linking,
+  Modal,
   NativeScrollEvent,
   NativeSyntheticEvent,
   Platform,
@@ -24,6 +25,7 @@ import { api, setToken } from "@/lib/api";
 import { getDeviceLocale } from "@/hooks/useDeviceLocale";
 import { ONB_TERMS_CONDITIONS, ONB_MEDIA_RELEASE, ONB_REIMBURSEMENT, ONB_PRIVACY_POLICY } from "@/lib/legal-texts";
 import { useColors } from "@/hooks/useColors";
+import { NumberPickerSheet } from "@/components/WizardPickers";
 
 // ── Brand ─────────────────────────────────────────────────────────────────────
 const NAVY = "#1E3A8A";
@@ -163,6 +165,7 @@ export default function Pioneer() {
   const [ageGroups,   setAgeGroups]   = useState<string[]>([]);
   const [skillLevels, setSkillLevels] = useState<string[]>([]);
   const [studios, setStudios] = useState<{ name: string; capacity: string }[]>([{ name: "", capacity: "20" }]);
+  const [numPicker, setNumPicker] = useState<{ label: string; val: string; min: number; max: number; set: (v: string) => void } | null>(null);
 
   // ── Step 4 — Communications ───────────────────────────────────────────────
   const [commResendKey,   setCommResendKey]   = useState("");
@@ -691,11 +694,15 @@ export default function Pioneer() {
                     <TextInput style={st.input} value={stud.name} onChangeText={v => updateStudio(i, "name", v)}
                       placeholder={`Studio ${String.fromCharCode(65 + i)}`} placeholderTextColor="#9CA3AF" />
                   </View>
-                  <View style={st.inputWrap}>
+                  <Pressable
+                    style={st.inputWrap}
+                    onPress={() => setNumPicker({ label: "Capacity", val: stud.capacity || "0", min: 0, max: 1000, set: v => updateStudio(i, "capacity", v) })}
+                  >
                     <Ionicons name="people-outline" size={15} color="#9CA3AF" />
-                    <TextInput style={st.input} value={stud.capacity} onChangeText={v => updateStudio(i, "capacity", v)}
-                      placeholder="Capacity" placeholderTextColor="#9CA3AF" keyboardType="numeric" />
-                  </View>
+                    <Text style={[st.input, { color: stud.capacity ? "#1F2937" : "#9CA3AF" }]}>
+                      {stud.capacity ? stud.capacity : "Capacity"}
+                    </Text>
+                  </Pressable>
                 </View>
                 {studios.length > 1 && (
                   <Pressable onPress={() => removeStudio(i)} hitSlop={8} style={{ paddingLeft: 8, paddingTop: 14 }}>
@@ -1119,6 +1126,25 @@ export default function Pioneer() {
           </Pressable>
         )}
       </ScrollView>
+
+      {numPicker && (
+        <Modal visible transparent animationType="slide" onRequestClose={() => setNumPicker(null)}>
+          <Pressable
+            style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }}
+            onPress={() => setNumPicker(null)}
+          >
+            <Pressable onPress={() => {}}>
+              <NumberPickerSheet
+                label={numPicker.label}
+                value={numPicker.val}
+                min={numPicker.min}
+                max={numPicker.max}
+                onConfirm={(v) => { numPicker.set(v); setNumPicker(null); }}
+              />
+            </Pressable>
+          </Pressable>
+        </Modal>
+      )}
     </KeyboardAvoidingView>
   );
 }

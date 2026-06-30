@@ -21,7 +21,7 @@ import { useAppData } from "@/context/AppDataContext";
 import { useColors } from "@/hooks/useColors";
 import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { api, type ApiAvailabilitySlot, type ApiDiscipline } from "@/lib/api";
-import { CalendarPicker, TimePickerSheet } from "@/components/WizardPickers";
+import { CalendarPicker, TimePickerSheet, NumberPickerSheet } from "@/components/WizardPickers";
 
 const DAYS      = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 const DAY_HEADS = ["M", "T", "W", "T", "F", "S", "S"];
@@ -216,6 +216,7 @@ export default function OperatorCalendar() {
   const [wSingleDay,        setWSingleDay]       = useState(false);
   const [wStartDateDisplay, setWStartDateDisplay]= useState(isoToDisplay(todayIso()));
   const [wEndDateDisplay,   setWEndDateDisplay]  = useState(isoToDisplay(todayIso()));
+  const [numPicker, setNumPicker] = useState<{ label: string; val: string; min: number; max: number; set: (v: string) => void } | null>(null);
   const [showStartCal,      setShowStartCal]     = useState(false);
   const [showEndCal,        setShowEndCal]       = useState(false);
   const [showFromTime,      setShowFromTime]     = useState(false);
@@ -989,14 +990,15 @@ export default function OperatorCalendar() {
               <View style={styles.twoCol}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.subLabel}>Max participants</Text>
-                  <TextInput
-                    style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]}
-                    placeholder="20"
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType="number-pad"
-                    value={wCapacity}
-                    onChangeText={setWCapacity}
-                  />
+                  <Pressable
+                    style={[styles.input, { borderColor: colors.primary, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }]}
+                    onPress={() => setNumPicker({ label: "Max participants", val: wCapacity || "0", min: 0, max: 1000, set: setWCapacity })}
+                  >
+                    <Text style={{ color: wCapacity ? colors.foreground : colors.mutedForeground, fontSize: 14 }}>
+                      {wCapacity || "20"}
+                    </Text>
+                    <Ionicons name="people-outline" size={16} color={colors.primary} />
+                  </Pressable>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.subLabel}>Price ({cur || "€"}, 0 = free)</Text>
@@ -1443,6 +1445,23 @@ export default function OperatorCalendar() {
               value={wEndTime}
               onConfirm={v => { setWEndTime(v); setShowToTime(false); }}
             />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ══ Number Picker ════════════════════════════════════════════════════════ */}
+      <Modal visible={!!numPicker} transparent animationType="slide">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setNumPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {numPicker && (
+              <NumberPickerSheet
+                label={numPicker.label}
+                value={numPicker.val}
+                min={numPicker.min}
+                max={numPicker.max}
+                onConfirm={(v) => { numPicker.set(v); setNumPicker(null); }}
+              />
+            )}
           </Pressable>
         </Pressable>
       </Modal>

@@ -19,6 +19,7 @@ import { useAppData } from "@/context/AppDataContext";
 import { useRealtime } from "@/context/RealtimeContext";
 import { useTerminology } from "@/context/TerminologyContext";
 import { useColors } from "@/hooks/useColors";
+import { NumberPickerSheet } from "@/components/WizardPickers";
 import { api, type ApiPromoCode } from "@/lib/api";
 
 async function copyToClipboard(text: string): Promise<boolean> {
@@ -121,6 +122,8 @@ export default function PromoCodesPage() {
   const [targetParentSearch, setTargetParentSearch] = useState("");
   const [targetParentNames, setTargetParentNames] = useState<string[]>([]);
   const [targetMemberCourseIds, setTargetMemberCourseIds] = useState<string[]>([]);
+
+  const [numPicker, setNumPicker] = useState<{ label: string; val: string; min: number; max: number; set: (v: string) => void } | null>(null);
 
   const loadPromos = useCallback(async () => {
     try {
@@ -387,10 +390,24 @@ export default function PromoCodesPage() {
             <TextInput style={[styles.input, { borderColor: colors.primary, color: colors.foreground }]} placeholder={newDiscountType === "percent" ? "20" : "1"} value={newDiscountValue} onChangeText={setNewDiscountValue} placeholderTextColor={colors.mutedForeground} keyboardType="numeric" />
 
             <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 16 }]}>Validity (months, optional)</Text>
-            <TextInput style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} placeholder="e.g. 3" value={newDuration} onChangeText={setNewDuration} placeholderTextColor={colors.mutedForeground} keyboardType="numeric" />
+            <Pressable
+              style={[styles.input, { borderColor: colors.border, justifyContent: "center" }]}
+              onPress={() => setNumPicker({ label: "Validity (months, optional)", val: newDuration || "0", min: 0, max: 60, set: setNewDuration })}
+            >
+              <Text style={{ fontSize: 15, color: newDuration ? colors.foreground : colors.mutedForeground }}>
+                {newDuration || "e.g. 3"}
+              </Text>
+            </Pressable>
 
             <Text style={[styles.fieldLabel, { color: colors.primary, marginTop: 16 }]}>Max Uses</Text>
-            <TextInput style={[styles.input, { borderColor: colors.border, color: colors.foreground }]} placeholder="1" value={newMaxUses} onChangeText={setNewMaxUses} placeholderTextColor={colors.mutedForeground} keyboardType="numeric" />
+            <Pressable
+              style={[styles.input, { borderColor: colors.border, justifyContent: "center" }]}
+              onPress={() => setNumPicker({ label: "Max Uses", val: newMaxUses || "1", min: 0, max: 1000, set: setNewMaxUses })}
+            >
+              <Text style={{ fontSize: 15, color: newMaxUses ? colors.foreground : colors.mutedForeground }}>
+                {newMaxUses || "1"}
+              </Text>
+            </Pressable>
 
             {/* Smart targeting */}
             <View style={{ flexDirection: "row", alignItems: "center", gap: 6, marginTop: 20, marginBottom: 10 }}>
@@ -573,6 +590,23 @@ export default function PromoCodesPage() {
             );
           })()}
         </View>
+      </Modal>
+
+      {/* Number Picker Modal */}
+      <Modal visible={!!numPicker} transparent animationType="slide" onRequestClose={() => setNumPicker(null)}>
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setNumPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {numPicker && (
+              <NumberPickerSheet
+                label={numPicker.label}
+                value={numPicker.val}
+                min={numPicker.min}
+                max={numPicker.max}
+                onConfirm={(v) => { numPicker.set(v); setNumPicker(null); }}
+              />
+            )}
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );
