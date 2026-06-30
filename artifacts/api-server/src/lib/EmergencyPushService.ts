@@ -522,7 +522,10 @@ export class EmergencyPushService {
         [userId, orgId],
       );
       const tokens = rows.map(r => r.token).filter(t => Expo.isExpoPushToken(t));
-      if (tokens.length === 0) return;
+      if (tokens.length === 0) {
+        logger.warn({ userId, orgId }, "EmergencyPushService.sendCascadePush: no registered device tokens for user — push not delivered");
+        return;
+      }
 
       const messages: ExpoPushMessage[] = tokens.map(to => ({
         to,
