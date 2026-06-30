@@ -125,13 +125,17 @@ jobs:
 
       - name: Push to target repository
         id: push
+        env:
+          GITHUB_PAT: ${{ secrets.GITHUB_PAT }}
         run: |
-          git remote add target https://x-access-token:${{ secrets.GITHUB_PAT }}@github.com/ciskybs-QRCode/StrideApp14052026.git
+          TARGET_URL="https://github.com/ciskybs-QRCode/StrideApp14052026.git"
+          AUTH_HEADER="Authorization: Basic $(printf 'x-access-token:%s' "$GITHUB_PAT" | base64 -w0)"
+          git remote add target "$TARGET_URL"
+          git config http.https://github.com/.extraheader "$AUTH_HEADER"
 
-          # Strategy: create a dated backup branch on the target before force-pushing.
+          # Strategy: create a dated backup branch on the target before pushing.
           # This preserves any commits that exist only on the target (e.g. hotfixes
-          # pushed directly there) so they can always be recovered, even though
-          # --force will overwrite target/main.
+          # pushed directly there) so they can always be recovered.
           BACKUP_BRANCH="backup/main-$(date -u +%Y%m%d-%H%M%S)"
           git fetch target main --depth=1 || true
           if git rev-parse FETCH_HEAD &>/dev/null; then
@@ -139,7 +143,6 @@ jobs:
             BACKUP_OUTPUT=$(git push target "FETCH_HEAD:refs/heads/${BACKUP_BRANCH}" 2>&1)
             BACKUP_EXIT=$?
             set -e
-            BACKUP_OUTPUT=$(printf '%s' "$BACKUP_OUTPUT" | sed "s/${{ secrets.GITHUB_PAT }}/[REDACTED]/g; s|https://x-access-token:[^@]*@|https://x-access-token:[REDACTED]@|g")
             if [ $BACKUP_EXIT -ne 0 ]; then
               TRUNCATED="${BACKUP_OUTPUT:0:500}"
               {
@@ -158,13 +161,12 @@ jobs:
             echo "backup_branch=" >> "$GITHUB_OUTPUT"
           fi
 
-          # Temporarily disable errexit so we can capture the exit code and
-          # stderr text from a failing push before deciding what to do.
+          # Fast-forward push (no --force). Fails if histories have diverged, which
+          # is the correct safe behaviour — investigate and resolve manually if so.
           set +e
-          PUSH_OUTPUT=$(git push target main --force 2>&1)
+          PUSH_OUTPUT=$(git push target main 2>&1)
           PUSH_EXIT=$?
           set -e
-          PUSH_OUTPUT=$(printf '%s' "$PUSH_OUTPUT" | sed "s/${{ secrets.GITHUB_PAT }}/[REDACTED]/g; s|https://x-access-token:[^@]*@|https://x-access-token:[REDACTED]@|g")
 
           if [ $PUSH_EXIT -ne 0 ]; then
             TRUNCATED="${PUSH_OUTPUT:0:500}"
