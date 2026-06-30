@@ -18,6 +18,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { api, type ApiPrivateLessonBooking, type ApiPrivateLessonPolicy } from "@/lib/api";
+import { CalendarPicker, TimePickerSheet, isoToCal, calToIso } from "@/components/WizardPickers";
 
 const STATUS_LABEL: Record<string, string> = {
   pending_payment: "Pending Payment",
@@ -73,6 +74,8 @@ export default function MyPrivateLessonsScreen() {
   const [newDate,    setNewDate]    = useState("");
   const [newTime,    setNewTime]    = useState("");
   const [rescheduling, setRescheduling] = useState(false);
+  const [calPicker,  setCalPicker]  = useState<{ value: string; set: (v: string) => void } | null>(null);
+  const [timePicker, setTimePicker] = useState<{ value: string; set: (v: string) => void } | null>(null);
 
   const [cancelId,   setCancelId]   = useState<number | null>(null);
   const [cancelling, setCancelling] = useState(false);
@@ -331,25 +334,25 @@ export default function MyPrivateLessonsScreen() {
               Enter the new date and time for your lesson.
             </Text>
 
-            <Text style={[styles.inputLabel, { color: colors.foreground }]}>New Date (YYYY-MM-DD)</Text>
-            <TextInput
-              style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
-              value={newDate}
-              onChangeText={setNewDate}
-              placeholder="2025-06-15"
-              placeholderTextColor={colors.mutedForeground}
-              keyboardType="numbers-and-punctuation"
-            />
+            <Text style={[styles.inputLabel, { color: colors.foreground }]}>New Date</Text>
+            <Pressable
+              style={[styles.input, { borderColor: colors.border, backgroundColor: colors.background, justifyContent: "center" }]}
+              onPress={() => setCalPicker({ value: isoToCal(newDate), set: (v) => setNewDate(calToIso(v)) })}
+            >
+              <Text style={{ fontSize: 15, color: newDate ? colors.foreground : colors.mutedForeground }}>
+                {newDate || "Select date"}
+              </Text>
+            </Pressable>
 
-            <Text style={[styles.inputLabel, { color: colors.foreground }]}>New Time (HH:MM)</Text>
-            <TextInput
-              style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
-              value={newTime}
-              onChangeText={setNewTime}
-              placeholder="14:30"
-              placeholderTextColor={colors.mutedForeground}
-              keyboardType="numbers-and-punctuation"
-            />
+            <Text style={[styles.inputLabel, { color: colors.foreground }]}>New Time</Text>
+            <Pressable
+              style={[styles.input, { borderColor: colors.border, backgroundColor: colors.background, justifyContent: "center" }]}
+              onPress={() => setTimePicker({ value: newTime || "09:00", set: (v) => setNewTime(v) })}
+            >
+              <Text style={{ fontSize: 15, color: newTime ? colors.foreground : colors.mutedForeground }}>
+                {newTime || "Select time"}
+              </Text>
+            </Pressable>
 
             {reschedule && rescheduleFeeFor({ ...({} as ApiPrivateLessonBooking), preferred_date: reschedule.currentDate, preferred_time: reschedule.currentTime, member_price_cents: reschedule.priceCents, status: "confirmed" }) > 0 && (
               <View style={[styles.feeWarning, { backgroundColor: "#FFF7ED", borderLeftColor: "#FB923C", marginBottom: 8 }]}>
@@ -380,6 +383,26 @@ export default function MyPrivateLessonsScreen() {
             </View>
           </View>
         </View>
+      </Modal>
+
+      <Modal visible={!!calPicker} transparent animationType="fade">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" }} onPress={() => setCalPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {calPicker && (
+              <CalendarPicker value={calPicker.value} onConfirm={(v) => { calPicker.set(v); setCalPicker(null); }} />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={!!timePicker} transparent animationType="slide">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setTimePicker(null)}>
+          <Pressable onPress={() => {}}>
+            {timePicker && (
+              <TimePickerSheet value={timePicker.value} onConfirm={(v) => { timePicker.set(v); setTimePicker(null); }} />
+            )}
+          </Pressable>
+        </Pressable>
       </Modal>
 
       {/* ── QR Code modal ── */}

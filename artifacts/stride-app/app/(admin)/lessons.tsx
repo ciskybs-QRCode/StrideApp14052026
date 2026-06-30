@@ -16,6 +16,7 @@ import {
   type ApiDiscipline, type ApiOperatorProfile, type ApiAvailabilitySlot,
   type ApiScheduledCourse, type ApiCourseAvailTemplate, type ApiPrivateLessonBooking,
 } from "@/lib/api";
+import { NumberPickerSheet } from "@/components/WizardPickers";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -130,6 +131,7 @@ function PrivateLessonsTab() {
   const [plFMember,  setPlFMember]  = useState("");
   const [plFOp,      setPlFOp]      = useState("");
   const [plFDur,     setPlFDur]     = useState("60");
+  const [numPicker, setNumPicker] = useState<{ label: string; val: string; min: number; max: number; set: (v: string) => void } | null>(null);
 
   const plLoad = useCallback(async () => {
     setPlLoading(true);
@@ -280,9 +282,14 @@ function PrivateLessonsTab() {
             </View>
             <View style={{ marginTop: 10 }}>
               <Text style={[plSt.fieldLabel, { color: colors.mutedForeground }]}>Duration (minutes)</Text>
-              <TextInput style={[plSt.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
-                value={plFDur} onChangeText={setPlFDur} placeholder="60" keyboardType="number-pad"
-                placeholderTextColor={colors.mutedForeground} />
+              <Pressable
+                style={[plSt.input, { borderColor: colors.border, backgroundColor: colors.background, justifyContent: "center" }]}
+                onPress={() => setNumPicker({ label: "Duration (minutes)", val: plFDur || "60", min: 0, max: 240, set: (v) => setPlFDur(v) })}
+              >
+                <Text style={{ fontSize: 15, fontWeight: "700", textAlign: "center", color: plFDur ? colors.foreground : colors.mutedForeground }}>
+                  {plFDur || "60"}
+                </Text>
+              </Pressable>
             </View>
             {plParseCents(plFMember) > 0 && plParseCents(plFOp) >= 0 && (
               <View style={[plSt.marginPreview, { backgroundColor: "#EFF6FF", borderColor: "#BFDBFE" }]}>
@@ -959,21 +966,25 @@ export default function AdminLessonsScreen() {
               <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.formSubLabel, { color: colors.mutedForeground }]}>Min age</Text>
-                  <TextInput
-                    style={[styles.ageInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
-                    value={scAgeMin} onChangeText={setScAgeMin}
-                    placeholder="5" placeholderTextColor={colors.mutedForeground}
-                    keyboardType="number-pad"
-                  />
+                  <Pressable
+                    style={[styles.ageInput, { borderColor: colors.border, backgroundColor: colors.background, justifyContent: "center" }]}
+                    onPress={() => setNumPicker({ label: "Min Age", val: scAgeMin || "0", min: 0, max: 100, set: (v) => setScAgeMin(v) })}
+                  >
+                    <Text style={{ fontSize: 15, fontWeight: "700", textAlign: "center", color: scAgeMin ? colors.foreground : colors.mutedForeground }}>
+                      {scAgeMin || "0"}
+                    </Text>
+                  </Pressable>
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={[styles.formSubLabel, { color: colors.mutedForeground }]}>Max age</Text>
-                  <TextInput
-                    style={[styles.ageInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
-                    value={scAgeMax} onChangeText={setScAgeMax}
-                    placeholder="18" placeholderTextColor={colors.mutedForeground}
-                    keyboardType="number-pad"
-                  />
+                  <Pressable
+                    style={[styles.ageInput, { borderColor: colors.border, backgroundColor: colors.background, justifyContent: "center" }]}
+                    onPress={() => setNumPicker({ label: "Max Age", val: scAgeMax || "18", min: 0, max: 100, set: (v) => setScAgeMax(v) })}
+                  >
+                    <Text style={{ fontSize: 15, fontWeight: "700", textAlign: "center", color: scAgeMax ? colors.foreground : colors.mutedForeground }}>
+                      {scAgeMax || "18"}
+                    </Text>
+                  </Pressable>
                 </View>
               </View>
               <Text style={[styles.formSubLabel, { color: colors.mutedForeground, marginBottom: 6 }]}>Skill level</Text>
@@ -1077,14 +1088,14 @@ export default function AdminLessonsScreen() {
                   <View style={{ flexDirection: "row", gap: 10 }}>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.formSubLabel, { color: colors.mutedForeground, marginBottom: 6 }]}>No. of lessons</Text>
-                      <TextInput
-                        style={[styles.ageInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
-                        value={scPackageSize}
-                        onChangeText={setScPackageSize}
-                        placeholder="10"
-                        placeholderTextColor={colors.mutedForeground}
-                        keyboardType="number-pad"
-                      />
+                      <Pressable
+                        style={[styles.ageInput, { borderColor: colors.border, backgroundColor: colors.background, justifyContent: "center" }]}
+                        onPress={() => setNumPicker({ label: "No. of lessons", val: scPackageSize || "10", min: 1, max: 100, set: (v) => setScPackageSize(v) })}
+                      >
+                        <Text style={{ fontSize: 15, fontWeight: "700", textAlign: "center", color: scPackageSize ? colors.foreground : colors.mutedForeground }}>
+                          {scPackageSize || "10"}
+                        </Text>
+                      </Pressable>
                     </View>
                     <View style={{ flex: 1 }}>
                       <Text style={[styles.formSubLabel, { color: colors.mutedForeground, marginBottom: 6 }]}>Package price ({cur || "€"})</Text>
@@ -1712,6 +1723,16 @@ export default function AdminLessonsScreen() {
             </View>
           </View>
         </View>
+      </Modal>
+
+      <Modal visible={!!numPicker} transparent animationType="slide">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setNumPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {numPicker && (
+              <NumberPickerSheet label={numPicker.label} value={numPicker.val} min={numPicker.min} max={numPicker.max} onConfirm={(v) => { numPicker.set(v); setNumPicker(null); }} />
+            )}
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );
