@@ -79,6 +79,7 @@ export default function SmartRosterScreen() {
 
   // ── Cascade Orchestrator state ─────────────────────────────────────────────
   const [autoTrigger,     setAutoTrigger]     = useState(false);
+  const [notifyChannel,   setNotifyChannel]   = useState<"push" | "in_app" | "both">("both");
   const [cascades,        setCascades]        = useState<RescueCascade[]>([]);
   const [cascadesLoading, setCascadesLoading] = useState(true);
   const [triggering,      setTriggering]      = useState(false);
@@ -113,11 +114,13 @@ export default function SmartRosterScreen() {
     AsyncStorage.getItem(AUTO_TRIGGER_KEY).then(v => {
       if (v !== null) setAutoTrigger(v === "true");
     });
-    request<{ cascade_auto_trigger?: boolean }>("GET", "/admin-settings")
+    request<{ cascade_auto_trigger?: boolean; cascade_notify_channel?: string }>("GET", "/admin-settings")
       .then(data => {
         const val = data.cascade_auto_trigger === true;
         setAutoTrigger(val);
         AsyncStorage.setItem(AUTO_TRIGGER_KEY, String(val));
+        const ch = data.cascade_notify_channel;
+        if (ch === "push" || ch === "in_app" || ch === "both") setNotifyChannel(ch);
       })
       .catch(() => {}); // keep AsyncStorage value on API failure
   }, []);
@@ -147,6 +150,11 @@ export default function SmartRosterScreen() {
     } catch {
       // keep local value — API sync is best-effort
     }
+  };
+
+  const handleChangeNotifyChannel = async (ch: "push" | "in_app" | "both") => {
+    setNotifyChannel(ch);
+    try { await request<unknown>("PUT", "/admin-settings", { cascade_notify_channel: ch }); } catch {}
   };
 
   // ── Smart Roster form ──────────────────────────────────────────────────────
@@ -363,6 +371,35 @@ export default function SmartRosterScreen() {
               </Text>
             </View>
           )}
+
+          {/* Candidate notification channel */}
+          <View style={[s.toggleRow, { backgroundColor: colors.muted, borderColor: colors.border, flexDirection: "column", gap: 10 }]}>
+            <View>
+              <Text style={[s.toggleLabel, { color: colors.foreground }]}>Candidate Notification Channel</Text>
+              <Text style={[s.toggleDesc, { color: colors.mutedForeground }]}>
+                How contacted candidates are notified of a substitute request
+              </Text>
+            </View>
+            <View style={{ flexDirection: "row", gap: 8 }}>
+              {(["push", "in_app", "both"] as const).map(opt => (
+                <Pressable
+                  key={opt}
+                  onPress={() => { void handleChangeNotifyChannel(opt); }}
+                  style={[
+                    s.channelChip,
+                    {
+                      borderColor:     notifyChannel === opt ? colors.primary : colors.border,
+                      backgroundColor: notifyChannel === opt ? colors.primary : "transparent",
+                    },
+                  ]}
+                >
+                  <Text style={{ color: notifyChannel === opt ? "#FFFFFF" : colors.mutedForeground, fontSize: 12, fontWeight: "600" }}>
+                    {opt === "push" ? "Push Only" : opt === "in_app" ? "In-App Only" : "Both"}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          </View>
 
           {/* Score formula */}
           <View style={[s.formulaBox, { backgroundColor: colors.muted }]}>
@@ -746,6 +783,8 @@ const s = StyleSheet.create({
   },
   formulaChipTxt: { fontSize: 10, fontWeight: "600" },
   formulaChipPct: { fontSize: 11, fontWeight: "800" },
+
+  channelChip: { flex: 1, borderWidth: 1.5, borderRadius: 9, paddingVertical: 8, alignItems: "center", justifyContent: "center" },
 
   // Cascades
   cascadesHeader: { flexDirection: "row", alignItems: "center", gap: 10 },

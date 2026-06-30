@@ -14,6 +14,7 @@ import { pool } from "./pg.js";
 import { supabase } from "./supabase.js";
 import { RosterOptimizer } from "./RosterOptimizer.js";
 import { ReliabilityService } from "./ReliabilityService.js";
+import { EmergencyPushService } from "./EmergencyPushService.js";
 import { logger } from "./logger.js";
 
 export interface CascadeTriggerParams {
@@ -93,6 +94,25 @@ export class RescueCascadeService {
     await pool.query(`
       ALTER TABLE cascade_contacts ALTER COLUMN contacted_at DROP NOT NULL
     `);
+
+    // Channel control for candidate notifications ('push'|'in_app'|'both', default 'both').
+    await pool.query(`
+      ALTER TABLE admin_settings
+        ADD COLUMN IF NOT EXISTS cascade_notify_channel TEXT NOT NULL DEFAULT 'both'
+    `);
+  }
+
+  /** Read the cascade candidate notification channel for an org. */
+  static async getNotifyChannel(orgId: number): Promise<"push" | "in_app" | "both"> {
+    try {
+      const { rows } = await pool.query<{ cascade_notify_channel?: string }>(
+        `SELECT cascade_notify_channel FROM admin_settings WHERE organization_id = $1`,
+        [orgId],
+      );
+      const val = rows[0]?.cascade_notify_channel;
+      if (val === "push" || val === "in_app" || val === "both") return val;
+      return "both";
+    } catch { return "both"; }
   }
 
   /**
@@ -162,6 +182,32 @@ export class RescueCascadeService {
       );
     }
 
+    // Notify rank-1 candidate (channel controlled by admin setting: push|in_app|both)
+    const notifyBody = `You have been selected to substitute for ${courseName ?? "a class"}${classDatetime ? ` on ${classDatetime}` : ""}. Please open Stride to accept or decline.`;
+    const ch = await RescueCascadeService.getNotifyChannel(orgId);
+    if (ch === "push" || ch === "both") {
+      EmergencyPushService.sendCascadePush(
+        ranked[0]!.operatorUserId,
+        orgId,
+        "Substitute Request",
+        notifyBody,
+        { cascade_id: cascadeId, absent_operator: absentOperatorName ?? absentOperatorId },
+      ).catch(() => {});
+    }
+    if (ch === "in_app" || ch === "both") {
+      const candidateIdInt = parseInt(ranked[0]!.operatorUserId, 10);
+      if (!isNaN(candidateIdInt)) {
+        supabase.from("private_notifications").insert({
+          organization_id: orgId,
+          recipient_id:    candidateIdInt,
+          type:            "cascade_substitute_request",
+          title:           "Substitute Request",
+          body:            notifyBody,
+          read:            false,
+        }).then(undefined, () => {});
+      }
+    }
+
     logger.info(
       { cascadeId, orgId, absentOperatorId, disciplineId, candidateCount: ranked.length },
       "RescueCascadeService: cascade triggered",
@@ -192,14 +238,23 @@ export class RescueCascadeService {
         .in("role", ["admin", "super_admin"]);
 
       for (const admin of (admins ?? [])) {
+        const adminId = (admin as { id: number }).id;
         await supabase.from("private_notifications").insert({
           organization_id: orgId,
-          recipient_id:    (admin as { id: number }).id,
+          recipient_id:    adminId,
           type:            "cascade_needs_decision",
           title:           "Substitute Needed — Action Required",
           body,
           read:            false,
         }).then(undefined, () => {});
+
+        EmergencyPushService.sendCascadePush(
+          String(adminId),
+          orgId,
+          "Substitute Needed — Action Required",
+          body,
+          { cascade_id: cascadeId, type: "admin_cascade_escalation" },
+        ).catch(() => {});
       }
     } catch (err) {
       logger.warn(err, "RescueCascadeService.notifyAdminsNoSubstitute: failed");

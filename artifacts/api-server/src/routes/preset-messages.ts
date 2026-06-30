@@ -61,6 +61,11 @@ const DEFAULT_TEMPLATES: Record<string, { subject: string; body: string; channel
     body: "Hi {member_name},\n\nGood news! A new course is now available at {association_name}: {course_name} on {course_schedule}.\n\nOpen the app to book your spot.\n\nThe {association_name} Team",
     channel_inapp: true, channel_push: true, channel_email: true,
   },
+  substitute_confirmed: {
+    subject: "Substitute confirmed for {course_name} — {association_name}",
+    body: "Hi team,\n\n{operator_name} has confirmed as substitute instructor for {course_name} on {class_date}.\n\nThe session is now covered. No further action is required.\n\nThe {association_name} Team",
+    channel_inapp: true, channel_push: true, channel_email: true,
+  },
 };
 
 // ── GET /preset-messages ──────────────────────────────────────────────────────

@@ -849,14 +849,23 @@ async function notifyCascadeAdmins(
       .in("role", ["admin", "super_admin"]);
 
     for (const admin of (admins ?? [])) {
+      const adminId = (admin as { id: number }).id;
       await supabase.from("private_notifications").insert({
         organization_id: orgId,
-        recipient_id:    (admin as { id: number }).id,
+        recipient_id:    adminId,
         type:            "cascade_needs_decision",
         title:           "Substitute Needed — Action Required",
         body,
         read:            false,
       }).then(undefined, () => {});
+
+      EmergencyPushService.sendCascadePush(
+        String(adminId),
+        orgId,
+        "Substitute Needed — Action Required",
+        body,
+        { cascade_id: cascadeId, type: "admin_cascade_escalation" },
+      ).catch(() => {});
     }
   } catch (err) {
     logger.warn(err, "notifyCascadeAdmins: failed to notify");
@@ -906,7 +915,38 @@ async function checkCascadeTimeouts(): Promise<void> {
           { cascadeId: row.cascade_id, nextContactId: nc.id, operator: nc.operator_name },
           "RescueCascade: promoted next candidate",
         );
-        // Push notification to the newly active candidate is handled in Step 2 (Part 2.2).
+        // Notify promoted candidate (channel controlled by org admin setting)
+        const candidateBody = `You have been selected to substitute for ${row.course_name ?? "a class"}. Please open Stride to accept or decline.`;
+        let notifyCh = "both";
+        try {
+          const { rows: chRows } = await pool.query<{ cascade_notify_channel?: string }>(
+            `SELECT cascade_notify_channel FROM admin_settings WHERE organization_id = $1`,
+            [row.org_id],
+          );
+          notifyCh = chRows[0]?.cascade_notify_channel ?? "both";
+        } catch { /* default both */ }
+        if (notifyCh === "push" || notifyCh === "both") {
+          EmergencyPushService.sendCascadePush(
+            nc.operator_id,
+            row.org_id,
+            "Substitute Request",
+            candidateBody,
+            { cascade_id: row.cascade_id },
+          ).catch(() => {});
+        }
+        if (notifyCh === "in_app" || notifyCh === "both") {
+          const candidateIdInt = parseInt(nc.operator_id, 10);
+          if (!isNaN(candidateIdInt)) {
+            supabase.from("private_notifications").insert({
+              organization_id: row.org_id,
+              recipient_id:    candidateIdInt,
+              type:            "cascade_substitute_request",
+              title:           "Substitute Request",
+              body:            candidateBody,
+              read:            false,
+            }).then(undefined, () => {});
+          }
+        }
       } else {
         // All candidates exhausted — escalate immediately.
         await pool.query(
@@ -922,13 +962,23 @@ async function checkCascadeTimeouts(): Promise<void> {
     }
 
     // ── B. Escalate cascades stuck pending for > 15 minutes total ────────────
+    // Exclude any cascade that still has a freshly-promoted pending candidate
+    // (contacted_at + 5 min > NOW()) to avoid a double escalation when Part A
+    // just promoted a new candidate in the same scheduler tick.
     const { rows: stuck } = await pool.query<{
       id: number; org_id: number; course_name: string | null;
     }>(`
-      SELECT id, org_id, course_name
-      FROM   rescue_cascades
-      WHERE  status     = 'pending'
-        AND  created_at + INTERVAL '15 minutes' <= NOW()
+      SELECT rc.id, rc.org_id, rc.course_name
+      FROM   rescue_cascades rc
+      WHERE  rc.status     = 'pending'
+        AND  rc.created_at + INTERVAL '15 minutes' <= NOW()
+        AND  NOT EXISTS (
+          SELECT 1
+          FROM   cascade_contacts cc
+          WHERE  cc.cascade_id   = rc.id
+            AND  cc.status       = 'pending'
+            AND  cc.contacted_at + INTERVAL '5 minutes' > NOW()
+        )
     `);
 
     for (const cascade of stuck) {

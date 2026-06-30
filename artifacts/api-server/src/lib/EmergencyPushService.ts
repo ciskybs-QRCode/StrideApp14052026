@@ -504,4 +504,53 @@ export class EmergencyPushService {
       logger.error({ err, orgId, category }, "EmergencyPushService: email fallback error");
     }
   }
+
+  // ── Cascade substitute push (non-critical, single operator) ──────────────────
+  // Sends a standard-priority push to one operator's registered device.
+  // No suppression checks, no Twilio fallback — informational only.
+
+  static async sendCascadePush(
+    userId: string,
+    orgId:  number,
+    title:  string,
+    body:   string,
+    data?:  Record<string, unknown>,
+  ): Promise<void> {
+    try {
+      const { rows } = await pool.query<{ token: string }>(
+        `SELECT token FROM device_push_tokens WHERE user_id = $1 AND org_id = $2`,
+        [userId, orgId],
+      );
+      const tokens = rows.map(r => r.token).filter(t => Expo.isExpoPushToken(t));
+      if (tokens.length === 0) return;
+
+      const messages: ExpoPushMessage[] = tokens.map(to => ({
+        to,
+        title,
+        body,
+        data:      { ...data, _cascade: true },
+        sound:     "default",
+        priority:  "high",
+        channelId: "cascade_substitute",
+      }));
+
+      const chunks = expo.chunkPushNotifications(messages);
+      for (const chunk of chunks) {
+        const tickets = await expo.sendPushNotificationsAsync(chunk);
+        for (let i = 0; i < tickets.length; i++) {
+          const ticket = tickets[i];
+          if (ticket?.status === "error") {
+            logger.warn({ userId, err: ticket.message }, "EmergencyPushService.sendCascadePush: ticket error");
+            if ((ticket as { details?: { error?: string } }).details?.error === "DeviceNotRegistered") {
+              pool.query(`DELETE FROM device_push_tokens WHERE token = $1`, [tokens[i]]).catch(() => {});
+            }
+          }
+        }
+      }
+
+      logger.info({ userId, orgId, tokensCount: tokens.length }, "EmergencyPushService.sendCascadePush: sent");
+    } catch (err) {
+      logger.warn(err, "EmergencyPushService.sendCascadePush: failed (non-fatal)");
+    }
+  }
 }
