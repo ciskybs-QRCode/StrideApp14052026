@@ -50,7 +50,7 @@ export default function JoinOrgScreen() {
     <View style={[s.root, { backgroundColor: colors.background }]}>
       {/* Header */}
       <View style={[s.header, { borderBottomColor: colors.border }]}>
-        <Pressable onPress={() => router.replace("/my-associations" as never)} hitSlop={12} style={s.backBtn}>
+        <Pressable onPress={() => { if (router.canGoBack()) router.back(); else router.replace("/my-associations" as never); }} hitSlop={12} style={s.backBtn}>
           <Ionicons name="arrow-back" size={22} color={colors.foreground} />
         </Pressable>
         <Text style={[s.title, { color: colors.foreground }]}>Join Association</Text>

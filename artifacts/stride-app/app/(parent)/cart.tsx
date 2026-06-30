@@ -15,6 +15,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { ScreenHeader } from "@/components/ScreenHeader";
 import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useCart, type CartItem, type CartItemStatus } from "@/context/CartContext";
@@ -290,12 +291,9 @@ export default function CartScreen() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={[styles.header, { paddingTop: insets.top > 0 ? insets.top + 6 : (Platform.OS === "ios" ? 50 : 28), backgroundColor: colors.card, borderBottomColor: colors.border }]}>
-        <Pressable style={styles.backBtn} onPress={() => router.navigate("/(parent)/courses" as never)}>
-          <Ionicons name="chevron-back" size={24} color={colors.secondary} />
-        </Pressable>
-        <Text style={[styles.headerTitle, { color: colors.primary }]}>Shopping Cart</Text>
-        {count > 0 ? (
+      <ScreenHeader
+        title="Shopping Cart"
+        right={count > 0 ? (
           <Pressable
             style={[styles.clearBtn, { flexDirection: "row", alignItems: "center", gap: 4 }]}
             onPress={() => { clearCart(); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); showSnack("Cart emptied"); }}
@@ -303,8 +301,8 @@ export default function CartScreen() {
             <Ionicons name="trash-outline" size={14} color="#EF4444" />
             <Text style={[styles.clearBtnText, { color: "#EF4444" }]}>Empty Cart</Text>
           </Pressable>
-        ) : <View style={{ width: 80 }} />}
-      </View>
+        ) : undefined}
+      />
 
       {/* Empty State */}
       {count === 0 ? (
