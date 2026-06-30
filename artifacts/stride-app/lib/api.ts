@@ -198,6 +198,10 @@ const DEMO_ENROLLMENTS: ApiEnrollment[] = [
 ];
 
 const DEMO_USERS: Record<string, { token: string; user: ApiUser }> = {
+  "ciskybs@gmail.com": {
+    token: "demo-token-super",
+    user: { id: "145", name: "Francesco", email: "ciskybs@gmail.com", role: "super_admin", orgId: 1 },
+  },
   "genitore@test.com": {
     token: "demo-token-parent",
     user: { id: "1", name: "John Smith", email: "genitore@test.com", role: "parent", orgId: 1 },
