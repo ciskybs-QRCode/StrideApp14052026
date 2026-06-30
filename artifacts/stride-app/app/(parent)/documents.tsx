@@ -26,6 +26,7 @@ import { useUnread } from "@/context/UnreadContext";
 import { useColors } from "@/hooks/useColors";
 import { useTerminology } from "@/context/TerminologyContext";
 import { HubCard } from "@/components/HubCard";
+import { CalendarPicker } from "@/components/WizardPickers";
 import { api } from "@/lib/api";
 import { pickAvatarDataUri } from "@/lib/avatar";
 import { getDeviceLocale } from "@/hooks/useDeviceLocale";
@@ -89,6 +90,7 @@ export default function DocumentsScreen() {
   const [addChildName, setAddChildName] = useState("");
   const [addChildAge, setAddChildAge] = useState("");
   const [addingChild, setAddingChild] = useState(false);
+  const [calPicker, setCalPicker] = useState<{ value: string; set: (v: string) => void; yearRange?: [number, number] } | null>(null);
 
   useEffect(() => {
     const detected = getDeviceLocale();
@@ -588,7 +590,18 @@ export default function DocumentsScreen() {
               <View style={[styles.formDivider, { backgroundColor: colors.border }]} />
               <View style={styles.formRow}>
                 <Text style={[styles.formLabel, { color: colors.mutedForeground }]}>Date of Birth</Text>
-                <TextInput style={[styles.formInput, { color: colors.foreground }]} value={editExtra.dateOfBirth} onChangeText={v => setEditExtra(p => ({ ...p, dateOfBirth: v }))} placeholder="DD/MM/YYYY" placeholderTextColor={colors.mutedForeground} keyboardType="numbers-and-punctuation" />
+                <Pressable
+                  style={styles.formInput}
+                  onPress={() => setCalPicker({
+                    value: editExtra.dateOfBirth,
+                    set: (v) => setEditExtra(p => ({ ...p, dateOfBirth: v })),
+                    yearRange: [1920, new Date().getFullYear()],
+                  })}
+                >
+                  <Text style={{ fontSize: 15, textAlign: "right", color: editExtra.dateOfBirth ? colors.foreground : colors.mutedForeground }}>
+                    {editExtra.dateOfBirth || "DD/MM/YYYY"}
+                  </Text>
+                </Pressable>
               </View>
               <View style={[styles.formDivider, { backgroundColor: colors.border }]} />
               <View style={styles.formRow}>
@@ -696,6 +709,20 @@ export default function DocumentsScreen() {
             <View style={{ height: 40 }} />
           </ScrollView>
         </View>
+      </Modal>
+
+      <Modal visible={!!calPicker} transparent animationType="fade">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" }} onPress={() => setCalPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {calPicker && (
+              <CalendarPicker
+                value={calPicker.value}
+                yearRange={calPicker.yearRange}
+                onConfirm={(v) => { calPicker.set(v); setCalPicker(null); }}
+              />
+            )}
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );

@@ -52,19 +52,6 @@ const FREQ_OPTIONS: { key: string; label: string; interval: number }[] = [
   { key: "semiannual", label: "Every 6 months", interval: 26 },
 ];
 
-function fmtTime(raw: string): string {
-  const d = raw.replace(/\D/g, "").slice(0, 4);
-  if (d.length <= 2) return d;
-  return `${d.slice(0, 2)}:${d.slice(2)}`;
-}
-
-function fmtDate(raw: string): string {
-  const d = raw.replace(/\D/g, "").slice(0, 8);
-  if (d.length <= 2) return d;
-  if (d.length <= 4) return `${d.slice(0, 2)}/${d.slice(2)}`;
-  return `${d.slice(0, 2)}/${d.slice(2, 4)}/${d.slice(4)}`;
-}
-
 function parseDate(s: string): string | null {
   const parts = s.split("/");
   if (parts.length !== 3) return null;
@@ -219,8 +206,9 @@ export default function ActivityWizard() {
   const [capacity,     setCapacity]     = useState("15");
 
   // ── Picker modal visibility
-  const [calPicker,  setCalPicker]  = useState<"start" | "end" | null>(null);
+  const [calPicker,  setCalPicker]  = useState<"start" | "end" | "evtDate" | null>(null);
   const [timePicker, setTimePicker] = useState<{ day: number; field: "start" | "end" } | null>(null);
+  const [evtTimePicker, setEvtTimePicker] = useState<"start" | "end" | null>(null);
   const [numPicker,  setNumPicker]  = useState<{ label: string; val: string; set: (v: string) => void; min: number; max: number } | null>(null);
 
   // ── Step 4: Pricing (Course)
@@ -486,16 +474,40 @@ export default function ActivityWizard() {
       </View>
       <View style={{ marginBottom: 14 }}>
         <Text style={st.fieldLabel}>Date  *</Text>
-        <TextInput value={evtDate} onChangeText={t => setEvtDate(fmtDate(t))} placeholder="DD/MM/YYYY" keyboardType="numeric" placeholderTextColor={colors.mutedForeground} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} maxLength={10} />
+        <Pressable
+          style={[ps.pickerBtn, { backgroundColor: colors.card, borderColor: evtDate ? colors.primary : colors.border }]}
+          onPress={() => { setCalPicker("evtDate"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+        >
+          <Ionicons name="calendar-outline" size={15} color={evtDate ? colors.primary : colors.mutedForeground} />
+          <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: evtDate ? "600" : "400", color: evtDate ? colors.foreground : colors.mutedForeground }}>
+            {evtDate || "DD/MM/YYYY"}
+          </Text>
+        </Pressable>
       </View>
       <View style={{ flexDirection: "row", gap: 10, marginBottom: 14 }}>
         <View style={{ flex: 1 }}>
           <Text style={st.fieldLabel}>Start time  *</Text>
-          <TextInput value={evtStartTime} onChangeText={t => setEvtStartTime(fmtTime(t))} placeholder="09:00" keyboardType="numeric" placeholderTextColor={colors.mutedForeground} maxLength={5} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+          <Pressable
+            style={[ps.pickerBtn, { backgroundColor: colors.card, borderColor: evtStartTime ? colors.primary : colors.border }]}
+            onPress={() => { setEvtTimePicker("start"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+          >
+            <Ionicons name="time-outline" size={15} color={evtStartTime ? colors.primary : colors.mutedForeground} />
+            <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: evtStartTime ? "600" : "400", color: evtStartTime ? colors.foreground : colors.mutedForeground }}>
+              {evtStartTime || "09:00"}
+            </Text>
+          </Pressable>
         </View>
         <View style={{ flex: 1 }}>
           <Text style={st.fieldLabel}>End time</Text>
-          <TextInput value={evtEndTime} onChangeText={t => setEvtEndTime(fmtTime(t))} placeholder="11:00" keyboardType="numeric" placeholderTextColor={colors.mutedForeground} maxLength={5} style={[st.textInput, { backgroundColor: colors.card, borderColor: colors.border, color: colors.foreground }]} />
+          <Pressable
+            style={[ps.pickerBtn, { backgroundColor: colors.card, borderColor: evtEndTime ? colors.primary : colors.border }]}
+            onPress={() => { setEvtTimePicker("end"); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+          >
+            <Ionicons name="time-outline" size={15} color={evtEndTime ? colors.primary : colors.mutedForeground} />
+            <Text numberOfLines={1} style={{ fontSize: 14, fontWeight: evtEndTime ? "600" : "400", color: evtEndTime ? colors.foreground : colors.mutedForeground }}>
+              {evtEndTime || "11:00"}
+            </Text>
+          </Pressable>
         </View>
       </View>
       <View style={{ marginBottom: 14 }}>
@@ -967,10 +979,11 @@ export default function ActivityWizard() {
         >
           <Pressable onPress={() => {}}>
             <CalendarPicker
-              value={calPicker === "start" ? startDate : endDate}
+              value={calPicker === "start" ? startDate : calPicker === "end" ? endDate : evtDate}
               onConfirm={v => {
                 if (calPicker === "start") setStartDate(v);
-                else setEndDate(v);
+                else if (calPicker === "end") setEndDate(v);
+                else setEvtDate(v);
                 setCalPicker(null);
               }}
             />
@@ -999,6 +1012,25 @@ export default function ActivityWizard() {
                   }));
                 }
                 setTimePicker(null);
+              }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ── Single-event time picker modal ── */}
+      <Modal visible={!!evtTimePicker} transparent animationType="slide">
+        <Pressable
+          style={[ps.overlay, { justifyContent: "flex-end" }]}
+          onPress={() => setEvtTimePicker(null)}
+        >
+          <Pressable onPress={() => {}}>
+            <TimePickerSheet
+              value={evtTimePicker === "start" ? (evtStartTime || "09:00") : (evtEndTime || "11:00")}
+              onConfirm={v => {
+                if (evtTimePicker === "start") setEvtStartTime(v);
+                else setEvtEndTime(v);
+                setEvtTimePicker(null);
               }}
             />
           </Pressable>

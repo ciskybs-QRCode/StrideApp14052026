@@ -6,6 +6,7 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -13,6 +14,7 @@ import {
   View,
 } from "react-native";
 import { useAuth } from "@/context/AuthContext";
+import { CalendarPicker } from "@/components/WizardPickers";
 import { useColors } from "@/hooks/useColors";
 import { getDeviceLocale } from "@/hooks/useDeviceLocale";
 import { api } from "@/lib/api";
@@ -261,6 +263,7 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
   const [touched, setTouched] = useState(false);
   const [locating, setLocating] = useState(false);
   const [orgCity, setOrgCity] = useState("");
+  const [calPicker, setCalPicker] = useState<{ value: string; set: (v: string) => void; yearRange?: [number, number] } | null>(null);
 
   const addrLabels = getAddressLabels(countryCode);
   const bizLabels  = getBusinessLabels(countryCode);
@@ -487,17 +490,22 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
           <FieldLabel label="Date of Birth" colors={colors} />
           <View style={styles.iconField}>
             <Ionicons name="calendar-outline" size={16} color={colors.mutedForeground} style={styles.iconPfx} />
-            <TextInput
+            <Pressable
               style={[styles.iconInput, {
                 borderColor: errors.dateOfBirth ? "#EF4444" : colors.border,
-                backgroundColor: colors.background, color: colors.foreground,
+                backgroundColor: colors.background,
+                justifyContent: "center",
               }]}
-              value={form.dateOfBirth}
-              onChangeText={set("dateOfBirth")}
-              placeholder="DD / MM / YYYY"
-              placeholderTextColor={colors.mutedForeground}
-              keyboardType="numbers-and-punctuation"
-            />
+              onPress={() => setCalPicker({
+                value: form.dateOfBirth,
+                set: set("dateOfBirth"),
+                yearRange: [1920, new Date().getFullYear()],
+              })}
+            >
+              <Text style={{ fontSize: 14, color: form.dateOfBirth ? colors.foreground : colors.mutedForeground }}>
+                {form.dateOfBirth || "DD / MM / YYYY"}
+              </Text>
+            </Pressable>
           </View>
           {errors.dateOfBirth ? <Text style={styles.errMsg}>{errors.dateOfBirth}</Text> : null}
         </View>
@@ -816,6 +824,20 @@ export function ProfileEditContent({ showFiscal = true }: { showFiscal?: boolean
           {saving ? "SAVING…" : saved ? "SAVED!" : "SAVE CHANGES"}
         </Text>
       </Pressable>
+
+      <Modal visible={!!calPicker} transparent animationType="fade">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" }} onPress={() => setCalPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {calPicker && (
+              <CalendarPicker
+                value={calPicker.value}
+                yearRange={calPicker.yearRange}
+                onConfirm={(v) => { calPicker.set(v); setCalPicker(null); }}
+              />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </>
   );
 }

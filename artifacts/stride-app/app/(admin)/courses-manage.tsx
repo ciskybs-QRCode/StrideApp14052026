@@ -24,6 +24,7 @@ import { ScreenHeader } from "@/components/ScreenHeader";
 import { useColors } from "@/hooks/useColors";
 import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { api, type ApiCourse, type ApiDiscipline } from "@/lib/api";
+import { NumberPickerSheet } from "@/components/WizardPickers";
 
 const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const LEVELS = ["beginner", "intermediate", "advanced", "open"] as const;
@@ -80,6 +81,8 @@ export default function AdminCoursesManageScreen() {
   const [fRequireApproval, setFRequireApproval] = useState(false);
   const [fMinHrs,          setFMinHrs]          = useState("");
   const [fMaxHrs,          setFMaxHrs]          = useState("");
+
+  const [numPicker, setNumPicker] = useState<{ label: string; val: string; min: number; max: number; set: (v: string) => void } | null>(null);
 
   // ── Load ─────────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
@@ -435,27 +438,30 @@ export default function AdminCoursesManageScreen() {
             <View style={S.twoCol}>
               <View style={{ flex: 1 }}>
                 <Text style={[S.label, { color: colors.mutedForeground }]}>MIN AGE</Text>
-                <TextInput
-                  style={[S.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
-                  value={fAgeMin} onChangeText={setFAgeMin}
-                  keyboardType="numeric" placeholder="3" placeholderTextColor={colors.mutedForeground}
-                />
+                <Pressable
+                  style={[S.input, { borderColor: colors.border, backgroundColor: colors.card, justifyContent: "center" }]}
+                  onPress={() => setNumPicker({ label: "Min Age", val: fAgeMin || "3", min: 0, max: 100, set: setFAgeMin })}
+                >
+                  <Text style={{ color: fAgeMin ? colors.foreground : colors.mutedForeground, fontSize: 14 }}>{fAgeMin || "3"}</Text>
+                </Pressable>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[S.label, { color: colors.mutedForeground }]}>MAX AGE</Text>
-                <TextInput
-                  style={[S.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
-                  value={fAgeMax} onChangeText={setFAgeMax}
-                  keyboardType="numeric" placeholder="18" placeholderTextColor={colors.mutedForeground}
-                />
+                <Pressable
+                  style={[S.input, { borderColor: colors.border, backgroundColor: colors.card, justifyContent: "center" }]}
+                  onPress={() => setNumPicker({ label: "Max Age", val: fAgeMax || "18", min: 0, max: 100, set: setFAgeMax })}
+                >
+                  <Text style={{ color: fAgeMax ? colors.foreground : colors.mutedForeground, fontSize: 14 }}>{fAgeMax || "18"}</Text>
+                </Pressable>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[S.label, { color: colors.mutedForeground }]}>CAPACITY</Text>
-                <TextInput
-                  style={[S.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
-                  value={fCapacity} onChangeText={setFCapacity}
-                  keyboardType="numeric" placeholder="15" placeholderTextColor={colors.mutedForeground}
-                />
+                <Pressable
+                  style={[S.input, { borderColor: colors.border, backgroundColor: colors.card, justifyContent: "center" }]}
+                  onPress={() => setNumPicker({ label: "Capacity", val: fCapacity || "15", min: 0, max: 1000, set: setFCapacity })}
+                >
+                  <Text style={{ color: fCapacity ? colors.foreground : colors.mutedForeground, fontSize: 14 }}>{fCapacity || "15"}</Text>
+                </Pressable>
               </View>
             </View>
 
@@ -547,6 +553,16 @@ export default function AdminCoursesManageScreen() {
             </Pressable>
           </ScrollView>
         </View>
+      </Modal>
+
+      <Modal visible={!!numPicker} transparent animationType="slide">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setNumPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {numPicker && (
+              <NumberPickerSheet label={numPicker.label} value={numPicker.val} min={numPicker.min} max={numPicker.max} onConfirm={(v) => { numPicker.set(v); setNumPicker(null); }} />
+            )}
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );

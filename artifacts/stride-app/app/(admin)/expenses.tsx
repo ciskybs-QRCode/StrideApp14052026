@@ -21,6 +21,7 @@ import * as Localization from "expo-localization";
 import { useColors } from "@/hooks/useColors";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { request } from "@/lib/api";
+import { CalendarPicker, NumberPickerSheet, isoToCal, calToIso } from "@/components/WizardPickers";
 import * as Haptics from "expo-haptics";
 
 const NAVY = "#1E3A8A";
@@ -289,6 +290,10 @@ export default function ExpensesScreen() {
   const [payLoading, setPayLoading] = useState(false);
 
   const [exportLoading, setExportLoading] = useState(false);
+
+  // ── Shared pickers ───────────────────────────────────────────────────────────
+  const [calPicker, setCalPicker] = useState<{ value: string; set: (v: string) => void; yearRange?: [number, number] } | null>(null);
+  const [numPicker, setNumPicker] = useState<{ label: string; val: string; min: number; max: number; set: (v: string) => void } | null>(null);
 
   // ── Load ───────────────────────────────────────────────────────────────────
   const load = useCallback(async () => {
@@ -753,11 +758,27 @@ export default function ExpensesScreen() {
                     ))}
                   </View>
                   {(fInterval === "monthly" || fInterval === "annual") && (
-                    <SInput label="DAY OF MONTH (1–28)" value={fDay} onChange={setFDay}
-                      placeholder="e.g. 1" keyboardType="decimal-pad" />
+                    <View style={{ marginBottom: 12 }}>
+                      <Text style={[S.fLabel, { color: colors.mutedForeground }]}>DAY OF MONTH (1-31)</Text>
+                      <Pressable
+                        onPress={() => setNumPicker({ label: "Day of Month", val: fDay || "1", min: 1, max: 31, set: setFDay })}
+                        style={[S.input, { borderColor: colors.border, backgroundColor: colors.card, justifyContent: "center" }]}
+                      >
+                        <Text style={{ fontSize: 14, color: colors.foreground }}>{fDay || "1"}</Text>
+                      </Pressable>
+                    </View>
                   )}
-                  <SInput label="NEXT DUE DATE (YYYY-MM-DD)" value={fNextDue} onChange={setFNextDue}
-                    placeholder="2026-07-01" />
+                  <View style={{ marginBottom: 12 }}>
+                    <Text style={[S.fLabel, { color: colors.mutedForeground }]}>NEXT DUE DATE</Text>
+                    <Pressable
+                      onPress={() => setCalPicker({ value: isoToCal(fNextDue), set: (v) => setFNextDue(calToIso(v)) })}
+                      style={[S.input, { borderColor: colors.border, backgroundColor: colors.card, justifyContent: "center" }]}
+                    >
+                      <Text style={{ fontSize: 14, color: fNextDue ? colors.foreground : colors.mutedForeground }}>
+                        {fNextDue || "Select date"}
+                      </Text>
+                    </Pressable>
+                  </View>
                 </View>
               )}
 
@@ -800,6 +821,31 @@ export default function ExpensesScreen() {
             </ScrollView>
           </View>
         </KeyboardAvoidingView>
+      </Modal>
+
+      {/* ── Shared pickers ── */}
+      <Modal visible={!!calPicker} transparent animationType="fade">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" }} onPress={() => setCalPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {calPicker && (
+              <CalendarPicker
+                value={calPicker.value}
+                yearRange={calPicker.yearRange}
+                onConfirm={(v) => { calPicker.set(v); setCalPicker(null); }}
+              />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={!!numPicker} transparent animationType="slide">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setNumPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {numPicker && (
+              <NumberPickerSheet label={numPicker.label} value={numPicker.val} min={numPicker.min} max={numPicker.max} onConfirm={(v) => { numPicker.set(v); setNumPicker(null); }} />
+            )}
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );

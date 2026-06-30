@@ -21,6 +21,7 @@ import { useColors } from "@/hooks/useColors";
 import { useSubstitution, type RescheduleAction, MOCK_SUBS } from "@/context/SubstitutionContext";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { api, type ApiDiscipline, type ApiOperatorProfile, request } from "@/lib/api";
+import { CalendarPicker, TimePickerSheet, NumberPickerSheet } from "@/components/WizardPickers";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -635,6 +636,8 @@ export default function ActivityScreen() {
   const [shiftMinutes, setShiftMinutes] = useState("30");
   const [makeupDate, setMakeupDate]   = useState("28/05/2026");
   const [makeupTime, setMakeupTime]   = useState("17:00");
+  const [showMakeupDatePicker, setShowMakeupDatePicker] = useState(false);
+  const [showMakeupTimePicker, setShowMakeupTimePicker] = useState(false);
   const focusedAlertId = activeAlert?.id ?? alerts[0]?.id ?? null;
   const focusedAlert   = focusedAlertId ? (alerts.find(a => a.id === focusedAlertId) ?? null) : null;
   const unresolved = alerts.filter(a => !a.resolved);
@@ -1707,21 +1710,25 @@ export default function ActivityScreen() {
             {rescheduleKind === "makeup" && (
               <View style={styles.rsInputRow}>
                 <Text style={[styles.rsInputLabel, { color: colors.primary }]}>Make-Up Date</Text>
-                <TextInput
-                  style={[styles.rsTextInput, { borderColor: colors.border, color: colors.foreground }]}
-                  value={makeupDate}
-                  onChangeText={setMakeupDate}
-                  placeholder="DD/MM/YYYY"
-                  placeholderTextColor={colors.mutedForeground}
-                />
+                <Pressable
+                  style={[styles.rsTextInput, { borderColor: colors.border, flexDirection: "row", alignItems: "center", gap: 8 }]}
+                  onPress={() => { Haptics.selectionAsync(); setShowMakeupDatePicker(true); }}
+                >
+                  <Ionicons name="calendar-outline" size={15} color={makeupDate ? colors.primary : colors.mutedForeground} />
+                  <Text style={{ fontSize: 15, color: makeupDate ? colors.foreground : colors.mutedForeground }}>
+                    {makeupDate || "DD/MM/YYYY"}
+                  </Text>
+                </Pressable>
                 <Text style={[styles.rsInputLabel, { color: colors.primary, marginTop: 8 }]}>Make-Up Time</Text>
-                <TextInput
-                  style={[styles.rsTextInput, { borderColor: colors.border, color: colors.foreground }]}
-                  value={makeupTime}
-                  onChangeText={setMakeupTime}
-                  placeholder="HH:MM"
-                  placeholderTextColor={colors.mutedForeground}
-                />
+                <Pressable
+                  style={[styles.rsTextInput, { borderColor: colors.border, flexDirection: "row", alignItems: "center", gap: 8 }]}
+                  onPress={() => { Haptics.selectionAsync(); setShowMakeupTimePicker(true); }}
+                >
+                  <Ionicons name="time-outline" size={15} color={makeupTime ? colors.primary : colors.mutedForeground} />
+                  <Text style={{ fontSize: 15, color: makeupTime ? colors.foreground : colors.mutedForeground }}>
+                    {makeupTime || "HH:MM"}
+                  </Text>
+                </Pressable>
               </View>
             )}
 
@@ -1738,6 +1745,30 @@ export default function ActivityScreen() {
             </View>
           </View>
         </View>
+      </Modal>
+
+      {/* ── Make-Up Date picker ── */}
+      <Modal visible={showMakeupDatePicker} transparent animationType="fade" onRequestClose={() => setShowMakeupDatePicker(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" }} onPress={() => setShowMakeupDatePicker(false)}>
+          <Pressable onPress={() => {}}>
+            <CalendarPicker
+              value={makeupDate}
+              onConfirm={v => { setMakeupDate(v); setShowMakeupDatePicker(false); }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ── Make-Up Time picker ── */}
+      <Modal visible={showMakeupTimePicker} transparent animationType="slide" onRequestClose={() => setShowMakeupTimePicker(false)}>
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setShowMakeupTimePicker(false)}>
+          <Pressable onPress={() => {}}>
+            <TimePickerSheet
+              value={makeupTime || "17:00"}
+              onConfirm={v => { setMakeupTime(v); setShowMakeupTimePicker(false); }}
+            />
+          </Pressable>
+        </Pressable>
       </Modal>
 
       {/* ══════════════════════════════════════════════════
@@ -2875,28 +2906,14 @@ export default function ActivityScreen() {
           {showMonthlyPayDayPicker && (
             <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 200 }}>
               <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setShowMonthlyPayDayPicker(false)}>
-                <Pressable onPress={e => e.stopPropagation()} style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 36 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                    <Text style={{ fontSize: 17, fontWeight: "800", color: colors.primary }}>Monthly Payment Day</Text>
-                    <Pressable onPress={() => setShowMonthlyPayDayPicker(false)}>
-                      <Ionicons name="close" size={22} color={colors.mutedForeground} />
-                    </Pressable>
-                  </View>
-                  <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: 16 }}>Pick the day payment is collected each month (1–28).</Text>
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                    {Array.from({ length: 28 }, (_, i) => i + 1).map(day => {
-                      const sel = draft.enrollment.monthlyPayDay === day;
-                      const suffix = ["th","st","nd","rd"][day <= 3 ? day : 0];
-                      return (
-                        <Pressable key={day}
-                          style={{ width: "12%", aspectRatio: 1, alignItems: "center", justifyContent: "center", borderRadius: 10, backgroundColor: sel ? colors.primary : colors.card, borderWidth: 1, borderColor: sel ? colors.primary : colors.border }}
-                          onPress={() => { Haptics.selectionAsync(); setDraft(d => ({ ...d, enrollment: { ...d.enrollment, monthlyPayDay: day } })); setShowMonthlyPayDayPicker(false); }}>
-                          <Text style={{ fontSize: 14, fontWeight: sel ? "700" : "400", color: sel ? colors.secondary : colors.foreground }}>{day}</Text>
-                          <Text style={{ fontSize: 9, color: sel ? colors.secondary : colors.mutedForeground }}>{suffix}</Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
+                <Pressable onPress={e => e.stopPropagation()}>
+                  <NumberPickerSheet
+                    label="Monthly Payment Day"
+                    value={String(draft.enrollment.monthlyPayDay)}
+                    min={1}
+                    max={31}
+                    onConfirm={v => { setDraft(d => ({ ...d, enrollment: { ...d.enrollment, monthlyPayDay: parseInt(v) || 1 } })); setShowMonthlyPayDayPicker(false); }}
+                  />
                 </Pressable>
               </Pressable>
             </View>
@@ -2954,28 +2971,14 @@ export default function ActivityScreen() {
           {showAnnualPayDayPicker && (
             <View style={{ position: "absolute", top: 0, left: 0, right: 0, bottom: 0, zIndex: 200 }}>
               <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setShowAnnualPayDayPicker(false)}>
-                <Pressable onPress={e => e.stopPropagation()} style={{ backgroundColor: colors.background, borderTopLeftRadius: 24, borderTopRightRadius: 24, padding: 20, paddingBottom: 36 }}>
-                  <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
-                    <Text style={{ fontSize: 17, fontWeight: "800", color: colors.primary }}>Annual Payment Day</Text>
-                    <Pressable onPress={() => setShowAnnualPayDayPicker(false)}>
-                      <Ionicons name="close" size={22} color={colors.mutedForeground} />
-                    </Pressable>
-                  </View>
-                  <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: 16 }}>Pick the day the annual payment is collected (1–28).</Text>
-                  <View style={{ flexDirection: "row", flexWrap: "wrap", gap: 8 }}>
-                    {Array.from({ length: 28 }, (_, i) => i + 1).map(day => {
-                      const sel = draft.enrollment.annualPayDay === day;
-                      const suffix = ["th","st","nd","rd"][day <= 3 ? day : 0];
-                      return (
-                        <Pressable key={day}
-                          style={{ width: "12%", aspectRatio: 1, alignItems: "center", justifyContent: "center", borderRadius: 10, backgroundColor: sel ? colors.primary : colors.card, borderWidth: 1, borderColor: sel ? colors.primary : colors.border }}
-                          onPress={() => { Haptics.selectionAsync(); setDraft(d => ({ ...d, enrollment: { ...d.enrollment, annualPayDay: day } })); setShowAnnualPayDayPicker(false); }}>
-                          <Text style={{ fontSize: 14, fontWeight: sel ? "700" : "400", color: sel ? colors.secondary : colors.foreground }}>{day}</Text>
-                          <Text style={{ fontSize: 9, color: sel ? colors.secondary : colors.mutedForeground }}>{suffix}</Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
+                <Pressable onPress={e => e.stopPropagation()}>
+                  <NumberPickerSheet
+                    label="Annual Payment Day"
+                    value={String(draft.enrollment.annualPayDay)}
+                    min={1}
+                    max={31}
+                    onConfirm={v => { setDraft(d => ({ ...d, enrollment: { ...d.enrollment, annualPayDay: parseInt(v) || 1 } })); setShowAnnualPayDayPicker(false); }}
+                  />
                 </Pressable>
               </Pressable>
             </View>

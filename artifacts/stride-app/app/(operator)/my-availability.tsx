@@ -17,6 +17,7 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { TimePickerSheet } from "@/components/WizardPickers";
 import { useColors } from "@/hooks/useColors";
 import {
   api,
@@ -53,12 +54,6 @@ const STATUS_LABEL: Record<string,string> = {
   executed:         "Applied",
 };
 
-type TimeEditState = {
-  dow: number;
-  field: "from_time" | "to_time";
-  value: string;
-};
-
 export default function MyAvailabilityScreen() {
   const router  = useRouter();
   const colors  = useColors();
@@ -70,8 +65,7 @@ export default function MyAvailabilityScreen() {
   const [slots, setSlots]       = useState<ApiWeekSlot[]>([]);
   const [loadingA, setLoadingA] = useState(true);
   const [savingA,  setSavingA]  = useState(false);
-  const [editing,  setEditing]  = useState<TimeEditState | null>(null);
-  const [editText, setEditText] = useState("");
+  const [timePicker, setTimePicker] = useState<{ value: string; set: (v: string) => void } | null>(null);
 
   // ── courses state ────────────────────────────────────────────────────────
   const [courses,  setCourses]  = useState<ApiAssignedCourse[]>([]);
@@ -147,28 +141,18 @@ export default function MyAvailabilityScreen() {
   const getSlot = (dow: number): ApiWeekSlot | undefined =>
     slots.find(s => s.day_of_week === dow);
 
+  const setSlotTime = (dow: number, field: "from_time" | "to_time", val: string) => {
+    setSlots(prev =>
+      prev.map(s =>
+        s.day_of_week === dow ? { ...s, [field]: val } : s,
+      ),
+    );
+  };
+
   const openTimeEdit = (dow: number, field: "from_time" | "to_time") => {
     const slot = getSlot(dow);
     const val  = slot ? slot[field] : field === "from_time" ? "09:00" : "17:00";
-    setEditing({ dow, field, value: val });
-    setEditText(val);
-  };
-
-  const applyTimeEdit = () => {
-    if (!editing) return;
-    const regex = /^([01]\d|2[0-3]):([0-5]\d)$/;
-    if (!regex.test(editText)) {
-      Alert.alert("Invalid time", "Enter time as HH:MM (e.g. 09:00)");
-      return;
-    }
-    setSlots(prev =>
-      prev.map(s =>
-        s.day_of_week === editing.dow
-          ? { ...s, [editing.field]: editText }
-          : s,
-      ),
-    );
-    setEditing(null);
+    setTimePicker({ value: val, set: (v) => setSlotTime(dow, field, v) });
   };
 
   const saveAvailability = async () => {
@@ -420,30 +404,13 @@ export default function MyAvailabilityScreen() {
         </ScrollView>
       )}
 
-      {/* ──────────────── TIME EDIT MODAL ────────────────────────── */}
-      <Modal visible={!!editing} transparent animationType="fade">
-        <Pressable style={st.overlay} onPress={() => setEditing(null)}>
-          <Pressable style={st.timeModal} onPress={e => e.stopPropagation()}>
-            <Text style={st.timeModalTitle}>
-              Edit {editing?.field === "from_time" ? "Start" : "End"} Time — {editing != null ? DAY_SHORT[editing.dow] : ""}
-            </Text>
-            <TextInput
-              style={st.timeInput}
-              value={editText}
-              onChangeText={setEditText}
-              placeholder="HH:MM"
-              keyboardType="numeric"
-              maxLength={5}
-              autoFocus
-            />
-            <View style={st.timeModalBtns}>
-              <Pressable style={st.timeModalCancel} onPress={() => setEditing(null)}>
-                <Text style={st.timeModalCancelTxt}>Cancel</Text>
-              </Pressable>
-              <Pressable style={st.timeModalOk} onPress={applyTimeEdit}>
-                <Text style={st.timeModalOkTxt}>Apply</Text>
-              </Pressable>
-            </View>
+      {/* ──────────────── TIME PICKER MODAL ──────────────────────── */}
+      <Modal visible={!!timePicker} transparent animationType="slide">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setTimePicker(null)}>
+          <Pressable onPress={() => {}}>
+            {timePicker && (
+              <TimePickerSheet value={timePicker.value} onConfirm={(v) => { timePicker.set(v); setTimePicker(null); }} />
+            )}
           </Pressable>
         </Pressable>
       </Modal>
@@ -510,23 +477,19 @@ export default function MyAvailabilityScreen() {
 
                   <Text style={st.fieldLabel}>Preferred time (optional)</Text>
                   <View style={st.timeRowInModal}>
-                    <TextInput
-                      style={[st.timeInputSmall, { flex: 1 }]}
-                      value={reqFrom}
-                      onChangeText={setReqFrom}
-                      placeholder="09:00"
-                      keyboardType="numeric"
-                      maxLength={5}
-                    />
+                    <Pressable
+                      style={[st.timeInputSmall, { flex: 1, justifyContent: "center" }]}
+                      onPress={() => setTimePicker({ value: reqFrom, set: setReqFrom })}
+                    >
+                      <Text style={{ fontSize: 14, color: "#1F2937", textAlign: "center" }}>{reqFrom}</Text>
+                    </Pressable>
                     <Text style={{ color: "#6B7280", marginHorizontal: 8 }}>–</Text>
-                    <TextInput
-                      style={[st.timeInputSmall, { flex: 1 }]}
-                      value={reqTo}
-                      onChangeText={setReqTo}
-                      placeholder="10:00"
-                      keyboardType="numeric"
-                      maxLength={5}
-                    />
+                    <Pressable
+                      style={[st.timeInputSmall, { flex: 1, justifyContent: "center" }]}
+                      onPress={() => setTimePicker({ value: reqTo, set: setReqTo })}
+                    >
+                      <Text style={{ fontSize: 14, color: "#1F2937", textAlign: "center" }}>{reqTo}</Text>
+                    </Pressable>
                   </View>
                 </>
               )}

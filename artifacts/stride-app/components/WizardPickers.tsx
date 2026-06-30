@@ -264,9 +264,32 @@ function DrumRollNative({ items, value, onChange }: {
 
 // ── CalendarPicker ────────────────────────────────────────────────────────────
 
-export function CalendarPicker({ value, onConfirm }: {
+/** "YYYY-MM-DD" (optionally with time suffix) -> "DD/MM/YYYY". Pass-through if unparseable. */
+export function isoToCal(s: string): string {
+  if (!s) return "";
+  const parts = s.slice(0, 10).split("-");
+  if (parts.length === 3) {
+    const [y, mo, d] = parts;
+    if (y && mo && d) return `${d.padStart(2, "0")}/${mo.padStart(2, "0")}/${y}`;
+  }
+  return s;
+}
+
+/** "DD/MM/YYYY" -> "YYYY-MM-DD". Pass-through if unparseable. */
+export function calToIso(s: string): string {
+  if (!s) return "";
+  const parts = s.split("/");
+  if (parts.length === 3) {
+    const [d, mo, y] = parts;
+    if (d && mo && y) return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  return s;
+}
+
+export function CalendarPicker({ value, onConfirm, yearRange }: {
   value: string;              // "DD/MM/YYYY" or ""
   onConfirm: (v: string) => void;
+  yearRange?: [number, number];
 }) {
   const colors = useColors();
   const today  = new Date();
@@ -289,6 +312,11 @@ export function CalendarPicker({ value, onConfirm }: {
   const [selDay,    setSelDay]    = useState<number | null>(value ? init.getDate() : null);
   const [selMo,     setSelMo]     = useState(init.getMonth());
   const [selYr,     setSelYr]     = useState(init.getFullYear());
+  const [mode,      setMode]      = useState<"day" | "ym">("day");
+
+  const minY  = yearRange?.[0] ?? today.getFullYear() - 100;
+  const maxY  = yearRange?.[1] ?? today.getFullYear() + 10;
+  const years = Array.from({ length: Math.max(1, maxY - minY + 1) }, (_, i) => String(minY + i));
 
   const prevMo = () => {
     if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
@@ -324,17 +352,41 @@ export function CalendarPicker({ value, onConfirm }: {
     <View style={[wp.calCard, { backgroundColor: colors.card }]}>
       {/* Month navigation */}
       <View style={wp.calHeader}>
-        <Pressable onPress={prevMo} hitSlop={14} style={wp.calNavBtn}>
-          <Ionicons name="chevron-back" size={22} color={colors.primary} />
+        <Pressable onPress={prevMo} hitSlop={14} style={wp.calNavBtn} disabled={mode === "ym"}>
+          <Ionicons name="chevron-back" size={22} color={mode === "ym" ? "transparent" : colors.primary} />
         </Pressable>
-        <Text style={[wp.calMonthTitle, { color: colors.foreground }]}>
-          {MONTH_NAMES[viewMonth]} {viewYear}
-        </Text>
-        <Pressable onPress={nextMo} hitSlop={14} style={wp.calNavBtn}>
-          <Ionicons name="chevron-forward" size={22} color={colors.primary} />
+        <Pressable
+          onPress={() => setMode(m => (m === "day" ? "ym" : "day"))}
+          hitSlop={10}
+          style={{ flexDirection: "row", alignItems: "center" }}
+        >
+          <Text style={[wp.calMonthTitle, { color: colors.foreground }]}>
+            {MONTH_NAMES[viewMonth]} {viewYear}
+          </Text>
+          <Ionicons name={mode === "ym" ? "chevron-up" : "chevron-down"} size={16} color={colors.primary} style={{ marginLeft: 4 }} />
+        </Pressable>
+        <Pressable onPress={nextMo} hitSlop={14} style={wp.calNavBtn} disabled={mode === "ym"}>
+          <Ionicons name="chevron-forward" size={22} color={mode === "ym" ? "transparent" : colors.primary} />
         </Pressable>
       </View>
 
+      {mode === "ym" && (
+        <View>
+          <View style={{ flexDirection: "row", justifyContent: "center" }}>
+            <DrumRoll items={MONTH_NAMES} value={MONTH_NAMES[viewMonth]!} onChange={v => setViewMonth(MONTH_NAMES.indexOf(v))} />
+            <DrumRoll items={years} value={String(viewYear)} onChange={v => setViewYear(parseInt(v) || viewYear)} />
+          </View>
+          <Pressable
+            style={[wp.confirmBtn, { backgroundColor: colors.primary, marginTop: 14 }]}
+            onPress={() => setMode("day")}
+          >
+            <Text style={wp.confirmText}>Done</Text>
+          </Pressable>
+        </View>
+      )}
+
+      {mode === "day" && (
+      <>
       {/* Day-of-week header */}
       <View style={wp.calDowRow}>
         {DOW_CAL.map(d => (
@@ -397,6 +449,8 @@ export function CalendarPicker({ value, onConfirm }: {
             : "Select a date"}
         </Text>
       </Pressable>
+      </>
+      )}
     </View>
   );
 }

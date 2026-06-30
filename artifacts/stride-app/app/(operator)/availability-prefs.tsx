@@ -7,6 +7,7 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -16,6 +17,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { NumberPickerSheet, TimePickerSheet } from "@/components/WizardPickers";
 import { useColors } from "@/hooks/useColors";
 import { api, type ApiOperatorPrefs } from "@/lib/api";
 
@@ -56,6 +58,8 @@ export default function AvailabilityPrefsScreen() {
   const [subMinStr,  setSubMinStr]  = useState("");
   const [plMinStr,   setPlMinStr]   = useState("");
   const [week, setWeek]         = useState<WeekSchedule>(DEFAULT_WEEK);
+  const [numPicker, setNumPicker] = useState<{ label: string; val: string; min: number; max: number; set: (v: string) => void } | null>(null);
+  const [timePicker, setTimePicker] = useState<{ value: string; set: (v: string) => void } | null>(null);
 
   useEffect(() => {
     Promise.all([
@@ -150,15 +154,14 @@ export default function AvailabilityPrefsScreen() {
               <Text style={[styles.subLabel, { color: colors.mutedForeground }]}>
                 Minimum shift duration (hours)
               </Text>
-              <TextInput
-                style={[styles.numInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
-                value={subMinStr}
-                onChangeText={setSubMinStr}
-                keyboardType="decimal-pad"
-                placeholder="No min."
-                placeholderTextColor={colors.mutedForeground}
-                returnKeyType="done"
-              />
+              <Pressable
+                style={[styles.numInput, { borderColor: colors.border, backgroundColor: colors.background, justifyContent: "center" }]}
+                onPress={() => setNumPicker({ label: "Minimum shift duration (hours)", val: subMinStr || "0", min: 0, max: 24, set: setSubMinStr })}
+              >
+                <Text style={{ fontSize: 14, fontWeight: "600", textAlign: "right", color: subMinStr ? colors.foreground : colors.mutedForeground }}>
+                  {subMinStr || "No min."}
+                </Text>
+              </Pressable>
             </View>
           )}
         </View>
@@ -190,15 +193,14 @@ export default function AvailabilityPrefsScreen() {
               <Text style={[styles.subLabel, { color: colors.mutedForeground }]}>
                 Minimum session duration (hours)
               </Text>
-              <TextInput
-                style={[styles.numInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
-                value={plMinStr}
-                onChangeText={setPlMinStr}
-                keyboardType="decimal-pad"
-                placeholder="No min."
-                placeholderTextColor={colors.mutedForeground}
-                returnKeyType="done"
-              />
+              <Pressable
+                style={[styles.numInput, { borderColor: colors.border, backgroundColor: colors.background, justifyContent: "center" }]}
+                onPress={() => setNumPicker({ label: "Minimum session duration (hours)", val: plMinStr || "0", min: 0, max: 24, set: setPlMinStr })}
+              >
+                <Text style={{ fontSize: 14, fontWeight: "600", textAlign: "right", color: plMinStr ? colors.foreground : colors.mutedForeground }}>
+                  {plMinStr || "No min."}
+                </Text>
+              </Pressable>
             </View>
           )}
         </View>
@@ -241,25 +243,19 @@ export default function AvailabilityPrefsScreen() {
               <View style={styles.timeRow}>
                 <Text style={[styles.timeDayLabel, { color: colors.foreground }]}>{label}</Text>
                 <View style={styles.timeInputsRow}>
-                  <TextInput
-                    style={[styles.timeInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
-                    value={slot.from}
-                    onChangeText={v => updateDayTime(key, "from", v)}
-                    placeholder="09:00"
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType="numbers-and-punctuation"
-                    returnKeyType="done"
-                  />
-                  <Text style={[styles.timeSep, { color: colors.mutedForeground }]}>–</Text>
-                  <TextInput
-                    style={[styles.timeInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
-                    value={slot.to}
-                    onChangeText={v => updateDayTime(key, "to", v)}
-                    placeholder="17:00"
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType="numbers-and-punctuation"
-                    returnKeyType="done"
-                  />
+                  <Pressable
+                    style={[styles.timeInput, { borderColor: colors.border, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }]}
+                    onPress={() => setTimePicker({ value: slot.from || "09:00", set: (v) => updateDayTime(key, "from", v) })}
+                  >
+                    <Text style={{ color: slot.from ? colors.foreground : colors.mutedForeground }}>{slot.from || "09:00"}</Text>
+                  </Pressable>
+                  <Text style={[styles.timeSep, { color: colors.mutedForeground }]}>-</Text>
+                  <Pressable
+                    style={[styles.timeInput, { borderColor: colors.border, backgroundColor: colors.background, alignItems: "center", justifyContent: "center" }]}
+                    onPress={() => setTimePicker({ value: slot.to || "17:00", set: (v) => updateDayTime(key, "to", v) })}
+                  >
+                    <Text style={{ color: slot.to ? colors.foreground : colors.mutedForeground }}>{slot.to || "17:00"}</Text>
+                  </Pressable>
                 </View>
               </View>
             </View>
@@ -288,6 +284,26 @@ export default function AvailabilityPrefsScreen() {
         </Pressable>
 
       </ScrollView>
+
+      <Modal visible={!!timePicker} transparent animationType="slide">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setTimePicker(null)}>
+          <Pressable onPress={() => {}}>
+            {timePicker && (
+              <TimePickerSheet value={timePicker.value} onConfirm={(v) => { timePicker.set(v); setTimePicker(null); }} />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={!!numPicker} transparent animationType="slide">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setNumPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {numPicker && (
+              <NumberPickerSheet label={numPicker.label} value={numPicker.val} min={numPicker.min} max={numPicker.max} onConfirm={(v) => { numPicker.set(v); setNumPicker(null); }} />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }

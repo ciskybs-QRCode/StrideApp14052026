@@ -28,6 +28,7 @@ import { useAppData } from "@/context/AppDataContext";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
 import { useTerminology } from "@/context/TerminologyContext";
+import { CalendarPicker } from "@/components/WizardPickers";
 import { api } from "@/lib/api";
 
 const MEDIA_CONSENT_LABELS: Record<"full" | "internal" | "none", string> = {
@@ -95,8 +96,7 @@ export default function ChildrenScreen() {
   const [dobDay,   setDobDay]   = useState("");
   const [dobMonth, setDobMonth] = useState("");
   const [dobYear,  setDobYear]  = useState("");
-  const dobMonthRef    = useRef<TextInput>(null);
-  const dobYearRef     = useRef<TextInput>(null);
+  const [calPicker, setCalPicker] = useState<{ value: string; set: (v: string) => void; yearRange?: [number, number] } | null>(null);
   const pendingCertRef = useRef<{ uri: string; expiry: string | null } | null>(null);
   const prevChildCount = useRef(0);
   const [newChildHasAllergies, setNewChildHasAllergies] = useState(false);
@@ -1353,61 +1353,23 @@ export default function ChildrenScreen() {
               <TextInput style={[styles.modalInput, { borderColor: colors.border, color: colors.foreground }]} value={newChildSurname} onChangeText={setNewChildSurname} placeholder="e.g. Doe" placeholderTextColor={colors.mutedForeground} autoCapitalize="words" />
 
               <Text style={[styles.modalLabel, { color: colors.primary, marginTop: 12 }]}>Date of Birth <Text style={{ color: "#EF4444" }}>*</Text></Text>
-              <View style={styles.dobGrid}>
-                <View style={styles.dobField}>
-                  <Text style={[styles.dobFieldLabel, { color: colors.mutedForeground }]}>Day</Text>
-                  <TextInput
-                    style={[styles.dobInput, { borderColor: dobDay.length === 2 ? colors.primary : colors.border, color: colors.foreground }]}
-                    value={dobDay}
-                    onChangeText={t => {
-                      const v = t.replace(/\D/g, "").slice(0, 2);
-                      setDobDay(v);
-                      if (v.length === 2) dobMonthRef.current?.focus();
-                    }}
-                    placeholder="DD"
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType="number-pad"
-                    maxLength={2}
-                    returnKeyType="next"
-                    onSubmitEditing={() => dobMonthRef.current?.focus()}
-                  />
-                </View>
-                <Text style={[styles.dobSep, { color: colors.mutedForeground }]}>/</Text>
-                <View style={styles.dobField}>
-                  <Text style={[styles.dobFieldLabel, { color: colors.mutedForeground }]}>Month</Text>
-                  <TextInput
-                    ref={dobMonthRef}
-                    style={[styles.dobInput, { borderColor: dobMonth.length === 2 ? colors.primary : colors.border, color: colors.foreground }]}
-                    value={dobMonth}
-                    onChangeText={t => {
-                      const v = t.replace(/\D/g, "").slice(0, 2);
-                      setDobMonth(v);
-                      if (v.length === 2) dobYearRef.current?.focus();
-                    }}
-                    placeholder="MM"
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType="number-pad"
-                    maxLength={2}
-                    returnKeyType="next"
-                    onSubmitEditing={() => dobYearRef.current?.focus()}
-                  />
-                </View>
-                <Text style={[styles.dobSep, { color: colors.mutedForeground }]}>/</Text>
-                <View style={[styles.dobField, { flex: 2 }]}>
-                  <Text style={[styles.dobFieldLabel, { color: colors.mutedForeground }]}>Year</Text>
-                  <TextInput
-                    ref={dobYearRef}
-                    style={[styles.dobInput, { borderColor: dobYear.length === 4 ? colors.primary : colors.border, color: colors.foreground }]}
-                    value={dobYear}
-                    onChangeText={t => setDobYear(t.replace(/\D/g, "").slice(0, 4))}
-                    placeholder="YYYY"
-                    placeholderTextColor={colors.mutedForeground}
-                    keyboardType="number-pad"
-                    maxLength={4}
-                    returnKeyType="done"
-                  />
-                </View>
-              </View>
+              <Pressable
+                style={[styles.modalInput, { borderColor: colors.border, justifyContent: "center" }]}
+                onPress={() => setCalPicker({
+                  value: (dobDay && dobMonth && dobYear) ? `${dobDay.padStart(2, "0")}/${dobMonth.padStart(2, "0")}/${dobYear}` : "",
+                  yearRange: [1920, new Date().getFullYear()],
+                  set: (v) => {
+                    const [d, m, y] = v.split("/");
+                    setDobDay(d ?? "");
+                    setDobMonth(m ?? "");
+                    setDobYear(y ?? "");
+                  },
+                })}
+              >
+                <Text style={{ color: (dobDay && dobMonth && dobYear) ? colors.foreground : colors.mutedForeground, fontSize: 14 }}>
+                  {(dobDay && dobMonth && dobYear) ? `${dobDay.padStart(2, "0")}/${dobMonth.padStart(2, "0")}/${dobYear}` : "Select date of birth"}
+                </Text>
+              </Pressable>
               {newChildDob ? (
                 <View style={{ flexDirection: "row", alignItems: "center", gap: 5, marginBottom: 8 }}>
                   <Ionicons name="checkmark-circle" size={13} color="#10B981" />
@@ -1680,6 +1642,20 @@ export default function ChildrenScreen() {
             </ScrollView>
           </View>
         </View>
+      </Modal>
+
+      <Modal visible={!!calPicker} transparent animationType="fade">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" }} onPress={() => setCalPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {calPicker && (
+              <CalendarPicker
+                value={calPicker.value}
+                yearRange={calPicker.yearRange}
+                onConfirm={(v) => { calPicker.set(v); setCalPicker(null); }}
+              />
+            )}
+          </Pressable>
+        </Pressable>
       </Modal>
     </View>
   );

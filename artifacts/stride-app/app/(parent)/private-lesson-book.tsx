@@ -4,13 +4,14 @@ import * as Linking from "expo-linking";
 import { useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
 import {
-  ActivityIndicator, Alert, Platform, Pressable,
+  ActivityIndicator, Alert, Modal, Pressable,
   ScrollView, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
 import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { CalendarPicker, TimePickerSheet, isoToCal, calToIso } from "@/components/WizardPickers";
 import { api, type ApiChild } from "@/lib/api";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -114,6 +115,9 @@ export default function PrivateLessonBook() {
   const [notes,        setNotes]       = useState("");
 
   const [success,     setSuccess]     = useState(false);
+
+  const [calPicker,  setCalPicker]  = useState<{ value: string; set: (v: string) => void; yearRange?: [number, number] } | null>(null);
+  const [timePicker, setTimePicker] = useState<{ value: string; set: (v: string) => void } | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -403,24 +407,24 @@ export default function PrivateLessonBook() {
         {step === "datetime" && (
           <View style={[styles.formCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <Text style={[styles.sectionLabel, { color: colors.primary, marginTop: 0 }]}>PREFERRED DATE</Text>
-            <TextInput
-              style={[styles.inputField, { borderColor: colors.border, color: colors.foreground }]}
-              value={prefDate}
-              onChangeText={setPrefDate}
-              placeholder="YYYY-MM-DD"
-              placeholderTextColor={colors.mutedForeground}
-              keyboardType={Platform.OS === "ios" ? "default" : "default"}
-            />
+            <Pressable
+              style={[styles.inputField, { borderColor: colors.border, justifyContent: "center" }]}
+              onPress={() => setCalPicker({ value: isoToCal(prefDate), set: (v) => setPrefDate(calToIso(v)) })}
+            >
+              <Text style={{ color: prefDate ? colors.foreground : colors.mutedForeground, fontSize: 14 }}>
+                {prefDate || "Select date"}
+              </Text>
+            </Pressable>
 
             <Text style={[styles.sectionLabel, { color: colors.primary, marginTop: 16 }]}>PREFERRED TIME</Text>
-            <TextInput
-              style={[styles.inputField, { borderColor: colors.border, color: colors.foreground }]}
-              value={prefTime}
-              onChangeText={setPrefTime}
-              placeholder="HH:MM (e.g. 09:00)"
-              placeholderTextColor={colors.mutedForeground}
-              keyboardType="default"
-            />
+            <Pressable
+              style={[styles.inputField, { borderColor: colors.border, justifyContent: "center" }]}
+              onPress={() => setTimePicker({ value: prefTime, set: setPrefTime })}
+            >
+              <Text style={{ color: prefTime ? colors.foreground : colors.mutedForeground, fontSize: 14 }}>
+                {prefTime || "Select time"}
+              </Text>
+            </Pressable>
 
             <View style={[styles.infoRow, { backgroundColor: "#EFF6FF", borderColor: "#BFDBFE", marginTop: 14 }]}>
               <Ionicons name="information-circle-outline" size={16} color={colors.primary} />
@@ -505,6 +509,30 @@ export default function PrivateLessonBook() {
           <Text style={[styles.btnText, { color: colors.foreground }]}>Back</Text>
         </Pressable>
       </View>
+
+      <Modal visible={!!calPicker} transparent animationType="fade">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" }} onPress={() => setCalPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {calPicker && (
+              <CalendarPicker
+                value={calPicker.value}
+                yearRange={calPicker.yearRange}
+                onConfirm={(v) => { calPicker.set(v); setCalPicker(null); }}
+              />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      <Modal visible={!!timePicker} transparent animationType="slide">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setTimePicker(null)}>
+          <Pressable onPress={() => {}}>
+            {timePicker && (
+              <TimePickerSheet value={timePicker.value} onConfirm={(v) => { timePicker.set(v); setTimePicker(null); }} />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }

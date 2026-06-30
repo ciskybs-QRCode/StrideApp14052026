@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Modal,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -18,6 +19,7 @@ import { useColors } from "@/hooks/useColors";
 import { useTerminology } from "@/context/TerminologyContext";
 import { api, type PayrollDeduction } from "@/lib/api";
 import { ScreenHeader } from "@/components/ScreenHeader";
+import { NumberPickerSheet } from "@/components/WizardPickers";
 import type { ApiAdminSettings } from "@/lib/api";
 
 // Brand-colour helper for every Switch on this page
@@ -84,6 +86,8 @@ export default function AppConfigurationPage() {
   const [plReschedWinStr, setPlReschedWinStr] = useState("24");
   const [plReschedFeeStr, setPlReschedFeeStr] = useState("0");
   const [absPpMinStr,     setAbsPpMinStr]     = useState("60");
+
+  const [numPicker, setNumPicker] = useState<{ label: string; val: string; min: number; max: number; set: (v: string) => void } | null>(null);
 
   const loadSettings = useCallback(async () => {
     try {
@@ -707,14 +711,12 @@ export default function AppConfigurationPage() {
             <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: 16, paddingVertical: 14, flexDirection: "row", alignItems: "center", gap: 12 }}>
               <Ionicons name="time-outline" size={18} color={colors.mutedForeground} />
               <Text style={[styles.rowLabel, { flex: 1, color: colors.foreground }]}>Postpone by (minutes)</Text>
-              <TextInput
-                style={[styles.termInput, { borderColor: colors.border, color: colors.foreground, width: 80, textAlign: "right", marginTop: 0 }]}
-                value={absPpMinStr}
-                onChangeText={setAbsPpMinStr}
-                onBlur={() => saveKey("absence_postpone_minutes", parseInt(absPpMinStr) || 60)}
-                keyboardType="number-pad"
-                returnKeyType="done"
-              />
+              <Pressable
+                style={[styles.termInput, { borderColor: colors.border, width: 80, marginTop: 0, justifyContent: "center", alignItems: "flex-end" }]}
+                onPress={() => setNumPicker({ label: "Postpone by (minutes)", val: absPpMinStr || "60", min: 0, max: 240, set: (v) => { setAbsPpMinStr(v); saveKey("absence_postpone_minutes", parseInt(v) || 60); } })}
+              >
+                <Text style={{ color: colors.foreground }}>{absPpMinStr}</Text>
+              </Pressable>
             </View>
           )}
           {(settings.absence_policy ?? "substitute") === "cancel" && (
@@ -767,14 +769,12 @@ export default function AppConfigurationPage() {
             <View style={{ flexDirection: "row", gap: 12 }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowDesc, { color: colors.mutedForeground, marginBottom: 6 }]}>Window (hours before)</Text>
-                <TextInput
-                  style={[styles.termInput, { borderColor: colors.border, color: colors.foreground, textAlign: "center" }]}
-                  value={plCancelWinStr}
-                  onChangeText={setPlCancelWinStr}
-                  onBlur={() => saveKey("pl_cancel_window_hours", parseInt(plCancelWinStr) || 24)}
-                  keyboardType="number-pad"
-                  returnKeyType="done"
-                />
+                <Pressable
+                  style={[styles.termInput, { borderColor: colors.border, alignItems: "center", justifyContent: "center" }]}
+                  onPress={() => setNumPicker({ label: "Cancellation window (hours before)", val: plCancelWinStr || "24", min: 0, max: 168, set: (v) => { setPlCancelWinStr(v); saveKey("pl_cancel_window_hours", parseInt(v) || 24); } })}
+                >
+                  <Text style={{ color: colors.foreground }}>{plCancelWinStr}</Text>
+                </Pressable>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowDesc, { color: colors.mutedForeground, marginBottom: 6 }]}>Late cancel fee (%)</Text>
@@ -800,14 +800,12 @@ export default function AppConfigurationPage() {
             <View style={{ flexDirection: "row", gap: 12 }}>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowDesc, { color: colors.mutedForeground, marginBottom: 6 }]}>Window (hours before)</Text>
-                <TextInput
-                  style={[styles.termInput, { borderColor: colors.border, color: colors.foreground, textAlign: "center" }]}
-                  value={plReschedWinStr}
-                  onChangeText={setPlReschedWinStr}
-                  onBlur={() => saveKey("pl_reschedule_window_hours", parseInt(plReschedWinStr) || 24)}
-                  keyboardType="number-pad"
-                  returnKeyType="done"
-                />
+                <Pressable
+                  style={[styles.termInput, { borderColor: colors.border, alignItems: "center", justifyContent: "center" }]}
+                  onPress={() => setNumPicker({ label: "Reschedule window (hours before)", val: plReschedWinStr || "24", min: 0, max: 168, set: (v) => { setPlReschedWinStr(v); saveKey("pl_reschedule_window_hours", parseInt(v) || 24); } })}
+                >
+                  <Text style={{ color: colors.foreground }}>{plReschedWinStr}</Text>
+                </Pressable>
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={[styles.rowDesc, { color: colors.mutedForeground, marginBottom: 6 }]}>Late reschedule fee (%)</Text>
@@ -837,6 +835,16 @@ export default function AppConfigurationPage() {
           </Text>
         </View>
       </ScrollView>
+
+      <Modal visible={!!numPicker} transparent animationType="slide">
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setNumPicker(null)}>
+          <Pressable onPress={() => {}}>
+            {numPicker && (
+              <NumberPickerSheet label={numPicker.label} value={numPicker.val} min={numPicker.min} max={numPicker.max} onConfirm={(v) => { numPicker.set(v); setNumPicker(null); }} />
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
     </View>
   );
 }

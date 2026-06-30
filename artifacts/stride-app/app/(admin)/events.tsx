@@ -39,6 +39,7 @@ import {
   type EventDate,
   type EventTicketType,
 } from "@/lib/api";
+import { CalendarPicker, TimePickerSheet, NumberPickerSheet, isoToCal, calToIso } from "@/components/WizardPickers";
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 
@@ -234,6 +235,10 @@ function EventDetailSheet({
 
   const [saving, setSaving]         = useState(false);
   const [publishing, setPublishing] = useState(false);
+
+  const [calPicker, setCalPicker]   = useState<{ value: string; set: (v: string) => void; yearRange?: [number, number] } | null>(null);
+  const [timePicker, setTimePicker] = useState<{ value: string; set: (v: string) => void } | null>(null);
+  const [numPicker, setNumPicker]   = useState<{ label: string; val: string; min: number; max: number; set: (v: string) => void } | null>(null);
 
   const reload = useCallback(async (id: string) => {
     setLoading(true);
@@ -491,38 +496,47 @@ function EventDetailSheet({
                   <View style={S.twoCol}>
                     <View style={{ flex: 1 }}>
                       <FieldLabel label="Date" required />
-                      <TextInput
-                        style={[S.input, { borderColor: colors.border, color: colors.foreground }]}
-                        value={newDate} onChangeText={setNewDate}
-                        placeholder="2026-09-20" placeholderTextColor={colors.mutedForeground}
-                      />
+                      <Pressable
+                        onPress={() => setCalPicker({ value: isoToCal(newDate), set: (v) => setNewDate(calToIso(v)) })}
+                        style={[S.input, { borderColor: colors.border, justifyContent: "center" }]}
+                      >
+                        <Text style={{ color: newDate ? colors.foreground : colors.mutedForeground }}>
+                          {newDate || "Select date"}
+                        </Text>
+                      </Pressable>
                     </View>
                   </View>
                   <View style={S.twoCol}>
                     <View style={{ flex: 1 }}>
                       <FieldLabel label="Start time" />
-                      <TextInput
-                        style={[S.input, { borderColor: colors.border, color: colors.foreground }]}
-                        value={newStart} onChangeText={setNewStart}
-                        placeholder="18:00" placeholderTextColor={colors.mutedForeground}
-                      />
+                      <Pressable
+                        onPress={() => setTimePicker({ value: newStart || "09:00", set: setNewStart })}
+                        style={[S.input, { borderColor: colors.border, justifyContent: "center" }]}
+                      >
+                        <Text style={{ color: newStart ? colors.foreground : colors.mutedForeground }}>
+                          {newStart || "Select time"}
+                        </Text>
+                      </Pressable>
                     </View>
                     <View style={{ flex: 1 }}>
                       <FieldLabel label="End time" />
-                      <TextInput
-                        style={[S.input, { borderColor: colors.border, color: colors.foreground }]}
-                        value={newEnd} onChangeText={setNewEnd}
-                        placeholder="21:00" placeholderTextColor={colors.mutedForeground}
-                      />
+                      <Pressable
+                        onPress={() => setTimePicker({ value: newEnd || "10:00", set: setNewEnd })}
+                        style={[S.input, { borderColor: colors.border, justifyContent: "center" }]}
+                      >
+                        <Text style={{ color: newEnd ? colors.foreground : colors.mutedForeground }}>
+                          {newEnd || "Select time"}
+                        </Text>
+                      </Pressable>
                     </View>
                   </View>
                   <FieldLabel label="Capacity (0 = unlimited)" />
-                  <TextInput
-                    style={[S.input, { borderColor: colors.border, color: colors.foreground }]}
-                    value={newCap} onChangeText={setNewCap}
-                    placeholder="0" keyboardType="numeric"
-                    placeholderTextColor={colors.mutedForeground}
-                  />
+                  <Pressable
+                    onPress={() => setNumPicker({ label: "Capacity", val: newCap || "0", min: 0, max: 1000, set: setNewCap })}
+                    style={[S.input, { borderColor: colors.border, justifyContent: "center" }]}
+                  >
+                    <Text style={{ color: colors.foreground }}>{newCap || "0"}</Text>
+                  </Pressable>
                   <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
                     <Pressable
                       style={[S.cancelFormBtn, { flex: 1 }]}
@@ -594,12 +608,12 @@ function EventDetailSheet({
                     </View>
                   </View>
                   <FieldLabel label="Free tickets per member (0 = none)" />
-                  <TextInput
-                    style={[S.input, { borderColor: colors.border, color: colors.foreground }]}
-                    value={newTypeFree} onChangeText={setNewTypeFree}
-                    placeholder="0" keyboardType="numeric"
-                    placeholderTextColor={colors.mutedForeground}
-                  />
+                  <Pressable
+                    onPress={() => setNumPicker({ label: "Free for members", val: newTypeFree || "0", min: 0, max: 50, set: setNewTypeFree })}
+                    style={[S.input, { borderColor: colors.border, justifyContent: "center" }]}
+                  >
+                    <Text style={{ color: colors.foreground }}>{newTypeFree || "0"}</Text>
+                  </Pressable>
                   <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
                     <Pressable
                       style={[S.cancelFormBtn, { flex: 1 }]}
@@ -627,6 +641,37 @@ function EventDetailSheet({
             </View>
           </ScrollView>
         )}
+
+        {/* ── Shared pickers ── */}
+        <Modal visible={!!calPicker} transparent animationType="fade">
+          <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" }} onPress={() => setCalPicker(null)}>
+            <Pressable onPress={() => {}}>
+              {calPicker && (
+                <CalendarPicker value={calPicker.value} yearRange={calPicker.yearRange} onConfirm={(v) => { calPicker.set(v); setCalPicker(null); }} />
+              )}
+            </Pressable>
+          </Pressable>
+        </Modal>
+
+        <Modal visible={!!timePicker} transparent animationType="slide">
+          <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setTimePicker(null)}>
+            <Pressable onPress={() => {}}>
+              {timePicker && (
+                <TimePickerSheet value={timePicker.value} onConfirm={(v) => { timePicker.set(v); setTimePicker(null); }} />
+              )}
+            </Pressable>
+          </Pressable>
+        </Modal>
+
+        <Modal visible={!!numPicker} transparent animationType="slide">
+          <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setNumPicker(null)}>
+            <Pressable onPress={() => {}}>
+              {numPicker && (
+                <NumberPickerSheet label={numPicker.label} value={numPicker.val} min={numPicker.min} max={numPicker.max} onConfirm={(v) => { numPicker.set(v); setNumPicker(null); }} />
+              )}
+            </Pressable>
+          </Pressable>
+        </Modal>
       </View>
     </Modal>
   );
@@ -673,6 +718,10 @@ function CreateEventModal({
   }>>([]);
 
   const [saving, setSaving] = useState(false);
+
+  const [calPicker, setCalPicker]   = useState<{ value: string; set: (v: string) => void; yearRange?: [number, number] } | null>(null);
+  const [timePicker, setTimePicker] = useState<{ value: string; set: (v: string) => void } | null>(null);
+  const [numPicker, setNumPicker]   = useState<{ label: string; val: string; min: number; max: number; set: (v: string) => void } | null>(null);
 
   const reset = () => {
     setTitle(""); setDesc(""); setCategory("general");
@@ -886,40 +935,48 @@ function CreateEventModal({
             Enter the first occurrence. You can add more dates after creation.
           </Text>
 
-          <FieldLabel label="Date (YYYY-MM-DD)" />
-          <TextInput
-            style={[S.input, { borderColor: colors.border, color: colors.foreground }]}
-            value={startDate} onChangeText={setStartDate}
-            placeholder="2026-09-20"
-            placeholderTextColor={colors.mutedForeground}
-          />
+          <FieldLabel label="Date" />
+          <Pressable
+            onPress={() => setCalPicker({ value: isoToCal(startDate), set: (v) => setStartDate(calToIso(v)) })}
+            style={[S.input, { borderColor: colors.border, justifyContent: "center" }]}
+          >
+            <Text style={{ color: startDate ? colors.foreground : colors.mutedForeground }}>
+              {startDate || "Select date"}
+            </Text>
+          </Pressable>
 
           <View style={S.twoCol}>
             <View style={{ flex: 1 }}>
-              <FieldLabel label="Start time (HH:MM)" />
-              <TextInput
-                style={[S.input, { borderColor: colors.border, color: colors.foreground }]}
-                value={startTime} onChangeText={setStartTime}
-                placeholder="18:00" placeholderTextColor={colors.mutedForeground}
-              />
+              <FieldLabel label="Start time" />
+              <Pressable
+                onPress={() => setTimePicker({ value: startTime || "09:00", set: setStartTime })}
+                style={[S.input, { borderColor: colors.border, justifyContent: "center" }]}
+              >
+                <Text style={{ color: startTime ? colors.foreground : colors.mutedForeground }}>
+                  {startTime || "Select time"}
+                </Text>
+              </Pressable>
             </View>
             <View style={{ flex: 1 }}>
-              <FieldLabel label="End time (HH:MM)" />
-              <TextInput
-                style={[S.input, { borderColor: colors.border, color: colors.foreground }]}
-                value={endTime} onChangeText={setEndTime}
-                placeholder="21:00" placeholderTextColor={colors.mutedForeground}
-              />
+              <FieldLabel label="End time" />
+              <Pressable
+                onPress={() => setTimePicker({ value: endTime || "10:00", set: setEndTime })}
+                style={[S.input, { borderColor: colors.border, justifyContent: "center" }]}
+              >
+                <Text style={{ color: endTime ? colors.foreground : colors.mutedForeground }}>
+                  {endTime || "Select time"}
+                </Text>
+              </Pressable>
             </View>
           </View>
 
           <FieldLabel label="Capacity (0 = unlimited)" />
-          <TextInput
-            style={[S.input, { borderColor: colors.border, color: colors.foreground }]}
-            value={capacity} onChangeText={setCapacity}
-            placeholder="0" keyboardType="numeric"
-            placeholderTextColor={colors.mutedForeground}
-          />
+          <Pressable
+            onPress={() => setNumPicker({ label: "Capacity", val: capacity || "0", min: 0, max: 1000, set: setCapacity })}
+            style={[S.input, { borderColor: colors.border, justifyContent: "center" }]}
+          >
+            <Text style={{ color: colors.foreground }}>{capacity || "0"}</Text>
+          </Pressable>
 
           {/* ── TICKETS ──────────────────────────────────────────────── */}
           <SectionHead icon="ticket-outline" title="Ticket Types" />
@@ -978,12 +1035,12 @@ function CreateEventModal({
                 </View>
               </View>
               <FieldLabel label="Free for members (qty)" />
-              <TextInput
-                style={[S.input, { borderColor: colors.border, color: colors.foreground }]}
-                value={ticketFree} onChangeText={setTicketFree}
-                placeholder="0" keyboardType="numeric"
-                placeholderTextColor={colors.mutedForeground}
-              />
+              <Pressable
+                onPress={() => setNumPicker({ label: "Free for members", val: ticketFree || "0", min: 0, max: 50, set: setTicketFree })}
+                style={[S.input, { borderColor: colors.border, justifyContent: "center" }]}
+              >
+                <Text style={{ color: colors.foreground }}>{ticketFree || "0"}</Text>
+              </Pressable>
               <View style={{ flexDirection: "row", gap: 10, marginTop: 4 }}>
                 <Pressable
                   style={[S.cancelFormBtn, { flex: 1 }]}
@@ -1020,6 +1077,37 @@ function CreateEventModal({
           </Pressable>
 
         </ScrollView>
+
+        {/* ── Shared pickers ── */}
+        <Modal visible={!!calPicker} transparent animationType="fade">
+          <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", alignItems: "center", justifyContent: "center" }} onPress={() => setCalPicker(null)}>
+            <Pressable onPress={() => {}}>
+              {calPicker && (
+                <CalendarPicker value={calPicker.value} yearRange={calPicker.yearRange} onConfirm={(v) => { calPicker.set(v); setCalPicker(null); }} />
+              )}
+            </Pressable>
+          </Pressable>
+        </Modal>
+
+        <Modal visible={!!timePicker} transparent animationType="slide">
+          <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setTimePicker(null)}>
+            <Pressable onPress={() => {}}>
+              {timePicker && (
+                <TimePickerSheet value={timePicker.value} onConfirm={(v) => { timePicker.set(v); setTimePicker(null); }} />
+              )}
+            </Pressable>
+          </Pressable>
+        </Modal>
+
+        <Modal visible={!!numPicker} transparent animationType="slide">
+          <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => setNumPicker(null)}>
+            <Pressable onPress={() => {}}>
+              {numPicker && (
+                <NumberPickerSheet label={numPicker.label} value={numPicker.val} min={numPicker.min} max={numPicker.max} onConfirm={(v) => { numPicker.set(v); setNumPicker(null); }} />
+              )}
+            </Pressable>
+          </Pressable>
+        </Modal>
       </View>
     </Modal>
   );

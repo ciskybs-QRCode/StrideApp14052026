@@ -14,6 +14,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import QRCode from "react-native-qrcode-svg";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
+import { NumberPickerSheet } from "@/components/WizardPickers";
 import {
   listEvents, getEvent, getMyTickets, purchaseEventTickets,
   type StrideEvent, type EventDate, type EventTicketType, type EventTicket,
@@ -121,6 +122,7 @@ function PurchaseModal({
   const [quantity, setQuantity]               = useState(1);
   const [attendeeName, setAttendeeName]       = useState("");
   const [loading, setLoading]                 = useState(false);
+  const [showQtyPicker, setShowQtyPicker]     = useState(false);
 
   useEffect(() => {
     if (visible && event) {
@@ -278,7 +280,9 @@ function PurchaseModal({
                 >
                   <Ionicons name="remove" size={20} color={colors.text} />
                 </Pressable>
-                <Text style={[styles.qtyValue, { color: colors.text }]}>{quantity}</Text>
+                <Pressable onPress={() => setShowQtyPicker(true)}>
+                  <Text style={[styles.qtyValue, { color: colors.text }]}>{quantity}</Text>
+                </Pressable>
                 <Pressable
                   onPress={() => setQuantity(q => Math.min(capacityLeft != null ? capacityLeft : 999, q + 1))}
                   style={[styles.qtyBtn, { borderColor: colors.border }]}
@@ -346,6 +350,23 @@ function PurchaseModal({
           </ScrollView>
         </View>
       </View>
+
+      <Modal visible={showQtyPicker} transparent animationType="slide">
+        <Pressable
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }}
+          onPress={() => setShowQtyPicker(false)}
+        >
+          <Pressable onPress={() => {}}>
+            <NumberPickerSheet
+              label="Quantity"
+              value={String(quantity)}
+              min={1}
+              max={Math.max(1, capacityLeft != null ? capacityLeft : 99)}
+              onConfirm={(v) => { setQuantity(parseInt(v, 10) || 1); setShowQtyPicker(false); }}
+            />
+          </Pressable>
+        </Pressable>
+      </Modal>
     </Modal>
   );
 }
