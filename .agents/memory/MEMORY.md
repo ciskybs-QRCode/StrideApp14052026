@@ -7,6 +7,7 @@
 - [Stride DB cleanup approach](stride-db-cleanup.md) — Supabase REST DELETE needs uuid filter for uuid-pk tables (id=neq.00000000-…) not id=gt.0; child_activity_log has uuid pk; FK cascade order matters (emergency_assessments before users).
 - [Stride multi-tenant architecture](stride-multi-tenant.md) — organizations table = tenant table; super_admin role; trial guard middleware; Stripe Connect per-org.
 - [Stride QR camera](stride-qr-camera.md) — expo-camera v55 (version mismatch vs SDK54 expected ~17); Platform.OS==="web" checks were bypassing CameraView — fixed to gate on permission only.
+- [Stride signed QR tokens](stride-qr-signed-tokens.md) — STRIDE:SIGNED:v1:{jwt} format; GET /api/qr-token; verifyQrSignature in access-check + verify-qr; parent home 20-min refresh; dashboard offline+online dispatch; 7-day legacy window.
 - [Stride onboarding flow](stride-onboarding.md) — 5-step wizard: details/address, phone, Next of Kin (step 3, skippable), dependents (step 4), signature (step 5). fieldSt.input/fieldSt.label are in a separate StyleSheet from main styles — use Field component or fieldSt for text inputs inside the wizard steps.
 - [Stride absence/substitution/finance](stride-absence-finance.md) — dual absence buttons, 5-min cascade, payroll ledger, Pay Now flow. Key isolation and pattern decisions.
 - [Stride legal gate](stride-legal-gate.md) — mandatory sequential signature gate with SHA-256 audit, IP/device capture, options, checkbox, gold-bordered pad.

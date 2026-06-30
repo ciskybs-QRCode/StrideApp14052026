@@ -1,4 +1,5 @@
 import { Router, type Request } from "express";
+import jwt from "jsonwebtoken";
 import { supabase } from "../lib/supabase.js";
 import { pool } from "../lib/pg.js";
 import { requireAuth, type TokenPayload } from "../lib/auth.js";
@@ -48,10 +49,35 @@ router.post("/verify-member-qr", requireAuth, qrScanLimiter, async (req, res) =>
 
   // ── 1. Parse member ID ─────────────────────────────────────────────────────
   let memberId: number | null = null;
-  if (qrData.startsWith("MBR-")) {
-    memberId = parseId(qrData.slice(4));
-  } else if (qrData.startsWith("STRIDE:MBR:") || qrData.startsWith("STRIDE:PARENT:")) {
-    memberId = parseId(qrData.split(":")[2]);
+
+  if (qrData.startsWith("STRIDE:SIGNED:v1:")) {
+    // ── Signed format: verify JWT server-side ─────────────────────────────
+    const rawJwt = qrData.slice("STRIDE:SIGNED:v1:".length);
+    try {
+      const qrSec = process.env["SESSION_SECRET"] ?? "";
+      if (!qrSec) throw new Error("no secret");
+      const decoded = jwt.verify(rawJwt, qrSec) as { type?: string; id?: number; orgId?: number };
+      if (typeof decoded.id !== "number" || decoded.id <= 0) throw new Error("invalid id");
+      if (decoded.orgId !== orgId) {
+        res.status(403).json({ error: "QR code belongs to a different organisation" });
+        return;
+      }
+      memberId = decoded.id;
+    } catch {
+      res.status(401).json({ error: "Invalid or expired QR — ask the member to refresh their pass" });
+      return;
+    }
+  } else {
+    // ── Legacy unsigned format (transition window — 7 days from rollout) ──
+    req.log.warn(
+      { prefix: qrData.split(":").slice(0, 2).join(":"), orgId },
+      "verify-member-qr: legacy unsigned QR scanned — transition window active",
+    );
+    if (qrData.startsWith("MBR-")) {
+      memberId = parseId(qrData.slice(4));
+    } else if (qrData.startsWith("STRIDE:MBR:") || qrData.startsWith("STRIDE:PARENT:")) {
+      memberId = parseId(qrData.split(":")[2]);
+    }
   }
 
   if (!memberId) {

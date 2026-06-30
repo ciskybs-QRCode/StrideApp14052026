@@ -1176,8 +1176,11 @@ export const api = {
     request<{ blocked: boolean; reason: string | null }>("POST", "/blacklist/check", data),
 
   // Access verification (QR anti-fraud check)
-  checkAccess: (childId: string) =>
-    request<ApiAccessCheck>("GET", `/access-check/${childId}`),
+  // qrRaw: full STRIDE:SIGNED:v1:{jwt} string — omit for legacy unsigned scans
+  checkAccess: (childId: string, qrRaw?: string) => {
+    const qs = qrRaw ? `?qrRaw=${encodeURIComponent(qrRaw)}` : "";
+    return request<ApiAccessCheck>("GET", `/access-check/${childId}${qs}`);
+  },
 
   // Silent staff security alert when a blacklisted person attempts entry
   sendSecurityAlert: (childId: string | number, childName?: string) =>

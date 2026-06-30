@@ -44,6 +44,19 @@ import { CalendarPicker } from "@/components/WizardPickers";
 
 const CASCADE_TIMEOUT_SECS = 300;
 
+// Decode the JWT payload from a STRIDE:SIGNED:v1:{jwt} string without verifying
+// the signature (verification happens server-side). Returns null on any error.
+function decodeSignedQrPayload(qrData: string): { type?: string; id?: number } | null {
+  try {
+    const jwtStr = qrData.slice("STRIDE:SIGNED:v1:".length);
+    const base64Url = jwtStr.split(".")[1] ?? "";
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    return JSON.parse(atob(base64)) as { type?: string; id?: number };
+  } catch {
+    return null;
+  }
+}
+
 // ── Web Audio tone synthesiser ────────────────────────────────────────────────
 function playDashboardTone(result: "success" | "warning" | "denied"): void {
   if (typeof window === "undefined") return;
@@ -800,7 +813,14 @@ export default function OperatorDashboard() {
       let studentId: string | undefined;
       let studentName: string | undefined;
 
-      if (data.startsWith("STRIDE:MEMBER:")) {
+      if (data.startsWith("STRIDE:SIGNED:v1:")) {
+        const decoded = decodeSignedQrPayload(data);
+        if (decoded) {
+          scanType = "checkin";
+          studentId = String(decoded.id ?? "");
+          studentName = "Member";
+        }
+      } else if (data.startsWith("STRIDE:MEMBER:")) {
         const parts = data.split(":");
         scanType = "checkin";
         studentId = parts[2] ?? undefined;
@@ -840,7 +860,52 @@ export default function OperatorDashboard() {
       return;
     }
 
-    if (data.startsWith("STRIDE:LESSON:")) {
+    if (data.startsWith("STRIDE:SIGNED:v1:")) {
+      // Signed QR — JWT payload decoded client-side to route; signature verified server-side.
+      const decoded = decodeSignedQrPayload(data);
+      if (!decoded) {
+        showScanResult({ type: "error", name: "Unknown", subscription: "none", medical: "expired", payment: "pending" });
+        return;
+      }
+      const decodedId = String(decoded.id ?? "");
+      setScanned(true);
+      setGuardianResult(null);
+      try {
+        const check = await api.checkAccess(decodedId, data);
+        if (check.verdict !== "allowed") {
+          const displayName = check.childName || "Member";
+          setAccessAlert({ verdict: check.verdict, childName: displayName, blockReason: check.blockReason });
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+          if (check.verdict === "blacklisted" || check.blacklisted === true) {
+            void api.sendSecurityAlert(decodedId, displayName);
+          } else if (check.verdict === "suspended" || check.verdict === "overdue_denied") {
+            triggerAccessAlert(decodedId, displayName,
+              check.verdict === "suspended" ? "Account unavailable" : "Membership payment required");
+          }
+          const logMsg =
+            check.verdict === "blacklisted"   ? `⚠ SECURITY ALERT: ${displayName} — staff notified` :
+            check.verdict === "suspended"     ? `✗ Account restricted: ${displayName}` :
+            check.verdict === "grace_allowed" ? `⚠ One-time grace access: ${displayName}` :
+            `✗ Membership payment required: ${displayName}`;
+          pushLog({ time: nowTime(), action: logMsg, type: check.verdict === "grace_allowed" ? "warning" : "error" });
+          setTimeout(() => { setAccessAlert(null); setScanned(false); setShowScanner(false); }, 7000);
+          return;
+        }
+      } catch {
+        showScanResult({ type: "error", name: "Member", subscription: "none", medical: "expired", payment: "pending" });
+        return;
+      }
+      const foundSigned = students.find(s => s.id === decodedId);
+      clearAlertByStudent(decodedId);
+      showScanResult({
+        type: "success",
+        name: foundSigned?.name ?? "Member",
+        subscription: "active",
+        medical: "valid",
+        payment: "paid",
+      });
+
+    } else if (data.startsWith("STRIDE:LESSON:")) {
       // Private lesson QR — format: STRIDE:LESSON:<bookingId>:<qrToken>:<discipline>:<student>
       const parts = data.split(":");
       const qrToken = parts[3] ?? "";

@@ -32,7 +32,7 @@ import { useFeatures } from "@/context/FeaturesContext";
 import { usePlanFeatures } from "@/hooks/usePlanFeatures";
 import { useColors } from "@/hooks/useColors";
 import { useOrgCurrency } from "@/hooks/useOrgCurrency";
-import { api, listEvents } from "@/lib/api";
+import { api, request, listEvents } from "@/lib/api";
 import { SOSButton } from "@/components/SOSButton";
 import { SOSModal } from "@/components/SOSModal";
 import { RoleSwitcherRow } from "@/components/RoleSwitcher";
@@ -102,6 +102,8 @@ export default function ParentHome() {
   const [selectedChild, setSelectedChild] = useState<string>("self");
   const [qrTarget, setQrTarget] = useState<"parent" | string>("parent");
   const [showSosModal, setShowSosModal] = useState(false);
+  const [qrTokenMap, setQrTokenMap] = useState<Record<string, string>>({});
+  const [qrLoading, setQrLoading]   = useState(false);
 
   const orgId = (user as { orgId?: number } | null)?.orgId;
   const [hasPublishedEvents,   setHasPublishedEvents]   = useState(false);
@@ -215,8 +217,35 @@ export default function ParentHome() {
   const qrLabel = qrTarget === "parent"
     ? (user?.name ?? "My QR")
     : (activeChild?.name ?? "");
+  // Signed token from server — null while loading or on error.
+  const signedQrValue: string | null = qrTokenMap[qrTarget] ?? null;
 
   const logoSource = orgLogoUri ?? (user?.logoUri ?? null);
+
+  // Fetch (and auto-refresh every 20 min) a server-signed QR token whenever
+  // the QR modal is open. No silent fallback — if the fetch fails the modal
+  // shows an error state so the operator is not misled.
+  useEffect(() => {
+    if (!showQR) return;
+    let cancelled = false;
+    const doFetch = async () => {
+      setQrLoading(true);
+      try {
+        const endpoint = qrTarget === "parent"
+          ? "/qr-token?type=member"
+          : `/qr-token?type=child&childId=${qrTarget}`;
+        const res = await request<{ token: string; expiresAt: number }>("GET", endpoint);
+        if (!cancelled) setQrTokenMap(m => ({ ...m, [qrTarget]: res.token }));
+      } catch {
+        // Leave token absent — UI shows "Cannot load QR" error state.
+      } finally {
+        if (!cancelled) setQrLoading(false);
+      }
+    };
+    void doFetch();
+    const timer = setInterval(() => { void doFetch(); }, 20 * 60 * 1000);
+    return () => { cancelled = true; clearInterval(timer); };
+  }, [showQR, qrTarget]);
 
   useEffect(() => {
     api.getOrg().then(org => {
@@ -911,19 +940,30 @@ export default function ParentHome() {
               </View>
 
               <View style={[styles.qrBox, { backgroundColor: "#F0F4FF" }]}>
-                {Platform.OS === "web" ? (
-                  <WebQRCode value={qrValue} size={160} color={colors.primary} />
+                {qrLoading ? (
+                  <ActivityIndicator size="large" color={colors.primary} style={{ height: 160, width: 160 }} />
+                ) : signedQrValue ? (
+                  Platform.OS === "web" ? (
+                    <WebQRCode value={signedQrValue} size={160} color={colors.primary} />
+                  ) : (
+                    <QRCode
+                      value={signedQrValue}
+                      size={160}
+                      color={colors.primary}
+                      backgroundColor="transparent"
+                      logo={logoSource ? { uri: logoSource } : undefined}
+                      logoSize={logoSource ? 38 : undefined}
+                      logoBackgroundColor="#FFFFFF"
+                      logoBorderRadius={8}
+                    />
+                  )
                 ) : (
-                  <QRCode
-                    value={qrValue}
-                    size={160}
-                    color={colors.primary}
-                    backgroundColor="transparent"
-                    logo={logoSource ? { uri: logoSource } : undefined}
-                    logoSize={logoSource ? 38 : undefined}
-                    logoBackgroundColor="#FFFFFF"
-                    logoBorderRadius={8}
-                  />
+                  <View style={{ height: 160, width: 160, alignItems: "center", justifyContent: "center" }}>
+                    <Ionicons name="warning-outline" size={40} color="#EF4444" />
+                    <Text style={{ fontSize: 11, color: "#EF4444", textAlign: "center", marginTop: 8 }}>
+                      Cannot load QR{"\n"}Check your connection
+                    </Text>
+                  </View>
                 )}
                 <Text style={[styles.qrChildName, { color: colors.primary }]}>{qrLabel}</Text>
                 <Text style={[styles.qrId, { color: colors.mutedForeground }]}>

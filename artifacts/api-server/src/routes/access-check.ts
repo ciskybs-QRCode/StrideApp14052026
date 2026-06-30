@@ -1,9 +1,29 @@
 import { Router, type Request } from "express";
+import jwt from "jsonwebtoken";
 import { supabase } from "../lib/supabase.js";
 import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { qrScanLimiter } from "../lib/rate-limit.js";
+import { logAction } from "../lib/audit.js";
 import Expo, { type ExpoPushMessage } from "expo-server-sdk";
+
+function verifyQrSignature(
+  raw: string,
+  expectedId: number,
+  expectedOrgId: number,
+): boolean {
+  try {
+    const jwtStr = raw.startsWith("STRIDE:SIGNED:v1:")
+      ? raw.slice("STRIDE:SIGNED:v1:".length)
+      : raw;
+    const s = process.env["SESSION_SECRET"] ?? "";
+    if (!s) return false;
+    const decoded = jwt.verify(jwtStr, s) as { id?: number; orgId?: number };
+    return decoded.id === expectedId && decoded.orgId === expectedOrgId;
+  } catch {
+    return false;
+  }
+}
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -17,10 +37,26 @@ export type AccessVerdict =
 
 // GET /access-check/:childId
 // Full QR membership verification — returns verdict + member info.
+// Optional query param ?qrRaw=STRIDE:SIGNED:v1:{jwt}: if present the signature is
+// verified first; if absent the scan is accepted but logged as a legacy unsigned request.
 router.get("/access-check/:childId", requireAuth, requireRole("admin", "operator"), qrScanLimiter, async (req, res) => {
   const { childId } = req.params;
   const user = (req as AuthReq).user;
   const orgId = user.orgId ?? 1;
+
+  // ── QR signature verification ──────────────────────────────────────────────
+  const qrRaw = req.query["qrRaw"] as string | undefined;
+  const qrSigned = !!qrRaw;
+  if (qrRaw) {
+    const expectedId = parseInt(String(childId), 10);
+    if (!verifyQrSignature(qrRaw, expectedId, orgId)) {
+      req.log.warn({ childId, orgId }, "access-check: invalid or expired QR signature — scan rejected");
+      res.status(401).json({ error: "Invalid or expired QR — ask the member to refresh their pass" });
+      return;
+    }
+  } else {
+    req.log.warn({ childId, orgId }, "access-check: legacy unsigned QR scanned — transition window active");
+  }
 
   // ── Fetch child ────────────────────────────────────────────────────────────
   const { data: child, error: childErr } = await supabase
@@ -38,10 +74,20 @@ router.get("/access-check/:childId", requireAuth, requireRole("admin", "operator
   const childName = `${child.first_name ?? ""} ${child.last_name ?? ""}`.trim() || "Studente";
   const isBlocked = child.is_blocked ?? false;
   const paymentStatus: string = child.payment_status ?? "active";
+  const childIdNum = parseInt(String(childId), 10);
+
+  const logScan = (verdict: AccessVerdict) => {
+    logAction({
+      userId: user.id,
+      action: "qr_scan",
+      tableAffected: "children",
+      recordId: childIdNum,
+      details: { org_id: orgId, child_id: childId, child_name: childName, verdict, qr_signed: qrSigned },
+    });
+  };
 
   // CASE A — Blocked / blacklisted account
   if (isBlocked) {
-    // Check the blacklist table for a specific entry (intentional restriction vs admin block)
     let isBlacklisted = false;
     try {
       const bl = await pool.query<{ id: number }>(
@@ -54,17 +100,15 @@ router.get("/access-check/:childId", requireAuth, requireRole("admin", "operator
       isBlacklisted = bl.rows.length > 0;
     } catch { /* blacklist table may not exist yet */ }
 
-    res.json({
-      verdict: isBlacklisted ? ("blacklisted" as AccessVerdict) : ("suspended" as AccessVerdict),
-      childId, childName,
-      blacklisted: isBlacklisted,
-      blockReason: child.block_reason ?? "Account restricted",
-    });
+    const verdict = isBlacklisted ? ("blacklisted" as AccessVerdict) : ("suspended" as AccessVerdict);
+    logScan(verdict);
+    res.json({ verdict, childId, childName, blacklisted: isBlacklisted, blockReason: child.block_reason ?? "Account restricted" });
     return;
   }
 
   // Active payment — allow immediately
   if (paymentStatus === "active" || paymentStatus === "") {
+    logScan("allowed");
     res.json({ verdict: "allowed" as AccessVerdict, childId, childName });
     return;
   }
@@ -81,19 +125,16 @@ router.get("/access-check/:childId", requireAuth, requireRole("admin", "operator
 
   // CASE C — Long-overdue
   if (paymentStatus === "overdue") {
-    res.json({
-      verdict: "overdue_denied" as AccessVerdict,
-      childId, childName,
-    });
+    logScan("overdue_denied");
+    res.json({ verdict: "overdue_denied" as AccessVerdict, childId, childName });
     return;
   }
 
   // payment_status === "expired"
   if (paymentStatus === "expired") {
     if (graceEnabled) {
-      const childIdNum = parseInt(String(childId), 10);
       if (graceUsed.includes(childIdNum)) {
-        // Grace already consumed
+        logScan("overdue_denied");
         res.json({ verdict: "overdue_denied" as AccessVerdict, childId, childName });
         return;
       }
@@ -104,14 +145,17 @@ router.get("/access-check/:childId", requireAuth, requireRole("admin", "operator
         .upsert({ organization_id: orgId, allow_one_time_grace_access: true, grace_used_child_ids: newGraceUsed })
         .eq("organization_id", orgId);
 
+      logScan("grace_allowed");
       res.json({ verdict: "grace_allowed" as AccessVerdict, childId, childName });
       return;
     }
     // CASE C — expired, no grace enabled
+    logScan("overdue_denied");
     res.json({ verdict: "overdue_denied" as AccessVerdict, childId, childName });
     return;
   }
 
+  logScan("allowed");
   res.json({ verdict: "allowed" as AccessVerdict, childId, childName });
 });
 
