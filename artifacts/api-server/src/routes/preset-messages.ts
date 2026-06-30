@@ -66,6 +66,16 @@ const DEFAULT_TEMPLATES: Record<string, { subject: string; body: string; channel
     body: "Hi team,\n\n{operator_name} has confirmed as substitute instructor for {course_name} on {class_date}.\n\nThe session is now covered. No further action is required.\n\nThe {association_name} Team",
     channel_inapp: true, channel_push: true, channel_email: true,
   },
+  membership_suspended: {
+    subject: "Membership suspended — {association_name}",
+    body: "Hi {member_name},\n\nYour {membership_name} at {association_name} has expired and been suspended.\nPlease renew your membership to regain access.\n\nThe {association_name} Team",
+    channel_inapp: true, channel_push: false, channel_email: false,
+  },
+  payment_received: {
+    subject: "Payment received — {association_name}",
+    body: "Hi {member_name},\n\nYour payment of {amount} was successfully processed on {date} at {time}.\n\nThank you!\n\nThe {association_name} Team",
+    channel_inapp: true, channel_push: false, channel_email: false,
+  },
 };
 
 // ── GET /preset-messages ──────────────────────────────────────────────────────

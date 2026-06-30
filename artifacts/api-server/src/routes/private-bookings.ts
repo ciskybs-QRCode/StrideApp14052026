@@ -1,7 +1,8 @@
 import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
-import crypto from "crypto";
+import crypto        from "crypto";
+import { getPreset } from "../lib/getPreset.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -207,16 +208,28 @@ router.post("/private-bookings/scan", requireAuth, requireRole("operator", "admi
     .eq("id", booking.id);
   if (uErr) { res.status(500).json({ error: uErr.message }); return; }
 
-  // Notify parent
-  await supabase.from("private_notifications").insert({
-    organization_id: user.orgId,
-    recipient_id: booking.parent_user_id,
-    sender_id: user.id,
-    type: "payment_received",
-    title: "Lesson Attended ✓",
-    body: `Lesson on ${booking.slot_date} at ${booking.start_time} marked complete. Earnings: €${(earningsCents / 100).toFixed(2)}.`,
-    booking_id: booking.id,
-  });
+  // Notify parent (text + channel from preset_messages if configured)
+  const pbPreset  = await getPreset(user.orgId ?? 1, "payment_received");
+  const pbBody    = pbPreset
+    ? pbPreset.body
+      .replace(/{member_name}/g, "")
+      .replace(/{amount}/g, `EUR ${(earningsCents / 100).toFixed(2)}`)
+      .replace(/{date}/g, String(booking.slot_date ?? ""))
+      .replace(/{time}/g, String(booking.start_time ?? ""))
+      .replace(/{association_name}/g, "")
+      .trim()
+    : `Lesson on ${booking.slot_date} at ${booking.start_time} marked complete. Earnings: EUR${(earningsCents / 100).toFixed(2)}.`;
+  if (!pbPreset || pbPreset.channel_inapp) {
+    await supabase.from("private_notifications").insert({
+      organization_id: user.orgId,
+      recipient_id: booking.parent_user_id,
+      sender_id: user.id,
+      type: "payment_received",
+      title: "Lesson Attended",
+      body: pbBody,
+      booking_id: booking.id,
+    });
+  }
 
   res.json({ ok: true, earnings_cents: earningsCents, invoice_number, attended_at });
 });

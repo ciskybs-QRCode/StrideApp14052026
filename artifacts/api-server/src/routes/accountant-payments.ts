@@ -1,7 +1,8 @@
 import { Router, type Request } from "express";
 import { pool } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
-import { openai } from "@workspace/integrations-openai-ai-server";
+import { openai }    from "@workspace/integrations-openai-ai-server";
+import { getPreset } from "../lib/getPreset.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -166,23 +167,34 @@ router.patch("/payroll/accountant/orders/:id/mark-paid", requireAuth, requireRol
       const paidDate = new Date().toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
       const paidTime = new Date().toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
       const amount   = (order.amount_cents / 100).toFixed(2);
-      // Find operator's push token via their name match in users
-      await pool.query(
-        `INSERT INTO private_notifications (recipient_id, organization_id, type, title, body)
-         SELECT u.id, $1, 'payment_received',
-                'Payment Received',
-                $2
-         FROM users u
-         WHERE u.organization_id = $1
-           AND u.role IN ('operator')
-           AND u.name ILIKE $3
-         LIMIT 1`,
-        [
-          order.org_id,
-          `Your payment of ${order.currency} ${amount} was successfully processed on ${paidDate} at ${paidTime}.`,
-          `%${order.payee_name.split(" ")[0] ?? order.payee_name}%`,
-        ],
-      ).catch(() => {});
+      const preset   = await getPreset(order.org_id, "payment_received");
+      const sendInApp = preset ? preset.channel_inapp : true;
+      const notifBody = preset
+        ? preset.body
+          .replace(/{member_name}/g, order.payee_name)
+          .replace(/{amount}/g, `${order.currency} ${amount}`)
+          .replace(/{date}/g, paidDate)
+          .replace(/{time}/g, paidTime)
+          .replace(/{association_name}/g, "")
+        : `Your payment of ${order.currency} ${amount} was successfully processed on ${paidDate} at ${paidTime}.`;
+      if (sendInApp) {
+        await pool.query(
+          `INSERT INTO private_notifications (recipient_id, organization_id, type, title, body)
+           SELECT u.id, $1, 'payment_received',
+                  'Payment Received',
+                  $2
+           FROM users u
+           WHERE u.organization_id = $1
+             AND u.role IN ('operator')
+             AND u.name ILIKE $3
+           LIMIT 1`,
+          [
+            order.org_id,
+            notifBody,
+            `%${order.payee_name.split(" ")[0] ?? order.payee_name}%`,
+          ],
+        ).catch(() => {});
+      }
     }
     res.json({ order: rows[0] });
   } catch (err) {

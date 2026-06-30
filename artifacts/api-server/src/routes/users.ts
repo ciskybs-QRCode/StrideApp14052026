@@ -5,6 +5,7 @@ import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { getOwnerEmail } from "../lib/owner-config.js";
 import { sendOrgEmail } from "../services/emailService.js";
 import { buildRoleAssignmentEmail } from "../services/emailService.js";
+import { getPreset }                from "../lib/getPreset.js";
 import { logAction } from "../lib/audit.js";
 
 const router = Router();
@@ -187,7 +188,7 @@ router.patch("/users/:id/roles", requireAuth, requireRole("admin"), async (req, 
     try {
       const orgId = admin.orgId ?? 1;
 
-      const [orgRes, settingsRes] = await Promise.all([
+      const [orgRes, settingsRes, preset] = await Promise.all([
         supabase.from("organizations").select("name").eq("id", orgId).maybeSingle(),
         pool.query<{
           brand_primary_color?: string;
@@ -201,6 +202,7 @@ router.patch("/users/:id/roles", requireAuth, requireRole("admin"), async (req, 
            FROM admin_settings WHERE organization_id = $1 LIMIT 1`,
           [orgId],
         ),
+        getPreset(orgId, "role_change"),
       ]);
 
       const orgName      = (orgRes.data as { name?: string } | null)?.name ?? "Your Association";
@@ -208,8 +210,6 @@ router.patch("/users/:id/roles", requireAuth, requireRole("admin"), async (req, 
       const primaryColor = s?.brand_primary_color ?? "#1E3A8A";
       const logoUrl      = s?.brand_logo_url ?? null;
       const appName      = s?.brand_app_name ?? orgName;
-      const subjectTpl   = s?.role_assignment_email_subject ?? "Your role has been updated at {org_name}";
-      const bodyTpl      = s?.role_assignment_email_body ?? "Hi {name}, your role at {org_name} has been updated. You now have access as: {roles}.";
 
       const roleLabels = cleanRoles.map(r =>
         r === "parent" ? "Member" : r === "operator" ? "Operator" : "Admin",
@@ -217,8 +217,27 @@ router.patch("/users/:id/roles", requireAuth, requireRole("admin"), async (req, 
       const userName  = (updatedUser as { name?: string })?.name ?? "User";
       const userEmail = (updatedUser as { email?: string })?.email;
 
+      const sendEmail = preset ? preset.channel_email : true;
+      const sendInApp = preset ? preset.channel_inapp  : true;
+
+      let subjectTpl: string;
+      let bodyTpl: string;
+      if (preset) {
+        // Render preset placeholders so buildRoleAssignmentEmail substitutions are no-ops
+        subjectTpl = preset.subject
+          .replace(/{association_name}/g, orgName)
+          .replace(/{member_name}/g, userName);
+        bodyTpl = preset.body
+          .replace(/{member_name}/g, userName)
+          .replace(/{association_name}/g, orgName)
+          .replace(/{new_role}/g, roleLabels.join(", "));
+      } else {
+        subjectTpl = s?.role_assignment_email_subject ?? "Your role has been updated at {org_name}";
+        bodyTpl    = s?.role_assignment_email_body    ?? "Hi {name}, your role at {org_name} has been updated. You now have access as: {roles}.";
+      }
+
       // Send email
-      if (userEmail) {
+      if (sendEmail && userEmail) {
         const { html, text, subject } = buildRoleAssignmentEmail({
           userName, orgName, appName,
           newRoles: roleLabels,
@@ -230,14 +249,16 @@ router.patch("/users/:id/roles", requireAuth, requireRole("admin"), async (req, 
       }
 
       // Bell notification
-      await supabase.from("private_notifications").insert({
-        organization_id: orgId,
-        recipient_id:    targetId,
-        sender_id:       parseInt(admin.id),
-        type:            "role_assignment",
-        title:           "Your roles have been updated",
-        body:            `You now have access as: ${roleLabels.join(", ")}.`,
-      });
+      if (sendInApp) {
+        await supabase.from("private_notifications").insert({
+          organization_id: orgId,
+          recipient_id:    targetId,
+          sender_id:       parseInt(admin.id),
+          type:            "role_assignment",
+          title:           "Your roles have been updated",
+          body:            `You now have access as: ${roleLabels.join(", ")}.`,
+        });
+      }
     } catch (err) {
       req.log.warn({ err }, "PATCH /users/:id/roles — side-effects failed");
     }

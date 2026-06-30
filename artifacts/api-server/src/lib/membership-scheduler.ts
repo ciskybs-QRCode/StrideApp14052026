@@ -5,8 +5,10 @@
  *  2. Suspends memberships past their expires_at when suspend_on_expiry = true
  *  3. Reactivates suspended memberships when Stripe marks them active again
  */
-import { pool }   from "./pg.js";
-import { logger }  from "./logger.js";
+import { pool }          from "./pg.js";
+import { logger }        from "./logger.js";
+import { getPreset }     from "./getPreset.js";
+import { sendOrgEmail }  from "../services/emailService.js";
 
 interface MemberSub {
   id:                  number;
@@ -115,15 +117,39 @@ async function runMembershipCheck(): Promise<void> {
           [sub.id],
         ).catch(() => {});
 
-        await pool.query(
-          `INSERT INTO private_notifications (user_id, organization_id, type, title, body, read, created_at)
-           VALUES ($1, $2, 'membership_suspended', 'Membership Suspended',
-                   $3, false, NOW()) ON CONFLICT DO NOTHING`,
-          [
-            sub.user_id, sub.organization_id,
-            `Your ${sub.item_name ?? "membership"} has expired and been suspended. Renew to regain access.`,
-          ],
-        ).catch(() => {});
+        const susp        = await getPreset(sub.organization_id, "membership_suspended");
+        const suspInApp   = susp ? susp.channel_inapp : true;
+        const suspEmail   = susp ? susp.channel_email : false;
+        const suspBody    = susp
+          ? susp.body
+            .replace(/{member_name}/g, "")
+            .replace(/{membership_name}/g, sub.item_name ?? "membership")
+            .replace(/{association_name}/g, "")
+            .trim()
+          : `Your ${sub.item_name ?? "membership"} has expired and been suspended. Renew to regain access.`;
+
+        if (suspInApp) {
+          await pool.query(
+            `INSERT INTO private_notifications (user_id, organization_id, type, title, body, read, created_at)
+             VALUES ($1, $2, 'membership_suspended', 'Membership Suspended',
+                     $3, false, NOW()) ON CONFLICT DO NOTHING`,
+            [sub.user_id, sub.organization_id, suspBody],
+          ).catch(() => {});
+        }
+        if (suspEmail) {
+          const { rows: uRows } = await pool.query<{ email: string }>(
+            `SELECT email FROM users WHERE id = $1 LIMIT 1`,
+            [sub.user_id],
+          ).catch(() => ({ rows: [] as { email: string }[] }));
+          if (uRows[0]?.email) {
+            sendOrgEmail(sub.organization_id, {
+              to:      uRows[0].email,
+              subject: (susp?.subject ?? "Membership suspended").replace(/{association_name}/g, ""),
+              text:    suspBody,
+              html:    `<p>${suspBody.replace(/\n/g, "<br/>")}</p>`,
+            }).catch(() => {});
+          }
+        }
 
         logger.info({ subId: sub.id }, "membership-scheduler: membership suspended");
       }

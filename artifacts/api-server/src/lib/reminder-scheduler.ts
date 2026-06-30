@@ -2,6 +2,7 @@ import { supabase }             from "./supabase.js";
 import { pool }                 from "./pg.js";
 import { logger }               from "./logger.js";
 import { sendTransactionalEmail, sendOrgEmail } from "../services/emailService.js";
+import { getPreset, type PresetRow }           from "./getPreset.js";
 import { EmergencyPushService } from "./EmergencyPushService.js";
 
 const WINDOW_MINUTES = 5;
@@ -547,16 +548,21 @@ const REMINDER_DAYS = [7, 3, 1];
 
 // ── Shared helper: send cert notification + email + dedup mark ────────────────
 async function sendCertReminder(opts: {
-  userId:    number;
-  orgId:     number;
-  certType:  "medical" | "first_aid" | "medical_expiry" | "first_aid_expiry";
-  title:     string;
-  body:      string;
-  subject:   string;
-  email:     string | null;
-  daysLeft:  number;
+  userId:         number;
+  orgId:          number;
+  certType:       "medical" | "first_aid" | "medical_expiry" | "first_aid_expiry";
+  title:          string;
+  body:           string;
+  subject:        string;
+  email:          string | null;
+  daysLeft:       number;
+  channel_inapp?: boolean;
+  channel_email?: boolean;
 }): Promise<void> {
-  const { userId, orgId, certType, title, body: msgBody, subject, email, daysLeft } = opts;
+  const {
+    userId, orgId, certType, title, body: msgBody, subject, email, daysLeft,
+    channel_inapp = true, channel_email = true,
+  } = opts;
   // Dedup
   const { rows: alreadySent } = await pool.query(
     `SELECT id FROM cert_reminders_sent WHERE user_id = $1 AND cert_type = $2 AND reminder_day = $3`,
@@ -564,13 +570,15 @@ async function sendCertReminder(opts: {
   );
   if (alreadySent.length > 0) return;
 
-  await pool.query(
-    `INSERT INTO private_notifications (user_id, org_id, title, body, type)
-     VALUES ($1, $2, $3, $4, 'cert_reminder') ON CONFLICT DO NOTHING`,
-    [userId, orgId, title, msgBody],
-  ).catch(() => {});
+  if (channel_inapp) {
+    await pool.query(
+      `INSERT INTO private_notifications (user_id, org_id, title, body, type)
+       VALUES ($1, $2, $3, $4, 'cert_reminder') ON CONFLICT DO NOTHING`,
+      [userId, orgId, title, msgBody],
+    ).catch(() => {});
+  }
 
-  if (email) {
+  if (channel_email && email) {
     await sendOrgEmail(orgId, {
       to:      email,
       subject,
@@ -606,6 +614,10 @@ async function checkCertReminders(): Promise<void> {
     for (const org of orgs) {
       const graceDays = org.cert_grace_days ?? 30;
       const now = new Date();
+      const [memberPreset, operatorPreset] = await Promise.all([
+        getPreset(org.organization_id, "cert_reminder_member"),
+        getPreset(org.organization_id, "cert_reminder_operator"),
+      ]);
 
       // ══ MEDICAL CERT ══════════════════════════════════════════════════════
       if (org.medical_cert_required) {
@@ -631,14 +643,24 @@ async function checkCertReminders(): Promise<void> {
             if (REMINDER_DAYS.includes(daysLeft)) {
               const deadlineFmt  = deadline.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
               const defaultBody  = `Hi ${name}, your medical certificate must be uploaded by ${deadlineFmt} (${daysLeft} day(s) remaining). After this date access will be suspended.`;
-              const msgBody = (org.cert_reminder_body ?? defaultBody)
-                .replace("{name}", name).replace("{cert_type}", "medical certificate")
-                .replace("{deadline}", deadlineFmt).replace("{days_remaining}", String(daysLeft));
+              const msgBody = memberPreset
+                ? memberPreset.body
+                  .replace(/{member_name}/g, name)
+                  .replace(/{deadline_date}/g, deadlineFmt)
+                  .replace(/{days_remaining}/g, String(daysLeft))
+                  .replace(/{association_name}/g, "")
+                : (org.cert_reminder_body ?? defaultBody)
+                  .replace("{name}", name).replace("{cert_type}", "medical certificate")
+                  .replace("{deadline}", deadlineFmt).replace("{days_remaining}", String(daysLeft));
               await sendCertReminder({
                 userId: user.id, orgId: org.organization_id, certType: "medical",
                 title: "Medical certificate required", body: msgBody,
-                subject: `Action required: Medical certificate (${daysLeft} day${daysLeft === 1 ? "" : "s"} remaining)`,
+                subject: memberPreset
+                  ? memberPreset.subject.replace(/{association_name}/g, "").trim()
+                  : `Action required: Medical certificate (${daysLeft} day${daysLeft === 1 ? "" : "s"} remaining)`,
                 email: user.email ?? null, daysLeft,
+                channel_inapp: memberPreset?.channel_inapp ?? true,
+                channel_email: memberPreset?.channel_email ?? true,
               });
             }
           } else {
@@ -649,12 +671,22 @@ async function checkCertReminders(): Promise<void> {
               const daysLeft = Math.ceil((expiry.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
               if (REMINDER_DAYS.includes(daysLeft)) {
                 const expiryFmt = expiry.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
-                const msgBody   = `Hi ${name}, your medical certificate will expire on ${expiryFmt} (${daysLeft} day(s) remaining). Please renew it before then to avoid access suspension.`;
+                const msgBody   = memberPreset
+                  ? memberPreset.body
+                    .replace(/{member_name}/g, name)
+                    .replace(/{deadline_date}/g, expiryFmt)
+                    .replace(/{days_remaining}/g, String(daysLeft))
+                    .replace(/{association_name}/g, "")
+                  : `Hi ${name}, your medical certificate will expire on ${expiryFmt} (${daysLeft} day(s) remaining). Please renew it before then to avoid access suspension.`;
                 await sendCertReminder({
                   userId: user.id, orgId: org.organization_id, certType: "medical_expiry",
                   title: "Medical certificate expiring soon", body: msgBody,
-                  subject: `Medical certificate expiring in ${daysLeft} day${daysLeft === 1 ? "" : "s"}`,
+                  subject: memberPreset
+                    ? memberPreset.subject.replace(/{association_name}/g, "").trim()
+                    : `Medical certificate expiring in ${daysLeft} day${daysLeft === 1 ? "" : "s"}`,
                   email: user.email ?? null, daysLeft,
+                  channel_inapp: memberPreset?.channel_inapp ?? true,
+                  channel_email: memberPreset?.channel_email ?? true,
                 });
               }
             }
@@ -686,14 +718,24 @@ async function checkCertReminders(): Promise<void> {
             if (REMINDER_DAYS.includes(daysLeft)) {
               const deadlineFmt = deadline.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
               const defaultBody = `Hi ${name}, your First Aid certificate must be uploaded by ${deadlineFmt} (${daysLeft} day(s) remaining). After this date you will not be able to lead lessons.`;
-              const msgBody = (org.cert_reminder_body ?? defaultBody)
-                .replace("{name}", name).replace("{cert_type}", "First Aid certificate")
-                .replace("{deadline}", deadlineFmt).replace("{days_remaining}", String(daysLeft));
+              const msgBody = operatorPreset
+                ? operatorPreset.body
+                  .replace(/{member_name}/g, name)
+                  .replace(/{deadline_date}/g, deadlineFmt)
+                  .replace(/{days_remaining}/g, String(daysLeft))
+                  .replace(/{association_name}/g, "")
+                : (org.cert_reminder_body ?? defaultBody)
+                  .replace("{name}", name).replace("{cert_type}", "First Aid certificate")
+                  .replace("{deadline}", deadlineFmt).replace("{days_remaining}", String(daysLeft));
               await sendCertReminder({
                 userId: user.id, orgId: org.organization_id, certType: "first_aid",
                 title: "First Aid certificate required", body: msgBody,
-                subject: `Action required: First Aid certificate (${daysLeft} day${daysLeft === 1 ? "" : "s"} remaining)`,
+                subject: operatorPreset
+                  ? operatorPreset.subject.replace(/{association_name}/g, "").trim()
+                  : `Action required: First Aid certificate (${daysLeft} day${daysLeft === 1 ? "" : "s"} remaining)`,
                 email: user.email ?? null, daysLeft,
+                channel_inapp: operatorPreset?.channel_inapp ?? true,
+                channel_email: operatorPreset?.channel_email ?? true,
               });
             }
           } else {
@@ -704,12 +746,22 @@ async function checkCertReminders(): Promise<void> {
               const daysLeft = Math.ceil((expiry.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
               if (REMINDER_DAYS.includes(daysLeft)) {
                 const expiryFmt = expiry.toLocaleDateString("en-GB", { day: "numeric", month: "long", year: "numeric" });
-                const msgBody   = `Hi ${name}, your First Aid certificate will expire on ${expiryFmt} (${daysLeft} day(s) remaining). Please renew it before then to avoid being restricted from leading lessons.`;
+                const msgBody   = operatorPreset
+                  ? operatorPreset.body
+                    .replace(/{member_name}/g, name)
+                    .replace(/{deadline_date}/g, expiryFmt)
+                    .replace(/{days_remaining}/g, String(daysLeft))
+                    .replace(/{association_name}/g, "")
+                  : `Hi ${name}, your First Aid certificate will expire on ${expiryFmt} (${daysLeft} day(s) remaining). Please renew it before then to avoid being restricted from leading lessons.`;
                 await sendCertReminder({
                   userId: user.id, orgId: org.organization_id, certType: "first_aid_expiry",
                   title: "First Aid certificate expiring soon", body: msgBody,
-                  subject: `First Aid certificate expiring in ${daysLeft} day${daysLeft === 1 ? "" : "s"}`,
+                  subject: operatorPreset
+                    ? operatorPreset.subject.replace(/{association_name}/g, "").trim()
+                    : `First Aid certificate expiring in ${daysLeft} day${daysLeft === 1 ? "" : "s"}`,
                   email: user.email ?? null, daysLeft,
+                  channel_inapp: operatorPreset?.channel_inapp ?? true,
+                  channel_email: operatorPreset?.channel_email ?? true,
                 });
               }
             }
@@ -754,11 +806,43 @@ async function checkWaitlistAutoPromote(): Promise<void> {
           `UPDATE course_waitlist SET status = 'offered', offered_at = NOW(), offer_expires_at = $1 WHERE id = $2`,
           [expiresAt, next[0]!.id],
         );
-        pool.query(
-          `INSERT INTO private_notifications (user_id, org_id, title, body, type, reference_id)
-           VALUES ($1,$2,'A spot is available!','A spot opened in your waitlisted course. You have 24 hours to accept it. Open the app → Courses now.','waitlist_offer',$3)`,
-          [next[0]!.member_id, entry.org_id, entry.course_id],
-        ).catch(() => {});
+        const wlPreset = await getPreset(entry.org_id, "waitlist_spot_freed");
+        const { rows: courseRows } = await pool.query<{ name: string }>(
+          `SELECT name FROM courses WHERE id = $1 LIMIT 1`, [entry.course_id],
+        ).catch(() => ({ rows: [] as { name: string }[] }));
+        const courseName = courseRows[0]?.name ?? "the course";
+        const notifTitle = wlPreset
+          ? wlPreset.subject.replace(/{course_name}/g, courseName).replace(/{association_name}/g, "").trim()
+          : "A spot is available!";
+        const notifBody  = wlPreset
+          ? wlPreset.body
+            .replace(/{course_name}/g, courseName)
+            .replace(/{member_name}/g, "")
+            .replace(/{association_name}/g, "")
+            .trim()
+          : `A spot opened in ${courseName}. You have 24 hours to accept it. Open the app now.`;
+
+        if (!wlPreset || wlPreset.channel_inapp) {
+          pool.query(
+            `INSERT INTO private_notifications (user_id, org_id, title, body, type, reference_id)
+             VALUES ($1, $2, $3, $4, 'waitlist_offer', $5)`,
+            [next[0]!.member_id, entry.org_id, notifTitle, notifBody, entry.course_id],
+          ).catch(() => {});
+        }
+        if (wlPreset?.channel_email) {
+          const { rows: uRows } = await pool.query<{ email: string }>(
+            `SELECT email FROM users WHERE id = $1 LIMIT 1`,
+            [next[0]!.member_id],
+          ).catch(() => ({ rows: [] as { email: string }[] }));
+          if (uRows[0]?.email) {
+            sendOrgEmail(entry.org_id, {
+              to:      uRows[0].email,
+              subject: notifTitle,
+              text:    notifBody,
+              html:    `<p>${notifBody.replace(/\n/g, "<br/>")}</p>`,
+            }).catch(() => {});
+          }
+        }
         logger.info({ courseId: entry.course_id, nextMemberId: next[0]!.member_id }, "waitlist auto-promoted");
       }
 

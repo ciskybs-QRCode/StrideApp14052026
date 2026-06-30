@@ -280,8 +280,8 @@ function PurchaseModal({
                 >
                   <Ionicons name="remove" size={20} color={colors.text} />
                 </Pressable>
-                <Pressable onPress={() => setShowQtyPicker(true)}>
-                  <Text style={[styles.qtyValue, { color: colors.text }]}>{quantity}</Text>
+                <Pressable onPress={() => setShowQtyPicker(true)} style={[styles.qtyValue, { justifyContent: "center", alignItems: "center" }]}>
+                  <Text style={{ fontSize: 22, fontWeight: "700", color: colors.primary }}>{quantity}</Text>
                 </Pressable>
                 <Pressable
                   onPress={() => setQuantity(q => Math.min(capacityLeft != null ? capacityLeft : 999, q + 1))}

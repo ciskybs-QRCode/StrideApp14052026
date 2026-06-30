@@ -2,7 +2,8 @@ import { Router, type Request } from "express";
 import { supabase } from "../lib/supabase.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { pool } from "../lib/pg.js";
-import { logAction } from "../lib/audit.js";
+import { logAction }  from "../lib/audit.js";
+import { getPreset }  from "../lib/getPreset.js";
 import { PLAN_LIMITS, getOrgPlanTier } from "./billing.js";
 
 const router = Router();
@@ -367,10 +368,27 @@ router.get("/members/confirm-promotion", async (req, res) => {
     .update({ notes: `[PROMOTED] Independent account approved: ${row.dependent_email}` })
     .eq("id", parseInt(row.member_id));
 
-  // Send welcome email to the dependent
-  const smtpHost = process.env["SMTP_HOST"];
-  if (smtpHost) {
+  // Send welcome email to the dependent (fire-and-forget; respects preset channel flag)
+  void (async () => {
     try {
+      const { rows: orgRows } = await pool.query<{ organization_id: number }>(
+        "SELECT organization_id FROM users WHERE id=$1 LIMIT 1",
+        [row.user_id],
+      );
+      const orgId  = orgRows[0]?.organization_id ?? 0;
+      const preset = await getPreset(orgId, "welcome_member");
+      if (preset && !preset.channel_email) return;
+
+      const domain      = process.env["REPLIT_DOMAINS"]?.split(",")[0] ?? "stride.app";
+      const emailSubject = preset
+        ? preset.subject.replace(/{member_name}/g, row.dependent_name).replace(/{association_name}/g, "Stride")
+        : `Welcome to Stride — ${row.dependent_name}, your account is ready`;
+      const emailText = preset
+        ? preset.body.replace(/{member_name}/g, row.dependent_name).replace(/{association_name}/g, "Stride")
+        : `Hi ${row.dependent_name}, your independent Stride account is approved. Register at: https://${domain}/join`;
+
+      const smtpHost = process.env["SMTP_HOST"];
+      if (!smtpHost) return;
       const nodemailer = await import("nodemailer");
       const transporter = nodemailer.default.createTransport({
         host:   smtpHost,
@@ -378,25 +396,23 @@ router.get("/members/confirm-promotion", async (req, res) => {
         secure: process.env["SMTP_PORT"] === "465",
         auth:   { user: process.env["SMTP_USER"], pass: process.env["SMTP_PASS"] },
       });
-      const domain = process.env["REPLIT_DOMAINS"]?.split(",")[0] ?? "stride.app";
       await transporter.sendMail({
         from:    process.env["SMTP_FROM"] ?? "Stride <no-reply@stride.app>",
         to:      row.dependent_email,
-        subject: `Welcome to Stride — ${row.dependent_name}, your account is ready`,
+        subject: emailSubject,
         html: `<div style="font-family:sans-serif;max-width:520px;margin:auto">
           <h2 style="color:#1E3A8A">Welcome, ${escapeHtml(row.dependent_name)}!</h2>
-          <p>Your primary member has confirmed your promotion to an independent Stride account.</p>
-          <p>You can now register with this email (<strong>${escapeHtml(row.dependent_email)}</strong>) on the Stride app.</p>
+          <p>${emailText.replace(/\n/g, "<br/>")}</p>
           <div style="text-align:center;margin:28px 0">
             <a href="https://${domain}/join" style="background:#1E3A8A;color:#FBBF24;padding:14px 28px;border-radius:10px;font-weight:bold;text-decoration:none;font-size:16px">Create Your Account</a>
           </div>
           <hr style="border:none;border-top:1px solid #E5E7EB;margin:24px 0"/>
           <p style="color:#9CA3AF;font-size:12px">Stride — Association Management</p>
         </div>`,
-        text: `Hi ${row.dependent_name}, your independent Stride account is approved. Register at: https://${process.env["REPLIT_DOMAINS"]?.split(",")[0] ?? "stride.app"}/join`,
+        text: emailText,
       });
     } catch { /* non-fatal */ }
-  }
+  })();
 
   res.send(`
     <div style="font-family:sans-serif;text-align:center;padding:60px;max-width:520px;margin:auto">
