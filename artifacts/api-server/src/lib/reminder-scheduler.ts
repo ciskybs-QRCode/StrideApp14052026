@@ -69,6 +69,9 @@ export function startReminderScheduler(): void {
     // Schedule change reminders run every 10 minutes
     setInterval(() => { void checkScheduleChangeReminders(); }, 10 * 60_000);
     void checkScheduleChangeReminders();
+    // Cascade timeout advancement runs every 60 s
+    setInterval(() => { void checkCascadeTimeouts(); }, 60_000);
+    void checkCascadeTimeouts();
   }, 15_000);
   logger.info("Lesson reminder scheduler started (checks every 60 s)");
 }
@@ -817,6 +820,127 @@ async function checkOrgFirstAidCoverage(): Promise<void> {
     }
   } catch (err) {
     logger.error(err, "checkOrgFirstAidCoverage error");
+  }
+}
+
+// ── Cascade timeout advancement ───────────────────────────────────────────────
+// Runs every 60 s. For each active rescue cascade:
+//   • Marks any pending contact whose 5-minute window has elapsed as 'expired'.
+//   • Promotes the next 'waiting' candidate to 'pending' (sets contacted_at=NOW()).
+//   • If no more waiting candidates remain, or the cascade has been running > 15 min
+//     with no acceptance, marks it 'needs_admin_decision' and notifies org admins.
+
+async function notifyCascadeAdmins(
+  cascadeId:  number,
+  orgId:      number,
+  courseName: string | null,
+  reason:     "timeout_15min" | "all_candidates_expired",
+): Promise<void> {
+  try {
+    const courseLabel = courseName ?? "a scheduled class";
+    const body = reason === "timeout_15min"
+      ? `No substitute accepted for ${courseLabel} within 15 minutes. Please review options in Smart Roster.`
+      : `All available substitutes declined or timed out for ${courseLabel}. Please review options in Smart Roster.`;
+
+    const { data: admins } = await supabase
+      .from("users")
+      .select("id")
+      .eq("organization_id", orgId)
+      .in("role", ["admin", "super_admin"]);
+
+    for (const admin of (admins ?? [])) {
+      await supabase.from("private_notifications").insert({
+        organization_id: orgId,
+        recipient_id:    (admin as { id: number }).id,
+        type:            "cascade_needs_decision",
+        title:           "Substitute Needed — Action Required",
+        body,
+        read:            false,
+      }).then(undefined, () => {});
+    }
+  } catch (err) {
+    logger.warn(err, "notifyCascadeAdmins: failed to notify");
+  }
+}
+
+async function checkCascadeTimeouts(): Promise<void> {
+  try {
+    // ── A. Advance pending contacts past their 5-minute window ───────────────
+    const { rows: expired } = await pool.query<{
+      contact_id: number;
+      cascade_id: number;
+      org_id:     number;
+      course_name: string | null;
+    }>(`
+      SELECT cc.id AS contact_id, cc.cascade_id, rc.org_id, rc.course_name
+      FROM   cascade_contacts cc
+      JOIN   rescue_cascades  rc ON rc.id = cc.cascade_id
+      WHERE  cc.status       = 'pending'
+        AND  cc.contacted_at IS NOT NULL
+        AND  cc.contacted_at + INTERVAL '5 minutes' <= NOW()
+        AND  rc.status       = 'pending'
+    `);
+
+    for (const row of expired) {
+      await pool.query(
+        `UPDATE cascade_contacts SET status = 'expired', responded_at = NOW() WHERE id = $1`,
+        [row.contact_id],
+      );
+
+      const { rows: next } = await pool.query<{
+        id: number; operator_id: string; operator_name: string | null;
+      }>(`
+        SELECT id, operator_id, operator_name
+        FROM   cascade_contacts
+        WHERE  cascade_id = $1 AND status = 'waiting'
+        ORDER  BY rank ASC LIMIT 1
+      `, [row.cascade_id]);
+
+      if (next.length > 0) {
+        const nc = next[0]!;
+        await pool.query(
+          `UPDATE cascade_contacts SET status = 'pending', contacted_at = NOW() WHERE id = $1`,
+          [nc.id],
+        );
+        logger.info(
+          { cascadeId: row.cascade_id, nextContactId: nc.id, operator: nc.operator_name },
+          "RescueCascade: promoted next candidate",
+        );
+        // Push notification to the newly active candidate is handled in Step 2 (Part 2.2).
+      } else {
+        // All candidates exhausted — escalate immediately.
+        await pool.query(
+          `UPDATE rescue_cascades SET status = 'needs_admin_decision' WHERE id = $1 AND status = 'pending'`,
+          [row.cascade_id],
+        );
+        await notifyCascadeAdmins(row.cascade_id, row.org_id, row.course_name, "all_candidates_expired");
+        logger.warn(
+          { cascadeId: row.cascade_id },
+          "RescueCascade: all candidates exhausted — admin notified",
+        );
+      }
+    }
+
+    // ── B. Escalate cascades stuck pending for > 15 minutes total ────────────
+    const { rows: stuck } = await pool.query<{
+      id: number; org_id: number; course_name: string | null;
+    }>(`
+      SELECT id, org_id, course_name
+      FROM   rescue_cascades
+      WHERE  status     = 'pending'
+        AND  created_at + INTERVAL '15 minutes' <= NOW()
+    `);
+
+    for (const cascade of stuck) {
+      await pool.query(
+        `UPDATE rescue_cascades SET status = 'needs_admin_decision' WHERE id = $1 AND status = 'pending'`,
+        [cascade.id],
+      );
+      await notifyCascadeAdmins(cascade.id, cascade.org_id, cascade.course_name, "timeout_15min");
+      logger.warn({ cascadeId: cascade.id }, "RescueCascade: 15-minute timeout — admin notified");
+    }
+  } catch (err) {
+    logger.error(err, "checkCascadeTimeouts: unexpected error");
   }
 }
 

@@ -35,6 +35,7 @@ export interface OptimizerParams {
   excludeOperatorId?: string;  // absent operator to exclude
   dateRangeStart?:    string;  // ISO date, for future date-range availability checks
   dateRangeEnd?:      string;
+  minCompositeScore?: number;  // hard cutoff — candidates below this score are excluded entirely
 }
 
 export class RosterOptimizer {
@@ -152,7 +153,11 @@ export class RosterOptimizer {
         });
       }
 
-      return results.sort((a, b) => b.compositeScore - a.compositeScore);
+      const threshold = params.minCompositeScore ?? 0;
+      const qualified = threshold > 0
+        ? results.filter(r => r.compositeScore >= threshold)
+        : results;
+      return qualified.sort((a, b) => b.compositeScore - a.compositeScore);
     } catch (err) {
       logger.error(err, "RosterOptimizer: unexpected error");
       return [];

@@ -82,11 +82,16 @@ export class RescueCascadeService {
         skill_score       NUMERIC(4,3),
         reliability_score NUMERIC(4,3),
         composite_score   NUMERIC(4,3),
-        contacted_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-        status            TEXT NOT NULL DEFAULT 'pending',
+        contacted_at      TIMESTAMPTZ,
+        status            TEXT NOT NULL DEFAULT 'waiting',
         responded_at      TIMESTAMPTZ,
         created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
       )
+    `);
+
+    // Allow NULL contacted_at for waiting (not-yet-contacted) candidates.
+    await pool.query(`
+      ALTER TABLE cascade_contacts ALTER COLUMN contacted_at DROP NOT NULL
     `);
   }
 
@@ -112,25 +117,48 @@ export class RescueCascadeService {
     );
     const cascadeId = cascadeRows[0].id;
 
-    // 2. Get ranked candidates
+    // 2. Get ranked candidates — hard cutoff at composite score 0.30
     const ranked = disciplineId
       ? await RosterOptimizer.getRankedOperators({
           disciplineId,
           orgId,
           excludeOperatorId: absentOperatorId,
+          minCompositeScore:  0.30,
         })
       : [];
 
-    // 3. Insert cascade_contact rows (one-by-one to avoid dynamic SQL injection risks)
+    // 2a. No qualified candidates — mark cascade unresolvable and notify admin immediately
+    if (ranked.length === 0) {
+      await pool.query(
+        `UPDATE rescue_cascades SET status = 'no_qualified_substitute' WHERE id = $1`,
+        [cascadeId],
+      );
+      await RescueCascadeService.notifyAdminsNoSubstitute(cascadeId, orgId, courseName ?? null, "no_qualified_candidates");
+      logger.warn(
+        { cascadeId, orgId, disciplineId },
+        "RescueCascadeService: no qualified candidates above threshold — admin notified",
+      );
+      return cascadeId;
+    }
+
+    // 3. Insert cascade_contact rows.
+    //    Rank 1 is immediately active (status='pending', contacted_at=NOW()).
+    //    All others wait (status='waiting', contacted_at=NULL) until promoted by the scheduler.
     for (let idx = 0; idx < ranked.length; idx++) {
-      const op = ranked[idx]!;
+      const op    = ranked[idx]!;
+      const isFirst = idx === 0;
       await pool.query(
         `INSERT INTO cascade_contacts
            (cascade_id, operator_id, operator_name, rank,
-            skill_score, reliability_score, composite_score)
-         VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-        [cascadeId, op.operatorUserId, op.name, idx + 1,
-         op.skillScore, op.reliabilityScore, op.compositeScore],
+            skill_score, reliability_score, composite_score,
+            status, contacted_at)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        [
+          cascadeId, op.operatorUserId, op.name, idx + 1,
+          op.skillScore, op.reliabilityScore, op.compositeScore,
+          isFirst ? "pending" : "waiting",
+          isFirst ? new Date() : null,
+        ],
       );
     }
 
@@ -140,6 +168,42 @@ export class RescueCascadeService {
     );
 
     return cascadeId;
+  }
+
+  /** Notify all admin users for an org that no substitute is available. */
+  static async notifyAdminsNoSubstitute(
+    cascadeId:   number,
+    orgId:       number,
+    courseName:  string | null,
+    reason:      "no_qualified_candidates" | "timeout_15min" | "all_candidates_expired",
+  ): Promise<void> {
+    try {
+      const courseLabel = courseName ?? "a scheduled class";
+      const body = reason === "no_qualified_candidates"
+        ? `No qualified substitute was found for ${courseLabel}. Please review options in Smart Roster.`
+        : reason === "timeout_15min"
+        ? `No substitute accepted for ${courseLabel} within 15 minutes. Please review options in Smart Roster.`
+        : `All available substitutes declined or timed out for ${courseLabel}. Please review options in Smart Roster.`;
+
+      const { data: admins } = await supabase
+        .from("users")
+        .select("id")
+        .eq("organization_id", orgId)
+        .in("role", ["admin", "super_admin"]);
+
+      for (const admin of (admins ?? [])) {
+        await supabase.from("private_notifications").insert({
+          organization_id: orgId,
+          recipient_id:    (admin as { id: number }).id,
+          type:            "cascade_needs_decision",
+          title:           "Substitute Needed — Action Required",
+          body,
+          read:            false,
+        }).then(undefined, () => {});
+      }
+    } catch (err) {
+      logger.warn(err, "RescueCascadeService.notifyAdminsNoSubstitute: failed");
+    }
   }
 
   /**
