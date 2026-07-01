@@ -1,7 +1,7 @@
 import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Alert,
   Modal,
@@ -12,6 +12,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { request } from "@/lib/api";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
@@ -44,6 +45,36 @@ export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [], 
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const colors = useColors();
+
+  // ── Bank Details ─────────────────────────────────────────────────────────
+  const [showBank, setShowBank] = useState(false);
+  const [bankIban, setBankIban] = useState("");
+  const [bankBic, setBankBic] = useState("");
+  const [bankName, setBankName] = useState("");
+  const [bankSaving, setBankSaving] = useState(false);
+
+  useEffect(() => {
+    request<{ iban?: string; bic?: string; account_name?: string }>("GET", "/account/payout-details")
+      .then(d => { setBankIban(d.iban ?? ""); setBankBic(d.bic ?? ""); setBankName(d.account_name ?? ""); })
+      .catch(() => {});
+  }, []);
+
+  const handleSaveBank = async () => {
+    setBankSaving(true);
+    try {
+      await request("PUT", "/account/payout-details", {
+        iban: bankIban.trim() || null,
+        bic: bankBic.trim() || null,
+        account_name: bankName.trim() || null,
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setShowBank(false);
+    } catch {
+      Alert.alert("Error", "Could not save bank details. Please try again.");
+    } finally {
+      setBankSaving(false);
+    }
+  };
 
   // ── Change Email ─────────────────────────────────────────────────────────
   const [showEmail, setShowEmail] = useState(false);
@@ -151,6 +182,14 @@ export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [], 
       iconColor: colors.primary,
       onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setPwCurrent(""); setPwNew(""); setPwConfirm(""); setShowPassword(true); },
     },
+    {
+      icon: "card-outline",
+      label: "Bank Details for Reimbursements",
+      desc: bankIban ? `IBAN: ${bankIban.slice(0, 8)}...` : "Add your IBAN to receive reimbursements",
+      iconBg: (colors.primary + "12"),
+      iconColor: colors.primary,
+      onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); setShowBank(true); },
+    },
     ...extraRows,
     {
       icon: "log-out-outline",
@@ -195,6 +234,69 @@ export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [], 
           </Pressable>
         ))}
       </ScrollView>
+
+      {/* ── Bank Details Modal ── */}
+      <Modal visible={showBank} transparent animationType="slide" onRequestClose={() => setShowBank(false)}>
+        <View style={styles.overlay}>
+          <ScrollView contentContainerStyle={{ flexGrow: 1, justifyContent: "flex-end" }} keyboardShouldPersistTaps="handled" showsVerticalScrollIndicator={false}>
+            <View style={[styles.sheet, { backgroundColor: colors.card }]}>
+              <View style={styles.sheetHandle} />
+              <View style={styles.modalTitleRow}>
+                <View style={[styles.modalIconBox, { backgroundColor: (colors.primary + "12") }]}>
+                  <Ionicons name="card" size={20} color={colors.primary} />
+                </View>
+                <Text style={[styles.modalTitle, { color: colors.primary }]}>Bank Details</Text>
+              </View>
+              <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>
+                Saved here so admins can transfer reimbursements directly to your account.
+              </Text>
+              <Text style={[styles.fieldLabel, { color: colors.primary }]}>IBAN / Account Number</Text>
+              <TextInput
+                style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background, marginBottom: 14 }]}
+                value={bankIban}
+                onChangeText={setBankIban}
+                placeholder="e.g. IT60 X054 2811 1010 0000 0123 456"
+                placeholderTextColor={colors.mutedForeground}
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+              <Text style={[styles.fieldLabel, { color: colors.primary }]}>BIC / SWIFT (optional)</Text>
+              <TextInput
+                style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background, marginBottom: 14 }]}
+                value={bankBic}
+                onChangeText={setBankBic}
+                placeholder="e.g. UNCRITMM"
+                placeholderTextColor={colors.mutedForeground}
+                autoCapitalize="characters"
+                autoCorrect={false}
+              />
+              <Text style={[styles.fieldLabel, { color: colors.primary }]}>Account Holder Name</Text>
+              <TextInput
+                style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}
+                value={bankName}
+                onChangeText={setBankName}
+                placeholder="Full name on account"
+                placeholderTextColor={colors.mutedForeground}
+                autoCorrect={false}
+              />
+              <View style={{ flexDirection: "row", gap: 8, marginTop: 8, backgroundColor: colors.primary + "10", borderRadius: 10, padding: 10, alignItems: "flex-start" }}>
+                <Ionicons name="lock-closed-outline" size={14} color={colors.primary} />
+                <Text style={{ flex: 1, fontSize: 11, color: colors.primary, lineHeight: 16 }}>
+                  These details are stored securely and only visible to your school admins when processing reimbursements.
+                </Text>
+              </View>
+              <View style={styles.btnRow}>
+                <Pressable style={[styles.btn, { backgroundColor: colors.muted }]} onPress={() => setShowBank(false)}>
+                  <Text style={[styles.btnText, { color: colors.mutedForeground }]}>Cancel</Text>
+                </Pressable>
+                <Pressable style={[styles.btn, { backgroundColor: colors.primary }]} onPress={() => void handleSaveBank()} disabled={bankSaving}>
+                  <Text style={[styles.btnText, { color: "#FFF" }]}>{bankSaving ? "Saving..." : "Save"}</Text>
+                </Pressable>
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+      </Modal>
 
       {/* ── Change Email Modal ── */}
       <Modal visible={showEmail} transparent animationType="slide" onRequestClose={() => setShowEmail(false)}>

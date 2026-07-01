@@ -408,6 +408,18 @@ router.post("/billing/webhook", async (req, res) => {
               amountCents: amtCents,
             });
 
+            // Store payment_intent_id for future refunds
+            if (session.payment_intent) {
+              const { pool: piPool } = await import("../lib/pg.js");
+              const piId = typeof session.payment_intent === "string"
+                ? session.payment_intent
+                : (session.payment_intent as { id: string }).id;
+              await piPool.query(
+                `UPDATE checkout_sessions SET payment_intent_id = $1 WHERE session_id = $2`,
+                [piId, session.id],
+              ).catch(() => {});
+            }
+
             // Capture Stripe subscription_id for recurring sessions
             if (session.subscription) {
               const { pool: pgPool }        = await import("../lib/pg.js");

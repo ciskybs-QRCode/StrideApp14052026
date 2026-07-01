@@ -245,6 +245,52 @@ router.patch("/account/profile-extra", requireAuth, async (req, res) => {
   }
 });
 
+// ── GET /account/payout-details ──────────────────────────────────────────────
+// Any authenticated user can retrieve their saved bank details for reimbursements
+router.get("/account/payout-details", requireAuth, async (req, res) => {
+  const user   = (req as AuthReq).user;
+  const userId = parseInt(user.id, 10);
+  try {
+    const { rows } = await pool.query(
+      `SELECT payout_iban, payout_bic, payout_account_name
+         FROM parent_profiles WHERE user_id = $1 LIMIT 1`,
+      [userId],
+    );
+    res.json(rows[0] ?? { payout_iban: null, payout_bic: null, payout_account_name: null });
+  } catch (err) {
+    logger.error({ err }, "account/payout-details GET failed");
+    res.json({ payout_iban: null, payout_bic: null, payout_account_name: null });
+  }
+});
+
+// ── PUT /account/payout-details ───────────────────────────────────────────────
+// Any authenticated user can save their bank details for reimbursements
+router.put("/account/payout-details", requireAuth, async (req, res) => {
+  const user   = (req as AuthReq).user;
+  const userId = parseInt(user.id, 10);
+  const { payout_iban, payout_bic, payout_account_name } = req.body as {
+    payout_iban?: string;
+    payout_bic?: string;
+    payout_account_name?: string;
+  };
+  try {
+    await pool.query(
+      `INSERT INTO parent_profiles (user_id, organization_id, payout_iban, payout_bic, payout_account_name)
+       VALUES ($1, $2, $3, $4, $5)
+       ON CONFLICT (user_id) DO UPDATE SET
+         payout_iban         = EXCLUDED.payout_iban,
+         payout_bic          = EXCLUDED.payout_bic,
+         payout_account_name = EXCLUDED.payout_account_name`,
+      [userId, user.orgId ?? 0, payout_iban ?? null, payout_bic ?? null, payout_account_name ?? null],
+    );
+    logger.info({ userId }, "account/payout-details saved");
+    res.json({ ok: true });
+  } catch (err) {
+    logger.error({ err }, "account/payout-details PUT failed");
+    res.status(500).json({ error: "Failed to save bank details" });
+  }
+});
+
 // ── PATCH /account/noshow-preference ─────────────────────────────────────────
 // Adult member toggles their own no-show safety alert preference.
 router.patch("/account/noshow-preference", requireAuth, async (req, res) => {

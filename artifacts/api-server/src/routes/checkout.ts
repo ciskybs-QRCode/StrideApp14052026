@@ -111,7 +111,7 @@ async function resolveLineItems(
       const matches = targets.length === 0 || targets.includes(item.courseId);
       if (matches) {
         if (promoDiscountType === "percent" && promoDiscountPercent != null) {
-          discount = Math.round(unitPrice * promoDiscountPercent) / 100;
+          discount = Math.round(unitPrice * promoDiscountPercent / 100 * 100) / 100;
         } else if (promoDiscountType === "amount" && promoDiscountAmount != null) {
           discount = Math.min(promoDiscountAmount, unitPrice);
         }

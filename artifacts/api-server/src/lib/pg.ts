@@ -346,6 +346,15 @@ export async function ensureTables(): Promise<void> {
   await pool.query(`ALTER TABLE IF EXISTS checkout_sessions ADD COLUMN IF NOT EXISTS batch_id UUID;`).catch(() => {});
   await pool.query(`ALTER TABLE IF EXISTS checkout_sessions ADD COLUMN IF NOT EXISTS batch_position INTEGER;`).catch(() => {});
   await pool.query(`ALTER TABLE IF EXISTS checkout_sessions ADD COLUMN IF NOT EXISTS checkout_url TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS checkout_sessions ADD COLUMN IF NOT EXISTS payment_intent_id TEXT;`).catch(() => {});
+
+  // Reimbursements — partial approval amount
+  await pool.query(`ALTER TABLE IF EXISTS reimbursement_requests ADD COLUMN IF NOT EXISTS approved_amount_cents INTEGER;`).catch(() => {});
+
+  // Parent payout bank details (mirrors operator_profiles pattern)
+  await pool.query(`ALTER TABLE IF EXISTS parent_profiles ADD COLUMN IF NOT EXISTS payout_iban TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS parent_profiles ADD COLUMN IF NOT EXISTS payout_bic TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS parent_profiles ADD COLUMN IF NOT EXISTS payout_account_name TEXT;`).catch(() => {});
 
   // Org public profile — social links + opening hours (moved off device-local AsyncStorage)
   await pool.query(`

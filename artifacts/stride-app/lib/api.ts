@@ -560,9 +560,10 @@ export const api = {
   updateReimbursement: (id: string, data: {
     status?: string;
     adminNote?: string;
-    paymentMethod?: "stripe" | "iban" | "cash";
+    paymentMethod?: "stripe_refund" | "stripe_transfer" | "bank_transfer" | "cash";
     paymentReference?: string;
     payeeIban?: string;
+    approvedAmountCents?: number;
   }) => request<ApiReimbursement>("PATCH", `/reimbursements/${id}`, data),
 
   // Profile (parent self-update)
@@ -1899,12 +1900,13 @@ export interface ApiReimbursement {
   claimant_role: "admin" | "paid_operator" | "volunteer" | "parent";
   description: string;
   amount_cents: number;
+  approved_amount_cents?: number | null;
   receipt_uri?: string;
-  status: "pending" | "approved" | "paid" | "rejected" | "cash_pending";
+  status: "pending" | "approved" | "paid" | "rejected" | "cash_pending" | "bank_transfer_initiated";
   admin_note?: string;
   submitted_at: string;
   updated_at: string;
-  payment_method?: "stripe" | "iban" | "cash";
+  payment_method?: "stripe_refund" | "stripe_transfer" | "bank_transfer" | "cash";
   payment_reference?: string;
   payee_iban?: string;
   paid_at?: string;
