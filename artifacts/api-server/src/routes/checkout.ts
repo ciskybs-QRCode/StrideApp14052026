@@ -32,7 +32,7 @@ export type CheckoutLineItem = {
 };
 
 type CartItemInput = {
-  type?:                "course" | "private_lesson" | "marketplace" | "event_ticket" | "membership";
+  type?:                "course" | "private_lesson" | "marketplace" | "event_ticket" | "membership" | "dropin";
   courseId:             string;
   courseName:           string;
   participantName:      string;
@@ -261,6 +261,31 @@ async function resolveAllLineItems(
         discount:         0,
         finalPrice:       unitPrice,
         priceSource,
+        kind:             "other",
+      });
+    } else if (itemType === "dropin") {
+      // Server-authoritative drop-in price — never trust client price
+      const cid = parseInt(item.courseId);
+      if (isNaN(cid)) throw new Error("Invalid courseId for drop-in");
+      const { rows: dr } = await pool.query<{ dropin_price_cents: number; name: string; dropin_enabled: boolean }>(
+        `SELECT dropin_price_cents, name, dropin_enabled
+         FROM courses WHERE id = $1 AND organization_id = $2`,
+        [cid, orgId],
+      );
+      if (!dr[0] || !dr[0].dropin_enabled) {
+        throw new Error(`Drop-in not available for course ${item.courseId}`);
+      }
+      const unitPrice = dr[0].dropin_price_cents / 100;
+      results.push({
+        courseId:         item.courseId,
+        courseName:       dr[0].name,
+        participantName:  item.participantName,
+        packageType:      "one_time",
+        organizationName: orgName,
+        unitPrice,
+        discount:         0,
+        finalPrice:       unitPrice,
+        priceSource:      "db",
         kind:             "other",
       });
     }

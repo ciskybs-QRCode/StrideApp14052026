@@ -379,7 +379,9 @@ export default function OperatorDashboard() {
   const [lessonScanning,  setLessonScanning]  = useState(false);
   const [guardianResult,  setGuardianResult]  = useState<GuardianResult | null>(null);
   const [overrideData,    setOverrideData]    = useState<OverrideData | null>(null);
-  const [accessAlert,     setAccessAlert]     = useState<{ verdict: string; childName: string; blockReason?: string } | null>(null);
+  const [accessAlert,     setAccessAlert]     = useState<{ verdict: string; childName: string; blockReason?: string; dropin_available?: boolean; dropin_courses?: Array<{ courseId: number; courseName: string; dropin_price_cents: number; currency: string }>; _childId?: string } | null>(null);
+  const [dropinSheet,     setDropinSheet]     = useState<{ courseName: string; price: string; courseId: number; childId: string } | null>(null);
+  const [dropinLoading,   setDropinLoading]   = useState(false);
 
   // ── Pending scheduled-course requests (operator must confirm or decline) ─────
   const [pendingCourses, setPendingCourses]           = useState<ApiScheduledCourse[]>([]);
@@ -874,7 +876,7 @@ export default function OperatorDashboard() {
         const check = await api.checkAccess(decodedId, data);
         if (check.verdict !== "allowed") {
           const displayName = check.childName || "Member";
-          setAccessAlert({ verdict: check.verdict, childName: displayName, blockReason: check.blockReason });
+          setAccessAlert({ verdict: check.verdict, childName: displayName, blockReason: check.blockReason, dropin_available: check.dropin_available, dropin_courses: check.dropin_courses, _childId: decodedId });
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           if (check.verdict === "blacklisted" || check.blacklisted === true) {
             void api.sendSecurityAlert(decodedId, displayName);
@@ -1001,7 +1003,7 @@ export default function OperatorDashboard() {
         const check = await api.checkAccess(memberId);
         if (check.verdict !== "allowed") {
           const displayName = check.childName || memberName;
-          setAccessAlert({ verdict: check.verdict, childName: displayName, blockReason: check.blockReason });
+          setAccessAlert({ verdict: check.verdict, childName: displayName, blockReason: check.blockReason, dropin_available: check.dropin_available, dropin_courses: check.dropin_courses, _childId: memberId });
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           // Silent staff alert for blacklisted persons
           if (check.verdict === "blacklisted" || check.blacklisted === true) {
@@ -1056,7 +1058,7 @@ export default function OperatorDashboard() {
         const check = await api.checkAccess(studentId);
         if (check.verdict !== "allowed") {
           const displayName = check.childName || studentName;
-          setAccessAlert({ verdict: check.verdict, childName: displayName, blockReason: check.blockReason });
+          setAccessAlert({ verdict: check.verdict, childName: displayName, blockReason: check.blockReason, dropin_available: check.dropin_available, dropin_courses: check.dropin_courses, _childId: studentId });
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
           // Silent staff alert for blacklisted persons
           if (check.verdict === "blacklisted" || check.blacklisted === true) {
@@ -2598,6 +2600,33 @@ export default function OperatorDashboard() {
             />
           )}
 
+          {/* Drop-in offer button — shown only on overdue_denied + dropin enabled on a course */}
+          {accessAlert && !scanResult && accessAlert.verdict === "overdue_denied" && accessAlert.dropin_available && (accessAlert.dropin_courses ?? []).length > 0 && (
+            <View style={{ marginTop: 12, gap: 8 }}>
+              {(accessAlert.dropin_courses ?? []).map(course => (
+                <Pressable
+                  key={course.courseId}
+                  style={{ backgroundColor: "#1E3A8A", borderRadius: 12, padding: 16, flexDirection: "row", alignItems: "center", gap: 10 }}
+                  onPress={() => setDropinSheet({
+                    courseName: course.courseName,
+                    price:      `${course.currency} ${(course.dropin_price_cents / 100).toFixed(2)}`,
+                    courseId:   course.courseId,
+                    childId:    accessAlert._childId ?? "",
+                  })}
+                >
+                  <Ionicons name="card-outline" size={20} color="#FBBF24" />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 15 }}>Offer Drop-in Payment</Text>
+                    <Text style={{ color: "rgba(255,255,255,0.75)", fontSize: 12 }}>{course.courseName}</Text>
+                  </View>
+                  <Text style={{ color: "#FBBF24", fontWeight: "800", fontSize: 16 }}>
+                    {course.currency} {(course.dropin_price_cents / 100).toFixed(2)}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
+
           {/* Member check-in semaphore result */}
           {scanResult && !lessonScanResult && (
             <View style={[styles.scanResultPanel, {
@@ -3186,6 +3215,79 @@ export default function OperatorDashboard() {
                 onConfirm={(v) => { calPicker.set(v); setCalPicker(null); }}
               />
             )}
+          </Pressable>
+        </Pressable>
+      </Modal>
+
+      {/* ── Drop-in / Walk-in payment bottom sheet ──────────────────────────── */}
+      <Modal visible={!!dropinSheet} transparent animationType="slide" onRequestClose={() => { if (!dropinLoading) setDropinSheet(null); }}>
+        <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.45)", justifyContent: "flex-end" }} onPress={() => { if (!dropinLoading) setDropinSheet(null); }}>
+          <Pressable onPress={() => {}}>
+            <View style={{ backgroundColor: "#FFF", borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 24, gap: 14 }}>
+              <View style={{ width: 40, height: 4, backgroundColor: "#E5E7EB", borderRadius: 2, alignSelf: "center", marginBottom: 4 }} />
+              <Text style={{ fontSize: 17, fontWeight: "800", color: "#1E3A8A" }}>Drop-in / Walk-in Entry</Text>
+
+              {dropinSheet && (
+                <>
+                  <View style={{ backgroundColor: "#EFF6FF", borderRadius: 12, padding: 16, gap: 6 }}>
+                    <Text style={{ color: "#374151", fontSize: 14 }}>{dropinSheet.courseName}</Text>
+                    <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                      <Text style={{ color: "#6B7280", fontSize: 13 }}>Drop-in price</Text>
+                      <Text style={{ color: "#1E3A8A", fontWeight: "800", fontSize: 20 }}>{dropinSheet.price}</Text>
+                    </View>
+                  </View>
+
+                  <Text style={{ color: "#6B7280", fontSize: 13 }}>
+                    Tapping "Send Payment Link" will open the secure checkout page on this device. Share the screen or QR with the member to complete payment.
+                  </Text>
+
+                  <Pressable
+                    style={{ backgroundColor: dropinLoading ? "#9CA3AF" : "#1E3A8A", borderRadius: 12, padding: 16, alignItems: "center", flexDirection: "row", justifyContent: "center", gap: 10 }}
+                    disabled={dropinLoading}
+                    onPress={async () => {
+                      if (!dropinSheet) return;
+                      setDropinLoading(true);
+                      try {
+                        const result = await api.createWebCheckoutSession({
+                          items: [{
+                            type: "dropin",
+                            courseId:        String(dropinSheet.courseId),
+                            courseName:      dropinSheet.courseName,
+                            participantName: accessAlert?.childName ?? "Member",
+                            packageType:     "one_time",
+                            childId:         dropinSheet.childId,
+                          }],
+                        });
+                        void Linking.openURL(result.checkoutUrl);
+                        setDropinSheet(null);
+                        setAccessAlert(null);
+                        setScanned(false);
+                        setShowScanner(false);
+                      } catch {
+                        Alert.alert("Error", "Could not create the drop-in payment link. Please try again.");
+                      } finally {
+                        setDropinLoading(false);
+                      }
+                    }}
+                  >
+                    {dropinLoading
+                      ? <ActivityIndicator color="#FFF" size="small" />
+                      : <>
+                          <Ionicons name="card-outline" size={18} color="#FBBF24" />
+                          <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 16 }}>Send Payment Link</Text>
+                        </>}
+                  </Pressable>
+
+                  <Pressable
+                    style={{ borderRadius: 12, padding: 14, alignItems: "center", borderWidth: 1, borderColor: "#E5E7EB" }}
+                    onPress={() => setDropinSheet(null)}
+                    disabled={dropinLoading}
+                  >
+                    <Text style={{ color: "#6B7280", fontWeight: "600" }}>Cancel</Text>
+                  </Pressable>
+                </>
+              )}
+            </View>
           </Pressable>
         </Pressable>
       </Modal>

@@ -72,6 +72,7 @@ router.post("/courses", requireAuth, requireRole("admin"), async (req, res) => {
     requires_approval = false, allow_over_level = false, target_level,
     substitute1_id, substitute2_id, substitute3_id,
     min_weekly_hours, max_weekly_hours,
+    dropin_enabled = false, dropin_price_cents = 0,
   } = req.body as {
     name: string; discipline: string; type?: string; level?: string;
     age_min?: number; age_max?: number; capacity?: number;
@@ -83,6 +84,7 @@ router.post("/courses", requireAuth, requireRole("admin"), async (req, res) => {
     allow_over_level?: boolean; target_level?: string | null;
     substitute1_id?: number | null; substitute2_id?: number | null; substitute3_id?: number | null;
     min_weekly_hours?: number | null; max_weekly_hours?: number | null;
+    dropin_enabled?: boolean; dropin_price_cents?: number;
   };
 
   if (!name?.trim() || !discipline?.trim()) {
@@ -118,6 +120,8 @@ router.post("/courses", requireAuth, requireRole("admin"), async (req, res) => {
       substitute3_id:    substitute3_id ?? null,
       min_weekly_hours:  min_weekly_hours ?? null,
       max_weekly_hours:  max_weekly_hours ?? null,
+      dropin_enabled,
+      dropin_price_cents,
     })
     .select()
     .single();
@@ -147,6 +151,7 @@ router.patch("/courses/:id", requireAuth, requireRole("admin"), async (req, res)
     "recurring_pattern", "days_of_week", "target_tags", "requires_approval",
     "allow_over_level", "target_level", "substitute1_id", "substitute2_id", "substitute3_id",
     "confirmation_status", "min_weekly_hours", "max_weekly_hours",
+    "dropin_enabled", "dropin_price_cents",
   ];
   const updates: Record<string, unknown> = {};
   for (const key of allowed) {

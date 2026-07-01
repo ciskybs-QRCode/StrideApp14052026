@@ -48,6 +48,7 @@ export default function AppConfigurationPage() {
     allow_one_time_grace_access: false,
     grace_used_child_ids: [],
     grace_entries_allowed: 1,
+    dropin_require_admin_approval: false,
     lesson_reminders_enabled: true,
     push_notifications_enabled: true,
     auto_invoice_enabled: true,
@@ -517,6 +518,20 @@ export default function AppConfigurationPage() {
             </View>
           </>
         )}
+
+        {/* ── DROP-IN PAYMENTS ── */}
+        <Text style={[styles.sectionLabel, { color: colors.primary }]}>DROP-IN PAYMENTS</Text>
+        <View style={[styles.card, { backgroundColor: colors.card, marginBottom: 20 }]}>
+          <SwitchRow
+            icon="walk-outline"
+            label="Require Operator Approval After Drop-in Payment"
+            description="If enabled, the Operator must manually confirm entry even after the member pays the drop-in fee."
+            value={settings.dropin_require_admin_approval ?? false}
+            saving={isSaving("dropin_require_admin_approval")}
+            onToggle={v => saveKey("dropin_require_admin_approval", v)}
+            colors={colors}
+          />
+        </View>
 
         {/* ── SUPERANNUATION ── */}
         <Text style={[styles.sectionLabel, { color: colors.primary }]}>PAYROLL & SUPERANNUATION</Text>

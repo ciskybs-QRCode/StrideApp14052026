@@ -1919,6 +1919,28 @@ export async function ensureTables(): Promise<void> {
   await pool.query(`ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS grace_entries_allowed  INTEGER NOT NULL DEFAULT 1`).catch(() => {});
   await pool.query(`ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS grace_entries_used     JSONB   NOT NULL DEFAULT '{}'`).catch(() => {});
 
+  // ── Drop-in / single-session ────────────────────────────────────────────────
+  await pool.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS dropin_enabled     BOOLEAN NOT NULL DEFAULT false`).catch(() => {});
+  await pool.query(`ALTER TABLE courses ADD COLUMN IF NOT EXISTS dropin_price_cents INTEGER NOT NULL DEFAULT 0`).catch(() => {});
+  await pool.query(`ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS dropin_require_admin_approval BOOLEAN NOT NULL DEFAULT false`).catch(() => {});
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS dropin_sessions (
+      id                   SERIAL       PRIMARY KEY,
+      organization_id      INTEGER      NOT NULL,
+      child_id             INTEGER      NOT NULL,
+      course_id            INTEGER      NOT NULL,
+      paid_at              TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+      valid_until          TIMESTAMPTZ  NOT NULL,
+      checkout_session_id  TEXT,
+      operator_approved    BOOLEAN,
+      UNIQUE(child_id, course_id, valid_until)
+    );
+    CREATE INDEX IF NOT EXISTS idx_dropin_child   ON dropin_sessions(child_id);
+    CREATE INDEX IF NOT EXISTS idx_dropin_course  ON dropin_sessions(course_id);
+    CREATE INDEX IF NOT EXISTS idx_dropin_valid   ON dropin_sessions(valid_until);
+  `).catch(() => {});
+
   // ── operator_profile_rates — per-discipline hourly rates for operators ───────
   await pool.query(`
     CREATE TABLE IF NOT EXISTS operator_profile_rates (

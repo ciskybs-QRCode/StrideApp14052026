@@ -29,6 +29,37 @@ function verifyQrSignature(
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
 
+type DropinCourse = { courseId: number; courseName: string; dropin_price_cents: number; currency: string };
+type DropinInfo   = { dropin_available: boolean; dropin_courses: DropinCourse[] };
+
+async function getDropinInfo(orgId: number, childIdNum: number): Promise<DropinInfo> {
+  try {
+    const { rows } = await pool.query<{ course_id: number; course_name: string; dropin_price_cents: number; currency: string }>(
+      `SELECT c.id AS course_id, c.name AS course_name, c.dropin_price_cents,
+              COALESCE(o.currency, 'EUR') AS currency
+       FROM enrollments e
+       JOIN courses c ON c.id = e.course_id
+       LEFT JOIN organizations o ON o.id = $1
+       WHERE e.child_id = $2
+         AND c.organization_id = $1
+         AND c.dropin_enabled = true
+       LIMIT 5`,
+      [orgId, childIdNum],
+    );
+    return {
+      dropin_available: rows.length > 0,
+      dropin_courses:   rows.map(r => ({
+        courseId:           r.course_id,
+        courseName:         r.course_name,
+        dropin_price_cents: r.dropin_price_cents,
+        currency:           r.currency,
+      })),
+    };
+  } catch {
+    return { dropin_available: false, dropin_courses: [] };
+  }
+}
+
 export type AccessVerdict =
   | "allowed"            // normal entry
   | "blacklisted"        // intentionally restricted person (CASE A-BL)
@@ -115,6 +146,22 @@ router.get("/access-check/:childId", requireAuth, requireRole("admin", "operator
     return;
   }
 
+  // Drop-in session override — paid walk-in admitted regardless of payment_status
+  try {
+    const { rows: ds } = await pool.query<{ id: number }>(
+      `SELECT id FROM dropin_sessions
+       WHERE child_id = $1 AND valid_until > NOW()
+         AND (operator_approved IS NULL OR operator_approved = true)
+       LIMIT 1`,
+      [childIdNum],
+    );
+    if (ds.length > 0) {
+      logScan("allowed");
+      res.json({ verdict: "allowed" as AccessVerdict, childId, childName });
+      return;
+    }
+  } catch { /* dropin_sessions table may not exist yet */ }
+
   // ── Fetch admin settings ───────────────────────────────────────────────────
   const { data: settings } = await supabase
     .from("admin_settings")
@@ -130,7 +177,8 @@ router.get("/access-check/:childId", requireAuth, requireRole("admin", "operator
   if (paymentStatus === "overdue") {
     logScan("overdue_denied");
     void sendStaffDeniedAlert(orgId, String(childId), childName, "overdue_denied");
-    res.json({ verdict: "overdue_denied" as AccessVerdict, childId, childName });
+    const dropinInfo = await getDropinInfo(orgId, childIdNum);
+    res.json({ verdict: "overdue_denied" as AccessVerdict, childId, childName, ...dropinInfo });
     return;
   }
 
@@ -152,13 +200,15 @@ router.get("/access-check/:childId", requireAuth, requireRole("admin", "operator
       // Grace exhausted
       logScan("overdue_denied");
       void sendStaffDeniedAlert(orgId, String(childId), childName, "overdue_denied");
-      res.json({ verdict: "overdue_denied" as AccessVerdict, childId, childName });
+      const dropinInfo1 = await getDropinInfo(orgId, childIdNum);
+      res.json({ verdict: "overdue_denied" as AccessVerdict, childId, childName, ...dropinInfo1 });
       return;
     }
     // CASE C — expired, no grace enabled
     logScan("overdue_denied");
     void sendStaffDeniedAlert(orgId, String(childId), childName, "overdue_denied");
-    res.json({ verdict: "overdue_denied" as AccessVerdict, childId, childName });
+    const dropinInfo2 = await getDropinInfo(orgId, childIdNum);
+    res.json({ verdict: "overdue_denied" as AccessVerdict, childId, childName, ...dropinInfo2 });
     return;
   }
 

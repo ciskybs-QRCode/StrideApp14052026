@@ -81,6 +81,8 @@ export default function AdminCoursesManageScreen() {
   const [fRequireApproval, setFRequireApproval] = useState(false);
   const [fMinHrs,          setFMinHrs]          = useState("");
   const [fMaxHrs,          setFMaxHrs]          = useState("");
+  const [fDropinEnabled,   setFDropinEnabled]   = useState(false);
+  const [fDropinPrice,     setFDropinPrice]     = useState("0");
 
   const [numPicker, setNumPicker] = useState<{ label: string; val: string; min: number; max: number; set: (v: string) => void } | null>(null);
 
@@ -110,6 +112,7 @@ export default function AdminCoursesManageScreen() {
     setFPrice("0"); setFDescription("");
     setFDays(Array(7).fill(false)); setFRequireApproval(false);
     setFMinHrs(""); setFMaxHrs("");
+    setFDropinEnabled(false); setFDropinPrice("0");
     setEditing(null); setSaveError(null);
   };
 
@@ -137,6 +140,8 @@ export default function AdminCoursesManageScreen() {
     setFRequireApproval(!!c.requires_approval);
     setFMinHrs(c.min_weekly_hours != null ? String(c.min_weekly_hours) : "");
     setFMaxHrs(c.max_weekly_hours != null ? String(c.max_weekly_hours) : "");
+    setFDropinEnabled(!!c.dropin_enabled);
+    setFDropinPrice(c.dropin_price_cents != null ? (c.dropin_price_cents / 100).toFixed(2) : "0");
     setSaveError(null);
     setShowModal(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -152,8 +157,9 @@ export default function AdminCoursesManageScreen() {
     const ageMax   = parseInt(fAgeMax, 10) || 18;
     const capacity = parseInt(fCapacity, 10) || 15;
     const daysArr  = fDays.map((on, i) => on ? i : -1).filter(i => i >= 0);
-    const minHrs   = fMinHrs.trim() ? parseFloat(fMinHrs.replace(",", ".")) : null;
-    const maxHrs   = fMaxHrs.trim() ? parseFloat(fMaxHrs.replace(",", ".")) : null;
+    const minHrs           = fMinHrs.trim() ? parseFloat(fMinHrs.replace(",", ".")) : null;
+    const maxHrs           = fMaxHrs.trim() ? parseFloat(fMaxHrs.replace(",", ".")) : null;
+    const dropinPriceCents = Math.round((parseFloat(fDropinPrice.replace(",", ".")) || 0) * 100);
 
     setSaving(true);
     try {
@@ -164,6 +170,7 @@ export default function AdminCoursesManageScreen() {
           description: fDescription.trim() || undefined,
           days_of_week: daysArr, requires_approval: fRequireApproval,
           min_weekly_hours: minHrs, max_weekly_hours: maxHrs,
+          dropin_enabled: fDropinEnabled, dropin_price_cents: dropinPriceCents,
         });
       } else {
         await api.createCourse({
@@ -172,6 +179,7 @@ export default function AdminCoursesManageScreen() {
           description: fDescription.trim() || undefined,
           days_of_week: daysArr, requires_approval: fRequireApproval,
           min_weekly_hours: minHrs, max_weekly_hours: maxHrs,
+          dropin_enabled: fDropinEnabled, dropin_price_cents: dropinPriceCents,
         });
       }
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -541,6 +549,35 @@ export default function AdminCoursesManageScreen() {
                 trackColor={{ true: colors.primary, false: colors.border }}
               />
             </View>
+
+            {/* Drop-in / Walk-in */}
+            <Text style={[S.label, { color: colors.mutedForeground, marginTop: 8 }]}>DROP-IN / WALK-IN</Text>
+            <View style={[S.switchRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+              <View style={{ flex: 1 }}>
+                <Text style={[S.switchLabel, { color: colors.foreground }]}>Allow drop-in (walk-in) entry</Text>
+                <Text style={[S.switchSub, { color: colors.mutedForeground }]}>
+                  Members with expired payment can pay at the door for a single session.
+                </Text>
+              </View>
+              <Switch
+                value={fDropinEnabled}
+                onValueChange={setFDropinEnabled}
+                trackColor={{ true: colors.primary, false: colors.border }}
+              />
+            </View>
+            {fDropinEnabled && (
+              <>
+                <Text style={[S.label, { color: colors.mutedForeground }]}>DROP-IN PRICE ({cur || "\u20ac"})</Text>
+                <TextInput
+                  style={[S.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
+                  value={fDropinPrice} onChangeText={setFDropinPrice}
+                  keyboardType="decimal-pad" placeholder="0.00" placeholderTextColor={colors.mutedForeground}
+                />
+                <Text style={[S.hintText, { color: colors.mutedForeground }]}>
+                  You can set this higher than the per-session cost of a full membership.
+                </Text>
+              </>
+            )}
 
             {/* Save button */}
             <Pressable
