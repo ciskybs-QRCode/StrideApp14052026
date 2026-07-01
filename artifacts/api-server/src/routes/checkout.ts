@@ -415,8 +415,58 @@ router.post("/checkout/web-session", requireAuth, async (req, res) => {
     const trialEndsAt    = org?.trial_ends_at ?? null;
     const isTrial        = !trialEndsAt || new Date() < new Date(trialEndsAt);
 
+    // ── Batch C: Membership gate ────────────────────────────────────────────
+    const mutableItems: CartItemInput[] = [...items];
+    try {
+      const { rows: memCfg } = await pool.query<{
+        membership_mandatory: boolean;
+        membership_checkout_mode: string;
+        membership_monthly_fee_cents: number;
+      }>(
+        `SELECT membership_mandatory, membership_checkout_mode, membership_monthly_fee_cents
+         FROM admin_settings WHERE organization_id = $1`,
+        [orgId],
+      );
+      const mc = memCfg[0];
+      if (mc?.membership_mandatory) {
+        const hasCourseItem = mutableItems.some(i => !i.type || i.type === "course");
+        if (hasCourseItem) {
+          const { rows: activeMem } = await pool.query<{ id: number }>(
+            `SELECT id FROM member_subscriptions
+             WHERE user_id = $1 AND organization_id = $2
+               AND item_type = 'membership' AND membership_status = 'active'
+             LIMIT 1`,
+            [user.id, orgId],
+          );
+          const hasMembership = activeMem.length > 0;
+          if (!hasMembership) {
+            const mode = mc.membership_checkout_mode ?? "auto_add";
+            if (mode === "block") {
+              res.status(402).json({
+                error: "membership_required",
+                message: "An active membership is required before enrolling in courses. Please purchase a membership first.",
+              });
+              return;
+            }
+            // auto_add — inject monthly membership unless already in cart
+            const alreadyHasMem = mutableItems.some(i => i.type === "membership");
+            if (!alreadyHasMem && mc.membership_monthly_fee_cents > 0) {
+              mutableItems.push({
+                type:            "membership",
+                courseId:        "membership",
+                courseName:      "Association Membership",
+                participantName: (user as unknown as Record<string, unknown>)["email"] as string ?? "Member",
+                packageType:     "monthly",
+                clientPrice:     mc.membership_monthly_fee_cents / 100,
+              } as CartItemInput);
+            }
+          }
+        }
+      }
+    } catch { /* fail-open — column may not exist yet */ }
+
     const lineItems = await resolveAllLineItems(
-      orgId, items, orgName,
+      orgId, mutableItems, orgName,
       promoCode, promoDiscountType, promoDiscountPercent,
       promoDiscountAmount, promoTargetCourseIds,
     );

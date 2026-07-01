@@ -533,6 +533,69 @@ export default function AppConfigurationPage() {
           />
         </View>
 
+        {/* ── MEMBERSHIP ENFORCEMENT ── */}
+        <Text style={[styles.sectionLabel, { color: colors.primary }]}>MEMBERSHIP ENFORCEMENT</Text>
+        <View style={[styles.card, { backgroundColor: colors.card, marginBottom: 8 }]}>
+          <SwitchRow
+            icon="id-card-outline"
+            label="Membership Required for Course Enrollment"
+            description="When ON, members must have an active association membership before they can enroll in courses."
+            value={settings.membership_mandatory ?? false}
+            saving={isSaving("membership_mandatory")}
+            onToggle={v => saveKey("membership_mandatory", v)}
+            colors={colors}
+          />
+          {(settings.membership_mandatory ?? false) && (
+            <>
+              <View style={{ borderTopWidth: 1, borderTopColor: colors.border }}>
+                <SwitchRow
+                  icon="ban-outline"
+                  label="Block QR Entry Without Membership"
+                  description="When ON, members without an active membership are denied entry at the QR scanner. When OFF, they are admitted with a warning to the operator."
+                  value={settings.membership_block_on_missing ?? false}
+                  saving={isSaving("membership_block_on_missing")}
+                  onToggle={v => saveKey("membership_block_on_missing", v)}
+                  colors={colors}
+                />
+              </View>
+              <View style={{ borderTopWidth: 1, borderTopColor: colors.border, paddingHorizontal: 16, paddingVertical: 14 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                  <Ionicons name="cart-outline" size={18} color={colors.mutedForeground} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.rowLabel, { color: colors.foreground }]}>Checkout Behaviour</Text>
+                    <Text style={[styles.rowDesc, { color: colors.mutedForeground }]}>
+                      What happens at checkout when a course is added to cart but membership is missing.
+                    </Text>
+                  </View>
+                </View>
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  {(["auto_add", "block"] as const).map(opt => (
+                    <Pressable
+                      key={opt}
+                      onPress={() => saveKey("membership_checkout_mode", opt)}
+                      style={{
+                        flex: 1, paddingVertical: 10, borderRadius: 10, alignItems: "center",
+                        backgroundColor: (settings.membership_checkout_mode ?? "auto_add") === opt ? colors.primary : colors.muted,
+                        borderWidth: 1,
+                        borderColor: (settings.membership_checkout_mode ?? "auto_add") === opt ? colors.primary : colors.border,
+                      }}
+                    >
+                      <Text style={{ fontSize: 12, fontWeight: "700",
+                        color: (settings.membership_checkout_mode ?? "auto_add") === opt ? "#FFF" : colors.mutedForeground,
+                      }}>
+                        {opt === "auto_add" ? "Auto-add" : "Block checkout"}
+                      </Text>
+                      <Text style={{ fontSize: 10, color: (settings.membership_checkout_mode ?? "auto_add") === opt ? "rgba(255,255,255,0.75)" : colors.mutedForeground, marginTop: 2, textAlign: "center", paddingHorizontal: 4 }}>
+                        {opt === "auto_add" ? "Add membership to cart" : "Require purchase first"}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            </>
+          )}
+        </View>
+
         {/* ── SUPERANNUATION ── */}
         <Text style={[styles.sectionLabel, { color: colors.primary }]}>PAYROLL & SUPERANNUATION</Text>
         <View style={[styles.card, { backgroundColor: colors.card, marginBottom: 8 }]}>

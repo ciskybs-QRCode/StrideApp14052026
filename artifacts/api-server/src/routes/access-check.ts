@@ -139,10 +139,46 @@ router.get("/access-check/:childId", requireAuth, requireRole("admin", "operator
     return;
   }
 
+  // ── Membership gate (Batch C) ──────────────────────────────────────────────
+  // Runs for every scan regardless of paymentStatus so the gate applies even
+  // to members whose course payment is current.
+  let membershipWarning = false;
+  try {
+    const { rows: memSettings } = await pool.query<{
+      membership_mandatory: boolean;
+      membership_block_on_missing: boolean;
+    }>(
+      `SELECT membership_mandatory, membership_block_on_missing
+       FROM admin_settings WHERE organization_id = $1`,
+      [orgId],
+    );
+    const ms = memSettings[0];
+    if (ms?.membership_mandatory) {
+      const parentUserId = (child as Record<string, unknown>).user_id;
+      const { rows: memRows } = await pool.query<{ id: number }>(
+        `SELECT id FROM member_subscriptions
+         WHERE user_id = $1 AND organization_id = $2
+           AND item_type = 'membership' AND membership_status = 'active'
+         LIMIT 1`,
+        [parentUserId, orgId],
+      );
+      const hasMembership = memRows.length > 0;
+      if (!hasMembership) {
+        if (ms.membership_block_on_missing) {
+          logScan("membership_required" as AccessVerdict);
+          res.json({ verdict: "membership_required" as AccessVerdict, childId, childName });
+          return;
+        }
+        // Soft warning — entry still granted, flag sent to operator
+        membershipWarning = true;
+      }
+    }
+  } catch { /* table or column may not exist yet — fail-open */ }
+
   // Active payment — allow immediately
   if (paymentStatus === "active" || paymentStatus === "") {
     logScan("allowed");
-    res.json({ verdict: "allowed" as AccessVerdict, childId, childName });
+    res.json({ verdict: "allowed" as AccessVerdict, childId, childName, membershipWarning: membershipWarning || undefined });
     return;
   }
 

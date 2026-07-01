@@ -138,6 +138,28 @@ export default function ParentHome() {
   const [orgWhatsApp, setOrgWhatsApp] = useState("");
   const [social, setSocial] = useState<Record<string, string>>({});
 
+  // ── Membership required banner ────────────────────────────────────────────
+  const [membershipBanner, setMembershipBanner] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const check = async () => {
+      try {
+        const plans = await api.getMembershipPlans();
+        if (!plans.membershipMandatory || !plans.membershipEnabled) return;
+        const subsRes = await api.listSubscriptions();
+        const subsList = Array.isArray(subsRes) ? subsRes : (subsRes as { subscriptions?: import("@/lib/api").MemberSubscription[] }).subscriptions ?? [];
+        const hasActive = subsList.some(s =>
+          (s.item_type === "membership" || s.item_name?.toLowerCase().includes("membership")) &&
+          (s.status === "active" || s.status === "paid"),
+        );
+        if (!cancelled) setMembershipBanner(!hasActive);
+      } catch { /* fail-silent */ }
+    };
+    void check();
+    return () => { cancelled = true; };
+  }, []);
+
   // ── Emergency Pulse ────────────────────────────────────────────────────────
   const [activePulse,    setActivePulse]    = useState<import("@/lib/api").EmergencyPulse | null>(null);
   const [showPulseAlert, setShowPulseAlert] = useState(false);
@@ -396,6 +418,28 @@ export default function ParentHome() {
         ]}
         showsVerticalScrollIndicator={false}
       >
+        {/* Membership required banner */}
+        {membershipBanner && (
+          <Pressable
+            onPress={() => router.navigate("/(parent)/membership" as never)}
+            style={{
+              backgroundColor: "#FEF3C7", borderRadius: 14, padding: 14,
+              flexDirection: "row", alignItems: "center", gap: 12,
+              borderWidth: 1.5, borderColor: "#FCD34D", marginBottom: 12,
+              marginHorizontal: 4,
+            }}
+          >
+            <Ionicons name="id-card-outline" size={22} color="#92400E" />
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 13, fontWeight: "800", color: "#92400E" }}>Membership Required</Text>
+              <Text style={{ fontSize: 12, color: "#B45309", marginTop: 2 }}>
+                Your association requires an active membership to attend courses. Tap to get yours.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color="#92400E" />
+          </Pressable>
+        )}
+
         {/* Header */}
         <View style={styles.headerRow}>
           <View style={{ flex: 1 }}>

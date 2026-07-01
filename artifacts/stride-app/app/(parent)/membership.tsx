@@ -221,9 +221,18 @@ export default function MembershipScreen() {
             <Ionicons name="id-card" size={30} color={colors.secondary} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={S.heroTitle}>Association Membership</Text>
+            <View style={{ flexDirection: "row", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+              <Text style={S.heroTitle}>Association Membership</Text>
+              {plans.membershipMandatory && (
+                <View style={{ backgroundColor: "#FBBF24", borderRadius: 6, paddingHorizontal: 7, paddingVertical: 2 }}>
+                  <Text style={{ fontSize: 10, fontWeight: "800", color: "#1E3A8A" }}>REQUIRED</Text>
+                </View>
+              )}
+            </View>
             <Text style={S.heroSub}>
-              {plans.description ?? "Join as an official member and unlock all benefits."}
+              {plans.membershipMandatory
+                ? "Membership is required to enroll in courses at this association."
+                : (plans.description ?? "Join as an official member and unlock all benefits.")}
             </Text>
           </View>
         </View>
@@ -390,7 +399,9 @@ export default function MembershipScreen() {
               <Text style={S.ctaText}>
                 {selectedCount === 0
                   ? "Select at least one member"
-                  : `Add ${selectedCount} Membership${selectedCount > 1 ? "s" : ""} to Cart`}
+                  : plans.membershipMandatory
+                    ? `Get Required Membership (${selectedCount})`
+                    : `Add ${selectedCount} Membership${selectedCount > 1 ? "s" : ""} to Cart`}
               </Text>
             </Pressable>
           </>

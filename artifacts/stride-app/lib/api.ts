@@ -2504,6 +2504,9 @@ export interface ApiAdminSettings {
   region_code?:                   string;
   // Drop-in / single-session
   dropin_require_admin_approval?: boolean;
+  // Batch C — membership gate
+  membership_block_on_missing?: boolean;
+  membership_checkout_mode?:    "auto_add" | "block";
 }
 
 export interface MembershipPlans {
@@ -2516,6 +2519,7 @@ export interface MembershipPlans {
   membershipAppliesTo:    "members" | "dependants" | "everyone";
   membershipBillingDay:   number;
   membershipDonationMode: boolean;
+  membershipMandatory:    boolean;
 }
 
 export interface MemberSubscription {
@@ -2591,13 +2595,14 @@ export interface ApiBlacklistEntry {
 }
 
 export interface ApiAccessCheck {
-  verdict: "allowed" | "suspended" | "blacklisted" | "grace_allowed" | "overdue_denied";
+  verdict: "allowed" | "suspended" | "blacklisted" | "grace_allowed" | "overdue_denied" | "membership_required";
   childId: string;
   childName: string;
   blacklisted?: boolean;
   blockReason?: string;
   dropin_available?: boolean;
   dropin_courses?: Array<{ courseId: number; courseName: string; dropin_price_cents: number; currency: string }>;
+  membershipWarning?: boolean;
 }
 
 // ── Scheduling Ecosystem ──────────────────────────────────────────────────────

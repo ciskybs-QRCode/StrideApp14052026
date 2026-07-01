@@ -2,7 +2,7 @@ import { Ionicons } from "@expo/vector-icons";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-export type AccessVerdict = "suspended" | "grace_allowed" | "overdue_denied";
+export type AccessVerdict = "suspended" | "grace_allowed" | "overdue_denied" | "membership_required";
 
 interface QRAccessAlertProps {
   verdict: AccessVerdict;
@@ -60,6 +60,18 @@ const CONFIG: Record<
     body: "Your membership has expired. Please contact the association to renew before entering. If you believe this is an error, speak to the administrator.",
     badge: "UNPAID",
     badgeBg: "#DC2626",
+  },
+  membership_required: {
+    bg: "#2D1B69",
+    border: "#7C3AED",
+    icon: "id-card-outline",
+    iconColor: "#C4B5FD",
+    label: "MEMBERSHIP REQUIRED",
+    labelColor: "#C4B5FD",
+    title: "Association Membership Missing",
+    body: "This member does not have an active association membership. Please ask them to purchase a membership before their next session.",
+    badge: "NO MEMBERSHIP",
+    badgeBg: "#7C3AED",
   },
 };
 

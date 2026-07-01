@@ -80,6 +80,8 @@ router.get("/admin-settings", requireAuth, requireRole("admin", "operator"), asy
     if (!("membership_applies_to"           in row)) row.membership_applies_to           = "members";
     if (!("membership_billing_day"          in row)) row.membership_billing_day          = 1;
     if (!("membership_donation_mode"        in row)) row.membership_donation_mode        = false;
+    if (!("membership_block_on_missing"    in row)) row.membership_block_on_missing    = false;
+    if (!("membership_checkout_mode"       in row)) row.membership_checkout_mode       = "auto_add";
     if (!("org_contact_email"              in row)) row.org_contact_email              = null;
 
     // Security: never send the raw Stripe secret key to the frontend.
@@ -167,6 +169,9 @@ router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res
     "membership_applies_to",
     "membership_billing_day",
     "membership_donation_mode",
+    // Batch C — membership gate
+    "membership_block_on_missing",
+    "membership_checkout_mode",
   ];
 
   // ── Organisation location: goes to Supabase organizations (not pg admin_settings) ──
@@ -287,19 +292,21 @@ router.get("/membership-plans", requireAuth, async (req, res) => {
   try {
     const { rows } = await pool.query(
       `SELECT membership_annual_fee_cents, membership_monthly_fee_cents, membership_description,
-              membership_enabled, membership_applies_to, membership_billing_day, membership_donation_mode
+              membership_enabled, membership_applies_to, membership_billing_day, membership_donation_mode,
+              membership_mandatory
        FROM admin_settings WHERE organization_id = $1`,
       [orgId],
     );
     const row = (rows[0] ?? {}) as Record<string, unknown>;
     res.json({
-      annualFeeCents:       Number(row["membership_annual_fee_cents"]  ?? 0),
-      monthlyFeeCents:      Number(row["membership_monthly_fee_cents"] ?? 0),
-      description:          (row["membership_description"] as string | null) ?? null,
-      membershipEnabled:    Boolean(row["membership_enabled"] ?? false),
-      membershipAppliesTo:  (row["membership_applies_to"] as string) ?? "members",
-      membershipBillingDay: Number(row["membership_billing_day"] ?? 1),
+      annualFeeCents:         Number(row["membership_annual_fee_cents"]  ?? 0),
+      monthlyFeeCents:        Number(row["membership_monthly_fee_cents"] ?? 0),
+      description:            (row["membership_description"] as string | null) ?? null,
+      membershipEnabled:      Boolean(row["membership_enabled"] ?? false),
+      membershipAppliesTo:    (row["membership_applies_to"] as string) ?? "members",
+      membershipBillingDay:   Number(row["membership_billing_day"] ?? 1),
       membershipDonationMode: Boolean(row["membership_donation_mode"] ?? false),
+      membershipMandatory:    Boolean(row["membership_mandatory"]   ?? false),
     });
   } catch (err) {
     req.log.error(err, "membership-plans GET error");

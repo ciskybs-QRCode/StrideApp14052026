@@ -379,7 +379,8 @@ export default function OperatorDashboard() {
   const [lessonScanning,  setLessonScanning]  = useState(false);
   const [guardianResult,  setGuardianResult]  = useState<GuardianResult | null>(null);
   const [overrideData,    setOverrideData]    = useState<OverrideData | null>(null);
-  const [accessAlert,     setAccessAlert]     = useState<{ verdict: string; childName: string; blockReason?: string; dropin_available?: boolean; dropin_courses?: Array<{ courseId: number; courseName: string; dropin_price_cents: number; currency: string }>; _childId?: string } | null>(null);
+  const [accessAlert,          setAccessAlert]          = useState<{ verdict: string; childName: string; blockReason?: string; dropin_available?: boolean; dropin_courses?: Array<{ courseId: number; courseName: string; dropin_price_cents: number; currency: string }>; _childId?: string } | null>(null);
+  const [membershipWarnBanner, setMembershipWarnBanner] = useState<string | null>(null);
   const [dropinSheet,     setDropinSheet]     = useState<{ courseName: string; price: string; courseId: number; childId: string } | null>(null);
   const [dropinLoading,   setDropinLoading]   = useState(false);
 
@@ -892,6 +893,13 @@ export default function OperatorDashboard() {
           pushLog({ time: nowTime(), action: logMsg, type: check.verdict === "grace_allowed" ? "warning" : "error" });
           setTimeout(() => { setAccessAlert(null); setScanned(false); setShowScanner(false); }, 7000);
           return;
+        }
+        // Soft membership warning — entry still allowed, operator gets a 7-second badge
+        if (check.membershipWarning) {
+          const warnName = check.childName || "Member";
+          setMembershipWarnBanner(warnName);
+          pushLog({ time: nowTime(), action: `⚠ No membership — ${warnName} admitted (entry allowed)`, type: "warning" });
+          setTimeout(() => setMembershipWarnBanner(null), 7000);
         }
       } catch {
         showScanResult({ type: "error", name: "Member", subscription: "none", medical: "expired", payment: "pending" });
@@ -2588,6 +2596,23 @@ export default function OperatorDashboard() {
               ) : (
                 <Text style={styles.guardianWarning}>⚠️ Contact member before proceeding</Text>
               )}
+            </View>
+          )}
+
+          {/* Membership soft-warning banner — entry allowed, no active membership */}
+          {membershipWarnBanner && !accessAlert && !scanResult && (
+            <View style={{
+              backgroundColor: "#FEF3C7", borderRadius: 14, padding: 14,
+              flexDirection: "row", alignItems: "center", gap: 12,
+              borderWidth: 1.5, borderColor: "#FCD34D", marginBottom: 8,
+            }}>
+              <Ionicons name="id-card-outline" size={22} color="#92400E" />
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 13, fontWeight: "800", color: "#92400E" }}>No Active Membership</Text>
+                <Text style={{ fontSize: 12, color: "#B45309", marginTop: 2 }}>
+                  {membershipWarnBanner} — entry allowed. Ask member to purchase a membership.
+                </Text>
+              </View>
             </View>
           )}
 

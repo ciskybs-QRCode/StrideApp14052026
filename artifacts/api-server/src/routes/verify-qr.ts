@@ -23,6 +23,7 @@ export type QrVerifyResult = {
   blocked?:         boolean;
   blacklisted?:     boolean;
   graceDecision?:   "allowed_grace" | "blocked_grace_used" | "not_applicable";
+  membershipWarning?: boolean;
   graceMessage?:    string;
   contactMessage?:  string;
 };
@@ -237,6 +238,29 @@ router.post("/verify-member-qr", requireAuth, qrScanLimiter, async (req, res) =>
     } catch { /* settings unavailable */ }
   }
 
+  // ── 7.5 Membership soft-warning ───────────────────────────────────────────
+  let membershipWarning = false;
+  try {
+    const { rows: memCfg } = await pool.query<{ membership_mandatory: boolean }>(
+      `SELECT membership_mandatory FROM admin_settings WHERE organization_id = $1`, [orgId],
+    );
+    if (memCfg[0]?.membership_mandatory) {
+      // Get the user_id linked to this member record (Supabase members → pg member_subscriptions)
+      const { data: memRow } = await supabase
+        .from("members").select("user_id").eq("id", memberId).maybeSingle();
+      if (memRow?.user_id) {
+        const { rows: sub } = await pool.query<{ id: number }>(
+          `SELECT id FROM member_subscriptions
+           WHERE user_id = $1 AND organization_id = $2
+             AND item_type = 'membership' AND membership_status = 'active'
+           LIMIT 1`,
+          [memRow.user_id, orgId],
+        );
+        membershipWarning = sub.length === 0;
+      }
+    }
+  } catch { /* fail-open */ }
+
   // ── 8. Final verdict ──────────────────────────────────────────────────────
   const hardBlock = needsGrace && graceDecision !== "allowed_grace";
   if (hardBlock) void sendStaffDeniedAlert(orgId, memberId, name, "overdue_denied");
@@ -251,6 +275,7 @@ router.post("/verify-member-qr", requireAuth, qrScanLimiter, async (req, res) =>
     name, subscription, medical, payment, type,
     ...(graceDecision !== "not_applicable" && { graceDecision, graceMessage }),
     ...(hardBlock && { contactMessage: "Contact Administration" }),
+    ...(membershipWarning && { membershipWarning: true }),
   };
 
   // Audit log

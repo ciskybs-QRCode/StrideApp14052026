@@ -1841,6 +1841,12 @@ export async function ensureTables(): Promise<void> {
       ADD COLUMN IF NOT EXISTS membership_billing_day            INTEGER NOT NULL DEFAULT 1,
       ADD COLUMN IF NOT EXISTS membership_donation_mode          BOOLEAN NOT NULL DEFAULT FALSE;
   `).catch(() => {});
+  // Batch C — membership gate + checkout mode
+  await pool.query(`
+    ALTER TABLE admin_settings
+      ADD COLUMN IF NOT EXISTS membership_block_on_missing BOOLEAN NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS membership_checkout_mode    TEXT    NOT NULL DEFAULT 'auto_add';
+  `).catch(() => {});
 
   // ── expires_at + membership_status on member_subscriptions ───────────────
   await pool.query(`
