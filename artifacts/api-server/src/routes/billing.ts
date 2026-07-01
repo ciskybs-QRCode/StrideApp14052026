@@ -498,6 +498,19 @@ router.post("/billing/webhook", async (req, res) => {
               ).catch(() => {});
             }
           }
+        } else if (meta?.["type"] === "fee_event_addon") {
+          // Mark optional add-on order as paid — triggered only after Stripe confirms payment.
+          const feeEventId = meta["feeEventId"] ? parseInt(meta["feeEventId"]) : null;
+          const userId     = meta["userId"]     ? parseInt(meta["userId"])     : null;
+          if (feeEventId && userId) {
+            const { pool: pgPool } = await import("../lib/pg.js");
+            await pgPool.query(
+              `UPDATE fee_event_optional_orders
+                 SET payment_status='paid', paid_at=NOW()
+               WHERE fee_event_id=$1 AND user_id=$2 AND payment_status='awaiting_payment'`,
+              [feeEventId, userId],
+            ).catch(() => {});
+          }
         } else {
           const orgId = getOrgId(meta);
           if (orgId && session.subscription) {

@@ -7,6 +7,7 @@ import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -204,15 +205,25 @@ export default function WalletScreen() {
         .filter(i => selectedAddons.has(i.name))
         .map(i => ({ name: i.name, price_cents: i.price_cents, qty: 1 }));
       const res = await import("@/lib/api").then(m =>
-        m.request<{ ok: boolean; total_cents: number }>(
+        m.request<{ ok: boolean; total_cents: number; checkout_url: string | null }>(
           `/api/fee-events/${addonsModal.id}/select-items`,
           "POST",
           { selected_items: items, extra_tickets: addonExtraTickets },
         )
       );
-      setAddonOrderMap(prev => ({ ...prev, [addonsModal.id]: { total_cents: res.total_cents, status: "pending" } }));
+
+      const modalId = addonsModal.id;
       setAddonsModal(null);
-      Alert.alert("Selection saved", "Your add-on order has been recorded. Proceed to cart to complete payment.");
+
+      if (res.checkout_url) {
+        // Real payment required — open Stripe checkout in browser
+        setAddonOrderMap(prev => ({ ...prev, [modalId]: { total_cents: res.total_cents, status: "awaiting_payment" } }));
+        await Linking.openURL(res.checkout_url);
+      } else {
+        // Free selection — already marked paid by server
+        setAddonOrderMap(prev => ({ ...prev, [modalId]: { total_cents: 0, status: "paid" } }));
+        Alert.alert("Selection saved", "Your free add-on selection has been recorded.");
+      }
     } catch {
       Alert.alert("Error", "Could not save your selection. Please try again.");
     } finally {

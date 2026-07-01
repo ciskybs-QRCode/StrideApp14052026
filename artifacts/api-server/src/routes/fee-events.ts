@@ -13,6 +13,10 @@
  *  GET    /fee-events/:id/stats           — notification + payment stats
  *  POST   /fee-events/:id/mark-read       — member marks notification as read
  *  POST   /fee-events/:id/mark-paid       — stripe callback marks as paid
+ *  POST   /fee-events/:id/select-items   — member submits add-on order → Stripe checkout
+ *  GET    /fee-events/:id/my-order       — member: own add-on order
+ *  GET    /fee-events/:id/item-orders    — admin: all add-on orders for an event
+ *  POST   /fee-events/:id/clone         — clone event as draft for next season
  */
 
 import { Router, type Request } from "express";
@@ -730,8 +734,10 @@ router.post("/fee-events/:id/mark-paid", requireAuth, async (req, res) => {
 });
 
 // ── POST /fee-events/:id/select-items — member submits optional add-on order ──
-// ON CONFLICT DO NOTHING on (fee_event_id, user_id) prevents duplicate orders
-// if the member double-taps or the request is retried.
+// Creates a real Stripe Checkout session when total > 0.
+// The order is stored as 'awaiting_payment' until the webhook (billing.ts
+// checkout.session.completed, type=fee_event_addon) flips it to 'paid'.
+// Free-only selections (total == 0) are marked 'paid' immediately.
 
 router.post("/fee-events/:id/select-items", requireAuth, async (req, res) => {
   const user    = (req as AuthReq).user;
@@ -752,39 +758,100 @@ router.post("/fee-events/:id/select-items", requireAuth, async (req, res) => {
   const items        = body.selected_items ?? [];
   const extraTickets = Math.max(0, body.extra_tickets ?? 0);
   const itemTotal    = items.reduce((s, i) => s + i.price_cents * (i.qty ?? 1), 0);
-  const ticketTotal  = extraTickets * (ev.extra_ticket_price_cents as number);
+  const ticketTotal  = extraTickets * (ev.extra_ticket_price_cents as number ?? 0);
   const total        = itemTotal + ticketTotal;
 
-  const { rows: [existing] } = await pool.query(
-    `SELECT id FROM fee_event_optional_orders WHERE fee_event_id=$1 AND user_id=$2`,
-    [eventId, uid],
+  // Resolve member name
+  const { data: meData } = await supabase
+    .from("users")
+    .select("name")
+    .eq("id", uid)
+    .single();
+  const memberName = (meData as { name?: string } | null)?.name ?? "";
+
+  // Upsert the order — reset to awaiting_payment so re-selections invalidate old sessions
+  await pool.query(
+    `INSERT INTO fee_event_optional_orders
+       (fee_event_id, user_id, member_name, selected_items, extra_tickets, total_cents, payment_status)
+     VALUES ($1,$2,$3,$4,$5,$6,'awaiting_payment')
+     ON CONFLICT (fee_event_id, user_id) DO UPDATE
+       SET selected_items=$4, extra_tickets=$5, total_cents=$6,
+           payment_status='awaiting_payment', checkout_session_id=NULL, paid_at=NULL`,
+    [eventId, uid, memberName, JSON.stringify(items), extraTickets, total],
   );
 
-  if (existing) {
+  // Free selection — skip Stripe, mark paid immediately
+  if (total === 0) {
     await pool.query(
-      `UPDATE fee_event_optional_orders
-         SET selected_items=$3, extra_tickets=$4, total_cents=$5, payment_status='pending'
+      `UPDATE fee_event_optional_orders SET payment_status='paid', paid_at=NOW()
        WHERE fee_event_id=$1 AND user_id=$2`,
-      [eventId, uid, JSON.stringify(items), extraTickets, total],
+      [eventId, uid],
     ).catch(() => {});
-  } else {
-    const { rows: [me] } = await supabase
-      .from("users")
-      .select("name")
-      .eq("id", uid)
-      .single()
-      .then(r => ({ rows: [r.data] }));
-
-    await pool.query(
-      `INSERT INTO fee_event_optional_orders
-         (fee_event_id, user_id, member_name, selected_items, extra_tickets, total_cents, payment_status)
-       VALUES ($1,$2,$3,$4,$5,$6,'pending')
-       ON CONFLICT (fee_event_id, user_id) DO NOTHING`,
-      [eventId, uid, me?.name ?? "", JSON.stringify(items), extraTickets, total],
-    ).catch(() => {});
+    res.json({ ok: true, total_cents: 0, checkout_url: null });
+    return;
   }
 
-  res.json({ ok: true, total_cents: total });
+  // Resolve Stripe key: org's own key takes priority over platform key
+  const masterKey = process.env["STRIPE_SECRET_KEY"] ?? null;
+  const { data: orgRow } = await supabase
+    .from("organizations")
+    .select("stripe_secret_key, currency, name")
+    .eq("id", user.orgId)
+    .maybeSingle();
+  type OrgRow = { stripe_secret_key?: string | null; currency?: string; name?: string };
+  const activeKey = (orgRow as OrgRow | null)?.stripe_secret_key ?? masterKey;
+  if (!activeKey) { res.status(503).json({ error: "stripe_not_configured" }); return; }
+
+  const currency = (orgRow as OrgRow | null)?.currency ?? "eur";
+  const Stripe   = (await import("stripe")).default;
+  const stripe   = new Stripe(activeKey);
+
+  const domains  = (process.env["REPLIT_DOMAINS"] ?? "").split(",")[0]?.trim() ?? "";
+  const baseUrl  = domains ? `https://${domains}` : "http://localhost:80";
+
+  const lineItems = [
+    ...items.map(i => ({
+      price_data: {
+        currency,
+        product_data: { name: i.name },
+        unit_amount:  i.price_cents,
+      },
+      quantity: i.qty ?? 1,
+    })),
+    ...(extraTickets > 0 && ev.extra_ticket_price_cents
+      ? [{
+          price_data: {
+            currency,
+            product_data: { name: "Additional Pass" },
+            unit_amount:  ev.extra_ticket_price_cents as number,
+          },
+          quantity: extraTickets,
+        }]
+      : []),
+  ];
+
+  const session = await stripe.checkout.sessions.create({
+    mode:                 "payment",
+    line_items:           lineItems,
+    payment_method_types: ["card"],
+    metadata: {
+      type:       "fee_event_addon",
+      feeEventId: String(eventId),
+      userId:     String(uid),
+      orgId:      String(user.orgId),
+    },
+    success_url: `${baseUrl}/payment-success?type=addon&session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url:  `${baseUrl}/payment-success?type=addon&cancelled=1`,
+  });
+
+  // Persist session ID so admin can cross-reference if needed
+  await pool.query(
+    `UPDATE fee_event_optional_orders SET checkout_session_id=$3
+     WHERE fee_event_id=$1 AND user_id=$2`,
+    [eventId, uid, session.id],
+  ).catch(() => {});
+
+  res.json({ ok: true, total_cents: total, checkout_url: session.url });
 });
 
 // ── GET /fee-events/:id/my-order — member: get own optional order ─────────────
@@ -816,6 +883,65 @@ router.get("/fee-events/:id/item-orders", requireAuth, requireRole("admin"), asy
     [eventId],
   );
   res.json(rows);
+});
+
+// ── POST /fee-events/:id/clone ────────────────────────────────────────────────
+// Copies all template data (line_items, optional_items, target_course_ids, etc.)
+// into a new draft row with season_year+1 and no recipients/payments.
+// The admin finds it in the draft list and adjusts before publishing.
+
+router.post("/fee-events/:id/clone", requireAuth, requireRole("admin"), async (req, res) => {
+  const user    = (req as AuthReq).user;
+  const eventId = parseInt((req.params["id"] as string) ?? "");
+
+  const { rows: [ev] } = await pool.query(
+    `SELECT * FROM fee_events WHERE id=$1 AND organization_id=$2`,
+    [eventId, user.orgId],
+  );
+  if (!ev) { res.status(404).json({ error: "Not found" }); return; }
+
+  const nextYear: number | null = typeof ev.season_year === "number"
+    ? ev.season_year + 1
+    : null;
+
+  const { rows: [cloned] } = await pool.query(
+    `INSERT INTO fee_events
+       (organization_id, title, description, payment_type, total_amount_cents, currency,
+        due_date, line_items, installments, free_tickets_per_member,
+        audience_mode, recipient_data,
+        category, season_year, optional_items, extra_ticket_price_cents,
+        external_catalog_url, target_course_ids, status)
+     VALUES (
+       $1, $2 || ' (Copy)', $3, $4, $5, $6,
+       NULL,
+       $7, $8, $9,
+       $10, $11,
+       $12, $13, $14, $15,
+       $16, $17, 'draft'
+     )
+     RETURNING id`,
+    [
+      user.orgId,
+      ev.title,
+      ev.description ?? null,
+      ev.payment_type,
+      ev.total_amount_cents,
+      ev.currency,
+      ev.line_items            ?? "[]",
+      ev.installments          ?? "[]",
+      ev.free_tickets_per_member ?? 0,
+      ev.audience_mode,
+      ev.recipient_data        ?? null,
+      ev.category              ?? null,
+      nextYear,
+      ev.optional_items        ?? "[]",
+      ev.extra_ticket_price_cents ?? 0,
+      ev.external_catalog_url  ?? null,
+      ev.target_course_ids     ?? null,
+    ],
+  );
+
+  res.status(201).json({ id: (cloned as { id: number }).id, status: "draft" });
 });
 
 export default router;
