@@ -15,6 +15,7 @@ import ContactPage          from "./pages/Contact";
 import AboutPage            from "./pages/About";
 import PricingPage          from "./pages/Pricing";
 import FaqPage              from "./pages/Faq";
+import ManualsPage          from "./pages/Manuals";
 import PromoVideo           from "./pages/marketing/PromoVideo";
 import InstagramPost        from "./pages/marketing/InstagramPost";
 import InstagramStory       from "./pages/marketing/InstagramStory";
@@ -42,6 +43,7 @@ export default function App() {
         <Route path="/about"                 component={AboutPage} />
         <Route path="/pricing"               component={PricingPage} />
         <Route path="/faq"                   component={FaqPage} />
+        <Route path="/manuals"               component={ManualsPage} />
         <Route path="/marketing/promo-video" component={PromoVideo} />
         <Route path="/marketing/instagram-post"   component={InstagramPost} />
         <Route path="/marketing/instagram-story"  component={InstagramStory} />

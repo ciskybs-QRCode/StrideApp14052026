@@ -1396,6 +1396,66 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* ── USER GUIDES ─────────────────────────────────────────────────── */}
+      <section id="guides" className="py-20 bg-white">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 bg-[#1E3A8A]/8 rounded-full px-4 py-1.5 mb-5">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1E3A8A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"/><path d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/>
+              </svg>
+              <span className="text-[#1E3A8A] text-xs font-bold tracking-wider uppercase">Documentation</span>
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-black text-slate-900 mb-4">User Guides — All Roles</h2>
+            <p className="text-slate-500 text-lg max-w-xl mx-auto">
+              Complete PDF manuals for every role on the platform. Download and read offline, or share with your team.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-10">
+            {[
+              { role: "Admin", sub: "Command Center", file: "/stride-manual-admin.pdf", desc: "Full management: members, finance, compliance & crisis response.", icon: "🛡️" },
+              { role: "Operator", sub: "Field Operations", file: "/stride-manual-operator.pdf", desc: "Class management, attendance scanning, SOS & substitute cascade.", icon: "📋" },
+              { role: "Member", sub: "Family Guide", file: "/stride-manual-member.pdf", desc: "Bookings, Smart Pass, payments, Gold Star diary & document signing.", icon: "👨‍👩‍👧" },
+              { role: "Kiosk", sub: "Setup & Operations", file: "/stride-manual-kiosk.pdf", desc: "Front-desk self-service check-in station — setup and daily use.", icon: "📟" },
+            ].map(m => (
+              <div key={m.role} className="bg-[#F8FAFC] border border-slate-200 rounded-2xl p-6 flex flex-col gap-4 hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3">
+                  <div className="w-11 h-11 rounded-xl bg-[#1E3A8A] flex items-center justify-center text-xl flex-shrink-0">
+                    {m.icon}
+                  </div>
+                  <div>
+                    <div className="text-[#FBBF24] text-xs font-black uppercase tracking-wider">{m.role}</div>
+                    <div className="text-slate-800 font-bold text-sm leading-tight">{m.sub}</div>
+                  </div>
+                </div>
+                <p className="text-slate-500 text-xs leading-relaxed flex-1">{m.desc}</p>
+                <a
+                  href={m.file}
+                  download
+                  className="flex items-center justify-center gap-2 bg-[#FBBF24] text-[#0A192F] font-black text-xs py-2.5 rounded-xl hover:bg-[#fcd34d] transition-colors no-underline"
+                >
+                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>
+                  </svg>
+                  Download PDF
+                </a>
+              </div>
+            ))}
+          </div>
+
+          <div className="text-center">
+            <a href="/manuals"
+              className="inline-flex items-center gap-2 bg-[#1E3A8A] text-white font-bold text-sm px-6 py-3 rounded-xl hover:bg-[#163075] transition-colors no-underline">
+              View full documentation page
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </a>
+          </div>
+        </div>
+      </section>
+
       {/* ── FAQ ────────────────────────────────────────────────────────────── */}
       <section id="faq" className="py-24 bg-slate-50">
         <div className="max-w-3xl mx-auto px-4 sm:px-6">

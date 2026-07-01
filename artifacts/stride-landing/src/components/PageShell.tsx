@@ -74,6 +74,7 @@ export function PageShell({ children, dark = false }: PageShellProps) {
           <div>
             <p className="text-white text-xs font-black uppercase tracking-wider mb-3">Support</p>
             <div className="flex flex-col gap-2">
+              <a href="/manuals" className="text-blue-300 text-xs hover:text-white transition-colors">User Guides</a>
               <a href="/contact" className="text-blue-300 text-xs hover:text-white transition-colors">Contact Us</a>
               <a href="/register" className="text-blue-300 text-xs hover:text-white transition-colors">Get Started</a>
             </div>
