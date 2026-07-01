@@ -145,6 +145,8 @@ export default function ParentHome() {
     let cancelled = false;
     const check = async () => {
       try {
+        // Only show to pure parents — never to operator/admin/super_admin
+        if (!user || user.role !== "parent") return;
         const plans = await api.getMembershipPlans();
         if (!plans.membershipMandatory || !plans.membershipEnabled) return;
         const subsRes = await api.listSubscriptions();
@@ -158,7 +160,7 @@ export default function ParentHome() {
     };
     void check();
     return () => { cancelled = true; };
-  }, []);
+  }, [user?.role]);
 
   // ── Emergency Pulse ────────────────────────────────────────────────────────
   const [activePulse,    setActivePulse]    = useState<import("@/lib/api").EmergencyPulse | null>(null);
