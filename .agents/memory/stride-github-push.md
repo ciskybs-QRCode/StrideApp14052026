@@ -19,11 +19,11 @@ A PAT avoids any commit — just push the existing HEAD.
 
 **How to apply:**
 - Account/owner: `ciskybs-QRCode` (type User).
-- Working secret name used: `GITHUB_PERSONAL_ACCESS_TOKEN` (the older `GITHUB_PAT` value was invalid / Bad credentials).
-- Verify a token before pushing: `curl -H "Authorization: Bearer $TOKEN" https://api.github.com/user`
-  and check the `x-oauth-scopes` response header for `repo, workflow`.
-- Push without persisting credentials (no remote added):
-  `git push https://x-access-token:$TOKEN@github.com/<owner>/<repo>.git HEAD:main`
-  and pipe through `sed "s/$TOKEN/REDACTED/g"` so the token never appears in logs.
+- Secret name in this repl: `GITHUB_PAT`.
+- Git over HTTPS requires **Basic auth**, not Bearer.
+  `git -c http.extraheader="Authorization: Basic $(printf "ciskybs-QRCode:$GITHUB_PAT" | base64 -w 0)" push https://github.com/ciskybs-QRCode/StrideApp14052026.git HEAD:main`
+- `Bearer $GITHUB_PAT` is rejected by GitHub git endpoints (returns "invalid credentials").
+  Only the REST API accepts Bearer; git transport needs Basic.
+- Verify alignment: `git ls-remote <url> refs/heads/main` SHA must equal `git rev-parse HEAD`.
 - A newly-added secret with the **same key** may read stale in the running shell; using a
-  **new key name** (as here) sidesteps the staleness.
+  **new key name** sidesteps the staleness.
