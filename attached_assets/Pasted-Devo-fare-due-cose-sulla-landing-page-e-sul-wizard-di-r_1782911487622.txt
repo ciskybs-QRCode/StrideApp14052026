@@ -1,0 +1,23 @@
+Devo fare due cose sulla landing page e sul wizard di registrazione Admin. Leggile entrambe prima di iniziare e dimmi il piano.
+Cosa 1 — Aggiornare i documenti legali nel wizard di registrazione (Register.tsx)
+Il wizard ha già 4 documenti con testo inline (tc, privacy, dpa, deletion). Il testo è vecchio e va sostituito con quello delle versioni aggiornate. Sostituisci il contenuto di ogni voce in LEGAL_DOCS con il testo aggiornato che ti allego nei 7 documenti Word. I testi sono già scritti — devi solo copiarli dentro LEGAL_DOCS.
+I 4 documenti esistenti (tc, privacy, dpa, deletion) restano nello stesso ordine. Aggiungine altri 3:
+
+id: "reimbursement", title: "Reimbursement & Payment Policy", checkLabel: "I have read and accept the Reimbursement & Payment Policy"
+id: "media", title: "Media Responsibility Policy", checkLabel: "I have read and accept the Media Responsibility Policy"
+id: "aup", title: "Acceptable Use Policy", checkLabel: "I have read and accept the Acceptable Use Policy"
+
+La Cookie Policy e la Data Retention Policy NON vanno nel wizard di firma — sono documenti informativi, non contrattuali. Vanno solo nelle pagine pubbliche (vedi Cosa 2).
+Tutti i 7 documenti devono essere accettati (checkbox spuntata) prima che il pulsante "Create Account" diventi attivo. Il sistema già funziona così per i 4 esistenti — estendilo ai 3 nuovi.
+Cosa 2 — Aggiungere le pagine pubbliche dei documenti nella landing
+Esistono già /terms e /privacy come pagine pubbliche. Aggiungi le pagine mancanti seguendo lo stesso pattern di Privacy.tsx:
+
+/reimbursement-policy → contenuto dalla Reimbursement Policy
+/media-policy → contenuto dalla Media Responsibility Policy
+/acceptable-use → contenuto dalla Acceptable Use Policy
+/cookie-policy → contenuto dalla Cookie Policy
+/data-retention → contenuto dalla Data Retention & Deletion Policy
+
+Aggiungile come route in App.tsx. Aggiorna il footer della landing (se esiste una sezione link legali) con i link a tutte le pagine.
+Importante su grafiche e lingua: tutto in inglese, stessa grafica e stile già usati in Privacy.tsx e Terms — non inventare nulla di nuovo, replica il pattern esistente.
+Typecheck dopo, confermami file e riga per ogni modifica.
