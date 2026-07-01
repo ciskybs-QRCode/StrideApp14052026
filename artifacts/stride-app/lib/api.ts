@@ -2491,6 +2491,10 @@ export interface ApiAdminSettings {
   membership_renewal_fixed_date?: string | null;
   membership_reminder_days?:      string | number[];
   membership_suspend_on_expiry?:  boolean;
+  // Organisation location (source of truth for currency/banking)
+  country?:                       string;
+  currency?:                       string;
+  region_code?:                   string;
 }
 
 export interface MembershipPlans {

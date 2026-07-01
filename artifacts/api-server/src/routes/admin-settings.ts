@@ -1,5 +1,6 @@
 import { Router, type Request } from "express";
 import { pool } from "../lib/pg.js";
+import { supabase } from "../lib/supabase.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { logAction } from "../lib/audit.js";
 
@@ -168,8 +169,18 @@ router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res
     "membership_donation_mode",
   ];
 
+  // ── Organisation location: goes to Supabase organizations (not pg admin_settings) ──
+  const orgCountry  = "country"  in body ? (body["country"]  as string | null) : undefined;
+  const orgCurrency = "currency" in body ? (body["currency"] as string | null) : undefined;
+
   const setClauses: string[] = [];
   const values: unknown[]    = [orgId];
+
+  // If country changes, auto-sync region_code in pg admin_settings (drives public-branding)
+  if (orgCountry !== undefined && !("region_code" in body)) {
+    values.push(orgCountry);
+    setClauses.push(`region_code = $${values.length}`);
+  }
 
   for (const key of allowed) {
     if (key in body) {
@@ -207,6 +218,16 @@ router.put("/admin-settings", requireAuth, requireRole("admin"), async (req, res
     delete row.stripe_secret_key;
     row.stripe_key_hint    = rawKey ? `...${rawKey.slice(-4)}` : null;
     row.stripe_key_is_live = rawKey ? rawKey.startsWith("sk_live_") : null;
+
+    // Mirror country/currency to Supabase organizations (source of truth for billing)
+    if (orgCountry !== undefined || orgCurrency !== undefined) {
+      const orgUpdate: Record<string, unknown> = {};
+      if (orgCountry  !== undefined) orgUpdate.country  = orgCountry;
+      if (orgCurrency !== undefined) orgUpdate.currency = orgCurrency;
+      await supabase.from("organizations").update(orgUpdate).eq("id", orgId).then(undefined, (err: unknown) => {
+        req.log.warn({ err }, "admin-settings: failed to sync country/currency to Supabase organizations");
+      });
+    }
 
     req.log.info({ orgId, settings: body }, "admin settings updated");
     logAction({ userId: user.id, action: "ADMIN_SETTINGS_UPDATED", tableAffected: "admin_settings", recordId: orgId, details: { changed: Object.keys(body) } });

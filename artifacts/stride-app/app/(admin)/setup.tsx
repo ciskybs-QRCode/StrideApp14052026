@@ -86,6 +86,16 @@ function detectAdminEmergency(address: string): { number: string; country: strin
   return { number: "112", country: "International", flag: "🌍" };
 }
 
+// ── Organisation location → currency mapping ──────────────────────────────────
+const ORG_LOCATIONS = [
+  { code: "AU", label: "Australia",              flag: "🇦🇺", currency: "AUD" },
+  { code: "IT", label: "Italy",                  flag: "🇮🇹", currency: "EUR" },
+  { code: "GB", label: "United Kingdom",         flag: "🇬🇧", currency: "GBP" },
+  { code: "US", label: "United States",          flag: "🇺🇸", currency: "USD" },
+  { code: "EU", label: "European Union / Other", flag: "🇪🇺", currency: "EUR" },
+] as const;
+type OrgLocationCode = typeof ORG_LOCATIONS[number]["code"];
+
 const PRESET_COLORS = [
   { primary: "#1E3A8A", secondary: "#FBBF24", name: "Stride Classic" },
   { primary: "#7C3AED", secondary: "#C4B5FD", name: "Violet" },
@@ -236,6 +246,14 @@ export default function AdminSetup() {
   const [logoFileName, setLogoFileName] = useState<string | null>(null);
   const [applied, setApplied] = useState(false);
   const [qrGenerated, setQrGenerated] = useState(false);
+  const [orgCountry, setOrgCountry] = useState<OrgLocationCode>("AU");
+
+  useEffect(() => {
+    api.getOrg().then(o => {
+      const found = ORG_LOCATIONS.find(l => l.code === o.country);
+      if (found) setOrgCountry(found.code);
+    }).catch(() => {});
+  }, []);
 
   // ── SOS state ────────────────────────────────────────────────────────────
   const [showSOS, setShowSOS]               = useState(false);
@@ -349,11 +367,14 @@ export default function AdminSetup() {
     const validHex = /^#[0-9A-Fa-f]{6}$/;
     const primary   = validHex.test(customPrimary)   ? customPrimary   : PRESET_COLORS[selectedColors].primary;
     const secondary = validHex.test(customSecondary) ? customSecondary : PRESET_COLORS[selectedColors].secondary;
+    const loc = ORG_LOCATIONS.find(l => l.code === orgCountry) ?? ORG_LOCATIONS[0];
 
     await Promise.all([
       updateUser({ schoolName, primaryColor: primary, secondaryColor: secondary }),
       // Broadcast to every connected device — Operator + Parent screens update instantly
       saveBranding({ primaryColor: primary, secondaryColor: secondary }),
+      // Save organisation location (country + currency + region_code in one call)
+      api.updateAdminSettings({ country: orgCountry, currency: loc.currency, region_code: orgCountry }).catch(() => {}),
     ]);
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setApplied(true);
@@ -509,6 +530,33 @@ export default function AdminSetup() {
             placeholder="e.g. Rising Stars Academy"
             placeholderTextColor={colors.mutedForeground}
           />
+        </View>
+
+        {/* ── Organisation Location ── */}
+        <View style={[styles.logoCard, { backgroundColor: "#FFFFFF" }]}>
+          <Text style={[styles.sectionTitle, { color: colors.primary }]}>Organisation Location</Text>
+          <Text style={[styles.sectionDesc, { color: colors.mutedForeground, marginBottom: 12 }]}>
+            Sets the default currency for payments and banking. Saved when you tap Apply below.
+          </Text>
+          <View style={{ gap: 10 }}>
+            {ORG_LOCATIONS.map(loc => {
+              const selected = orgCountry === loc.code;
+              return (
+                <Pressable
+                  key={loc.code}
+                  style={{ flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 14, padding: 14, borderWidth: 2, borderColor: selected ? colors.primary : colors.border, backgroundColor: selected ? "rgba(30,58,138,0.06)" : "#FAFAFA" }}
+                  onPress={() => { setOrgCountry(loc.code); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+                >
+                  <Text style={{ fontSize: 24 }}>{loc.flag}</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: "700", color: selected ? colors.primary : "#374151" }}>{loc.label}</Text>
+                    <Text style={{ fontSize: 12, color: colors.mutedForeground }}>{loc.currency}</Text>
+                  </View>
+                  {selected && <Ionicons name="checkmark-circle" size={22} color={colors.primary} />}
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
 
         {/* Color Palette */}

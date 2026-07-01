@@ -99,6 +99,16 @@ function detectTaxConfig(): TaxConfig {
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 
+// ── Organisation location → currency mapping ──────────────────────────────────
+const ORG_LOCATIONS = [
+  { code: "AU", label: "Australia",              flag: "🇦🇺", currency: "AUD" },
+  { code: "IT", label: "Italy",                  flag: "🇮🇹", currency: "EUR" },
+  { code: "GB", label: "United Kingdom",         flag: "🇬🇧", currency: "GBP" },
+  { code: "US", label: "United States",          flag: "🇺🇸", currency: "USD" },
+  { code: "EU", label: "European Union / Other", flag: "🇪🇺", currency: "EUR" },
+] as const;
+type OrgLocationCode = typeof ORG_LOCATIONS[number]["code"];
+
 const MAIN_FIELDS = [
   { key: "name" as const,    label: "Organisation Name", placeholder: "e.g. Rising Stars Academy", icon: "business-outline" as const },
   { key: "address" as const, label: "Address",          placeholder: "1 Main Street, City",       icon: "location-outline" as const },
@@ -175,6 +185,10 @@ const DEFAULT_INFO: SchoolInfo = {
   // Loading state for initial data fetch
   const [loadingOrg, setLoadingOrg] = useState(true);
 
+  // Organisation location
+  const [orgCountry, setOrgCountry] = useState<OrgLocationCode>("AU");
+  const [savingLocation, setSavingLocation] = useState(false);
+
   // Main info
   const [info, setInfo] = useState<SchoolInfo>({ ...DEFAULT_INFO, name: user?.schoolName || DEFAULT_INFO.name });
   const [editingInfo, setEditingInfo] = useState(false);
@@ -212,6 +226,9 @@ const DEFAULT_INFO: SchoolInfo = {
         phone:   org.contact_phone    || prev.phone,
         email:   org.official_email   || prev.email,
       }));
+      // Load organisation location
+      const foundLoc = ORG_LOCATIONS.find(l => l.code === org.country);
+      if (foundLoc) setOrgCountry(foundLoc.code);
       // Pre-fill WhatsApp from backend if not already in AsyncStorage
       if (org.whatsapp_number) {
         setSocial(prev => prev.whatsapp ? prev : { ...prev, whatsapp: org.whatsapp_number! });
@@ -242,6 +259,24 @@ const DEFAULT_INFO: SchoolInfo = {
   useEffect(() => { loadOrgData(); }, [loadOrgData]);
 
   // ── Main Info handlers ────────────────────────────────────────────────────
+
+  const handleSaveLocation = async () => {
+    setSavingLocation(true);
+    const loc = ORG_LOCATIONS.find(l => l.code === orgCountry) ?? ORG_LOCATIONS[0];
+    let ok = true;
+    try {
+      await api.updateOrg({ country: orgCountry, currency: loc.currency });
+      await api.updateAdminSettings({ region_code: orgCountry });
+    } catch {
+      ok = false;
+    }
+    setSavingLocation(false);
+    Haptics.notificationAsync(ok ? Haptics.NotificationFeedbackType.Success : Haptics.NotificationFeedbackType.Warning);
+    Alert.alert(
+      ok ? "Location Saved" : "Sync Failed",
+      ok ? `Organisation location set to ${loc.label} (${loc.currency}).` : "Could not reach the server. Please try again."
+    );
+  };
 
   const handleSaveInfo = async () => {
     let apiOk = true;
@@ -469,6 +504,49 @@ const DEFAULT_INFO: SchoolInfo = {
               </Pressable>
             </View>
           )}
+        </View>
+
+        {/* ── Organisation Location ── */}
+        <View style={[styles.sectionHeaderRow, { marginTop: 8 }]}>
+          <View style={styles.sectionLabelRow}>
+            <View style={[styles.sectionAccentDot, { backgroundColor: colors.primary }]} />
+            <Text style={[styles.sectionTitle, { color: colors.primary, marginBottom: 0 }]}>Organisation Location</Text>
+          </View>
+        </View>
+        <View style={[styles.card, { backgroundColor: colors.card, borderLeftWidth: 3, borderLeftColor: colors.secondary, padding: 16, gap: 10 }]}>
+          <Text style={{ fontSize: 12, color: colors.mutedForeground, marginBottom: 4 }}>
+            Defines the default currency for all payments and banking details across the app.
+          </Text>
+          {ORG_LOCATIONS.map(loc => {
+            const selected = orgCountry === loc.code;
+            return (
+              <Pressable
+                key={loc.code}
+                style={{ flexDirection: "row", alignItems: "center", gap: 12, borderRadius: 12, padding: 12, borderWidth: 2, borderColor: selected ? colors.primary : colors.border, backgroundColor: selected ? "rgba(30,58,138,0.06)" : colors.background }}
+                onPress={() => { setOrgCountry(loc.code); Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light); }}
+              >
+                <Text style={{ fontSize: 22 }}>{loc.flag}</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: selected ? colors.primary : colors.foreground }}>{loc.label}</Text>
+                  <Text style={{ fontSize: 12, color: colors.mutedForeground }}>{loc.currency}</Text>
+                </View>
+                {selected && <Ionicons name="checkmark-circle" size={20} color={colors.primary} />}
+              </Pressable>
+            );
+          })}
+          <Pressable
+            style={({ pressed }) => [{ flexDirection: "row", alignItems: "center", justifyContent: "center", gap: 8, backgroundColor: colors.primary, borderRadius: 12, paddingVertical: 13, marginTop: 4, opacity: pressed ? 0.85 : 1 }]}
+            onPress={handleSaveLocation}
+            disabled={savingLocation}
+          >
+            {savingLocation
+              ? <ActivityIndicator size="small" color="#FFF" />
+              : <>
+                  <Ionicons name="checkmark-circle" size={16} color="#FFF" />
+                  <Text style={{ color: "#FFF", fontWeight: "700", fontSize: 14 }}>Save Location</Text>
+                </>
+            }
+          </Pressable>
         </View>
 
         {/* ── Social Media ── */}
