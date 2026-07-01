@@ -10,15 +10,16 @@ type AuthReq = Request & { user: TokenPayload };
 // Returns only non-sensitive branding fields (logo, colors, app name).
 router.get("/admin-settings/public-branding", async (req, res) => {
   const orgId = parseInt((req.query.orgId as string) ?? "1", 10) || 1;
+  const empty = { brand_primary_color: null, brand_logo_url: null, brand_app_name: null, region_code: null };
   try {
     const { rows } = await pool.query(
-      `SELECT brand_primary_color, brand_logo_url, brand_app_name
+      `SELECT brand_primary_color, brand_logo_url, brand_app_name, region_code
        FROM admin_settings WHERE organization_id = $1`,
       [orgId],
     );
-    res.json(rows[0] ?? { brand_primary_color: null, brand_logo_url: null, brand_app_name: null });
+    res.json(rows[0] ?? empty);
   } catch {
-    res.json({ brand_primary_color: null, brand_logo_url: null, brand_app_name: null });
+    res.json(empty);
   }
 });
 

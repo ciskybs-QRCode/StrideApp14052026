@@ -2,17 +2,18 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Haptics from "expo-haptics";
 import * as Linking from "expo-linking";
 import { useFocusEffect, useRouter } from "expo-router";
-import React, { useCallback, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator, Alert, Modal, Pressable,
   ScrollView, StyleSheet, Text, TextInput, View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useColors } from "@/hooks/useColors";
-import { useOrgCurrency } from "@/hooks/useOrgCurrency";
 import { ScreenHeader } from "@/components/ScreenHeader";
 import { CalendarPicker, TimePickerSheet, isoToCal, calToIso } from "@/components/WizardPickers";
-import { api, type ApiChild } from "@/lib/api";
+import { api, request, type ApiChild } from "@/lib/api";
+import { currencySymbol as getCurrencySymbol } from "@/lib/payment-regions";
+import { useAuth } from "@/context/AuthContext";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -35,7 +36,7 @@ type Step = "discipline" | "child" | "operator" | "datetime" | "confirm";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function cents(c: number, sym = "$") { return `${sym}${(c / 100).toFixed(2)}`; }
+function cents(c: number, currencyCode: string) { return `${getCurrencySymbol(currencyCode)}${(c / 100).toFixed(2)}`; }
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);
@@ -94,8 +95,24 @@ function StepBar({ current }: { current: Step }) {
 
 export default function PrivateLessonBook() {
   const colors = useColors();
-  const cur    = useOrgCurrency();
+  const { user } = useAuth();
   const insets = useSafeAreaInsets();
+
+  // ISO currency code derived from org region — with EUR as last-resort fallback
+  const [orgCurrencyCode, setOrgCurrencyCode] = useState("EUR");
+  useEffect(() => {
+    const orgId = user?.orgId ?? 1;
+    request<{ region_code?: string | null }>("GET", `/admin-settings/public-branding?orgId=${orgId}`)
+      .then(d => {
+        const REGION_TO_ISO: Record<string, string> = {
+          EU:"EUR", IT:"EUR", DE:"EUR", FR:"EUR", ES:"EUR", NL:"EUR",
+          AU:"AUD", GB:"GBP", US:"USD", CH:"CHF", CA:"CAD", NZ:"NZD", JP:"JPY",
+        };
+        const rc = (d.region_code ?? "").toUpperCase();
+        setOrgCurrencyCode(REGION_TO_ISO[rc] ?? "EUR");
+      })
+      .catch(() => {}); // silently keep EUR fallback
+  }, [user?.orgId]);
   const router = useRouter();
 
   const [loading,     setLoading]     = useState(true);
@@ -285,7 +302,7 @@ export default function PrivateLessonBook() {
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.optionTitle, { color: colors.foreground }]}>{cfg.discipline_name}</Text>
                     <Text style={[styles.optionSub, { color: colors.mutedForeground }]}>
-                      {cfg.duration_minutes} min · <Text style={{ color: colors.primary, fontWeight: "800" }}>{cents(cfg.member_price_cents, cur)}</Text> per lesson
+                      {cfg.duration_minutes} min · <Text style={{ color: colors.primary, fontWeight: "800" }}>{cents(cfg.member_price_cents, orgCurrencyCode)}</Text> per lesson
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={colors.mutedForeground} />
@@ -474,7 +491,7 @@ export default function PrivateLessonBook() {
             <View style={[styles.priceBox, { backgroundColor: colors.primary + "08", borderColor: colors.primary + "30" }]}>
               <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
                 <Text style={[styles.priceLabel, { color: colors.mutedForeground }]}>Total to pay</Text>
-                <Text style={[styles.priceValue, { color: colors.primary }]}>{cents(selConfig.member_price_cents, cur)}</Text>
+                <Text style={[styles.priceValue, { color: colors.primary }]}>{cents(selConfig.member_price_cents, orgCurrencyCode)}</Text>
               </View>
               <Text style={{ fontSize: 11, color: colors.mutedForeground, marginTop: 4 }}>
                 Secure payment via Stripe · Your card is charged now.
@@ -489,7 +506,7 @@ export default function PrivateLessonBook() {
                 : <>
                     <Ionicons name="card-outline" size={18} color="#0A192F" />
                     <Text style={[styles.btnText, { color: "#0A192F", fontSize: 15 }]}>
-                      Pay {cents(selConfig.member_price_cents, cur)}
+                      Pay {cents(selConfig.member_price_cents, orgCurrencyCode)}
                     </Text>
                   </>
               }
