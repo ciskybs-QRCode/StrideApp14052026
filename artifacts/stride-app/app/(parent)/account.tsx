@@ -6,6 +6,7 @@ export default function ParentAccountScreen() {
     <AccountHubPage
       parentRoute="/(parent)/documents"
       profileEditRoute="/(parent)/profile-edit"
+      dangerZoneRoute="/(parent)/settings/delete-account"
     />
   );
 }

@@ -2433,6 +2433,8 @@ export interface ApiAdminSettings {
   organization_id: number;
   allow_one_time_grace_access: boolean;
   grace_used_child_ids: number[];
+  grace_entries_allowed?: number;
+  grace_entries_used?: Record<string, number>;
   cascade_auto_trigger?: boolean;
   social_buffer_minutes?: number;
   brand_primary_color?: string | null;

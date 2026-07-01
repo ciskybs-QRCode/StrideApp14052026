@@ -37,11 +37,12 @@ interface Props {
   extraRows?: ExtraRow[];
   showDeleteAccount?: boolean;
   requireCurrentEmail?: boolean;
+  dangerZoneRoute?: string;
 }
 
 // ── Component ─────────────────────────────────────────────────────────────────
 
-export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [], showDeleteAccount = true, requireCurrentEmail = false }: Props) {
+export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [], showDeleteAccount = true, requireCurrentEmail = false, dangerZoneRoute }: Props) {
   const { user, logout, updateUser } = useAuth();
   const insets = useSafeAreaInsets();
   const router = useRouter();
@@ -219,7 +220,9 @@ export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [], 
       iconBg: "#FEF2F2",
       iconColor: "#EF4444",
       titleColor: "#EF4444",
-      onPress: () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); setDeleteText(""); setShowDelete(true); },
+      onPress: dangerZoneRoute
+        ? () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); router.push(dangerZoneRoute as never); }
+        : () => { Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy); setDeleteText(""); setShowDelete(true); },
     }] : []),
   ];
 

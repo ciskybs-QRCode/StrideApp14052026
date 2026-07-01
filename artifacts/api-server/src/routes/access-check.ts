@@ -6,6 +6,7 @@ import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 import { qrScanLimiter } from "../lib/rate-limit.js";
 import { logAction } from "../lib/audit.js";
 import Expo, { type ExpoPushMessage } from "expo-server-sdk";
+import { sendStaffDeniedAlert } from "../lib/staff-alert.js";
 
 function verifyQrSignature(
   raw: string,
@@ -102,6 +103,7 @@ router.get("/access-check/:childId", requireAuth, requireRole("admin", "operator
 
     const verdict = isBlacklisted ? ("blacklisted" as AccessVerdict) : ("suspended" as AccessVerdict);
     logScan(verdict);
+    if (verdict === "suspended") void sendStaffDeniedAlert(orgId, String(childId), childName, "suspended");
     res.json({ verdict, childId, childName, blacklisted: isBlacklisted, blockReason: child.block_reason ?? "Account restricted" });
     return;
   }
@@ -116,16 +118,18 @@ router.get("/access-check/:childId", requireAuth, requireRole("admin", "operator
   // ── Fetch admin settings ───────────────────────────────────────────────────
   const { data: settings } = await supabase
     .from("admin_settings")
-    .select("allow_one_time_grace_access, grace_used_child_ids")
+    .select("allow_one_time_grace_access, grace_entries_allowed, grace_entries_used")
     .eq("organization_id", orgId)
     .maybeSingle();
 
-  const graceEnabled = settings?.allow_one_time_grace_access ?? false;
-  const graceUsed: number[] = (settings?.grace_used_child_ids as number[]) ?? [];
+  const graceEnabled   = settings?.allow_one_time_grace_access ?? false;
+  const entriesAllowed = (settings?.grace_entries_allowed as number) ?? 1;
+  const entriesUsed    = (settings?.grace_entries_used ?? {}) as Record<string, number>;
 
   // CASE C — Long-overdue
   if (paymentStatus === "overdue") {
     logScan("overdue_denied");
+    void sendStaffDeniedAlert(orgId, String(childId), childName, "overdue_denied");
     res.json({ verdict: "overdue_denied" as AccessVerdict, childId, childName });
     return;
   }
@@ -133,24 +137,27 @@ router.get("/access-check/:childId", requireAuth, requireRole("admin", "operator
   // payment_status === "expired"
   if (paymentStatus === "expired") {
     if (graceEnabled) {
-      if (graceUsed.includes(childIdNum)) {
-        logScan("overdue_denied");
-        res.json({ verdict: "overdue_denied" as AccessVerdict, childId, childName });
+      const usedCount = entriesUsed[String(childIdNum)] ?? 0;
+      if (usedCount < entriesAllowed) {
+        // CASE B — Grace entry granted
+        const newUsed = { ...entriesUsed, [String(childIdNum)]: usedCount + 1 };
+        await supabase
+          .from("admin_settings")
+          .update({ grace_entries_used: newUsed })
+          .eq("organization_id", orgId);
+        logScan("grace_allowed");
+        res.json({ verdict: "grace_allowed" as AccessVerdict, childId, childName, graceMessage: `Grace entry ${usedCount + 1} of ${entriesAllowed}` });
         return;
       }
-      // CASE B — First-time grace
-      const newGraceUsed = [...graceUsed, childIdNum];
-      await supabase
-        .from("admin_settings")
-        .upsert({ organization_id: orgId, allow_one_time_grace_access: true, grace_used_child_ids: newGraceUsed })
-        .eq("organization_id", orgId);
-
-      logScan("grace_allowed");
-      res.json({ verdict: "grace_allowed" as AccessVerdict, childId, childName });
+      // Grace exhausted
+      logScan("overdue_denied");
+      void sendStaffDeniedAlert(orgId, String(childId), childName, "overdue_denied");
+      res.json({ verdict: "overdue_denied" as AccessVerdict, childId, childName });
       return;
     }
     // CASE C — expired, no grace enabled
     logScan("overdue_denied");
+    void sendStaffDeniedAlert(orgId, String(childId), childName, "overdue_denied");
     res.json({ verdict: "overdue_denied" as AccessVerdict, childId, childName });
     return;
   }

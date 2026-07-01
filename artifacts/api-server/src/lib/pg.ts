@@ -1916,6 +1916,8 @@ export async function ensureTables(): Promise<void> {
   await pool.query(`ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS brand_app_name        TEXT`).catch(() => {});
   await pool.query(`ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS min_first_aid_operators INTEGER NOT NULL DEFAULT 1`).catch(() => {});
   await pool.query(`ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS org_contact_email      TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS grace_entries_allowed  INTEGER NOT NULL DEFAULT 1`).catch(() => {});
+  await pool.query(`ALTER TABLE admin_settings ADD COLUMN IF NOT EXISTS grace_entries_used     JSONB   NOT NULL DEFAULT '{}'`).catch(() => {});
 
   // ── operator_profile_rates — per-discipline hourly rates for operators ───────
   await pool.query(`

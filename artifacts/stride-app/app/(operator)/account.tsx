@@ -6,6 +6,7 @@ export default function OperatorAccountScreen() {
     <AccountHubPage
       parentRoute="/(operator)/settings"
       profileEditRoute="/(operator)/profile-edit"
+      dangerZoneRoute="/(operator)/settings/delete-account"
     />
   );
 }

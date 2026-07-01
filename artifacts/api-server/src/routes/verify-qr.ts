@@ -5,6 +5,7 @@ import { pool } from "../lib/pg.js";
 import { requireAuth, type TokenPayload } from "../lib/auth.js";
 import { qrScanLimiter } from "../lib/rate-limit.js";
 import { logAction } from "../lib/audit.js";
+import { sendStaffDeniedAlert } from "../lib/staff-alert.js";
 
 const router = Router();
 type AuthReq = Request & { user: TokenPayload };
@@ -207,26 +208,30 @@ router.post("/verify-member-qr", requireAuth, qrScanLimiter, async (req, res) =>
     try {
       const settingsRes = await pool.query<{
         allow_one_time_grace_access: boolean;
-        grace_used_child_ids: number[];
+        grace_entries_allowed: number;
+        grace_entries_used: Record<string, number>;
       }>(
-        `SELECT allow_one_time_grace_access, grace_used_child_ids
+        `SELECT allow_one_time_grace_access, grace_entries_allowed, grace_entries_used
          FROM admin_settings WHERE organization_id = $1`,
         [orgId],
       );
       const s = settingsRes.rows[0];
       if (s?.allow_one_time_grace_access) {
-        const used: number[] = Array.isArray(s.grace_used_child_ids) ? s.grace_used_child_ids : [];
-        if (!used.includes(memberId)) {
+        const entriesAllowed = s.grace_entries_allowed ?? 1;
+        const entriesUsed    = (s.grace_entries_used ?? {}) as Record<string, number>;
+        const usedCount      = entriesUsed[String(memberId)] ?? 0;
+        if (usedCount < entriesAllowed) {
           graceDecision = "allowed_grace";
-          graceMessage  = "One-time grace entry granted — payment required next session";
+          graceMessage  = `Grace entry ${usedCount + 1} of ${entriesAllowed}`;
+          const newUsed = { ...entriesUsed, [String(memberId)]: usedCount + 1 };
           pool.query(
-            `UPDATE admin_settings SET grace_used_child_ids = $2, updated_at = NOW()
+            `UPDATE admin_settings SET grace_entries_used = $2, updated_at = NOW()
              WHERE organization_id = $1`,
-            [orgId, JSON.stringify([...used, memberId])],
+            [orgId, JSON.stringify(newUsed)],
           ).catch(() => {});
         } else {
           graceDecision = "blocked_grace_used";
-          graceMessage  = "Grace entry already used — full payment required to enter";
+          graceMessage  = "All grace entries used — full payment required to enter";
         }
       }
     } catch { /* settings unavailable */ }
@@ -234,6 +239,7 @@ router.post("/verify-member-qr", requireAuth, qrScanLimiter, async (req, res) =>
 
   // ── 8. Final verdict ──────────────────────────────────────────────────────
   const hardBlock = needsGrace && graceDecision !== "allowed_grace";
+  if (hardBlock) void sendStaffDeniedAlert(orgId, memberId, name, "overdue_denied");
   const type: "success" | "warning" | "error" =
     hardBlock || graceDecision === "blocked_grace_used" || medical === "expired" && payment === "overdue"
       ? "error"

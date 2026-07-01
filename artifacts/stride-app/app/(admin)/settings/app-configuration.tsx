@@ -47,6 +47,7 @@ export default function AppConfigurationPage() {
     organization_id: 1,
     allow_one_time_grace_access: false,
     grace_used_child_ids: [],
+    grace_entries_allowed: 1,
     lesson_reminders_enabled: true,
     push_notifications_enabled: true,
     auto_invoice_enabled: true,
@@ -487,12 +488,34 @@ export default function AppConfigurationPage() {
           />
         </View>
         {settings.allow_one_time_grace_access && (
-          <View style={[styles.infoBox, { backgroundColor: "rgba(30,58,138,0.07)", borderLeftWidth: 3, borderLeftColor: colors.primary, marginBottom: 20 }]}>
-            <Ionicons name="warning-outline" size={16} color={colors.primary} />
-            <Text style={[styles.infoText, { color: colors.primary, fontSize: 12 }]}>
-              Grace Access is ON. Members whose subscriptions have expired will be admitted once. On that entry the app automatically sends them a payment reminder warning that the next visit will be blocked.
-            </Text>
-          </View>
+          <>
+            <View style={[styles.card, { backgroundColor: colors.card, marginBottom: 8, padding: 16 }]}>
+              <Text style={[styles.rowLabel, { color: colors.foreground, marginBottom: 4 }]}>Grace entries allowed</Text>
+              <Text style={[styles.rowDesc, { color: colors.mutedForeground, marginBottom: 10 }]}>
+                Number of entries a member with expired payment is allowed before being blocked.
+              </Text>
+              <Pressable
+                style={[styles.termInput, { borderColor: colors.border, backgroundColor: colors.background, justifyContent: "center" }]}
+                onPress={() => setNumPicker({
+                  label: "Grace entries allowed",
+                  val: String(settings.grace_entries_allowed ?? 1),
+                  min: 1,
+                  max: 30,
+                  set: (v) => saveKey("grace_entries_allowed", parseInt(v, 10) || 1),
+                })}
+              >
+                <Text style={{ fontSize: 15, color: colors.foreground }}>
+                  {settings.grace_entries_allowed ?? 1} {(settings.grace_entries_allowed ?? 1) === 1 ? "entry" : "entries"}
+                </Text>
+              </Pressable>
+            </View>
+            <View style={[styles.infoBox, { backgroundColor: "rgba(30,58,138,0.07)", borderLeftWidth: 3, borderLeftColor: colors.primary, marginBottom: 20 }]}>
+              <Ionicons name="warning-outline" size={16} color={colors.primary} />
+              <Text style={[styles.infoText, { color: colors.primary, fontSize: 12 }]}>
+                Grace Access is ON. Members with expired subscriptions will be admitted up to {settings.grace_entries_allowed ?? 1} {(settings.grace_entries_allowed ?? 1) === 1 ? "time" : "times"}. Each grace entry sends an automatic payment reminder.
+              </Text>
+            </View>
+          </>
         )}
 
         {/* ── SUPERANNUATION ── */}
