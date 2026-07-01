@@ -34,6 +34,8 @@ const RED   = "#ef4444";
 interface LineItem { description: string; amount_cents: number }
 interface Installment { label: string; amount_cents: number; due_date: string }
 
+interface OptionalItem { name: string; price_cents: number }
+
 interface FeeEvent {
   id: number;
   title: string;
@@ -55,6 +57,12 @@ interface FeeEvent {
   paid_count?: number;
   line_items?: LineItem[];
   installments?: Installment[];
+  category?: string | null;
+  season_year?: number | null;
+  optional_items?: OptionalItem[];
+  extra_ticket_price_cents?: number;
+  external_catalog_url?: string | null;
+  target_course_ids?: number[];
 }
 
 interface StatsData {
@@ -255,7 +263,13 @@ export default function FeeEventsScreen() {
   const [freeTickets, setFreeTickets] = useState(0);
   const [audience, setAudience]       = useState("all");
   const [selectedOperatorIds, setSelectedOperatorIds] = useState<number[]>([]);
-  const [selectedCourseIds, setSelectedCourseIds]     = useState<string[]>([]);
+  const [selectedCourseIds, setSelectedCourseIds]     = useState<number[]>([]);
+  // new season / add-on fields
+  const [category, setCategory]                       = useState("");
+  const [seasonYear, setSeasonYear]                   = useState<number>(new Date().getFullYear());
+  const [optionalItems, setOptionalItems]             = useState<OptionalItem[]>([]);
+  const [extraTicketPrice, setExtraTicketPrice]       = useState(0);
+  const [externalCatalogUrl, setExternalCatalogUrl]   = useState("");
   const [lineItems, setLineItems]     = useState<LineItem[]>([]);
   const [installments, setInstallments] = useState<Installment[]>([]);
   const [saving, setSaving]           = useState(false);
@@ -310,6 +324,8 @@ export default function FeeEventsScreen() {
     setLineItems([]); setInstallments([]);
     setSendEmail(true); setSendInApp(true);
     setEmailDraft(null); setEditId(null);
+    setCategory(""); setSeasonYear(new Date().getFullYear());
+    setOptionalItems([]); setExtraTicketPrice(0); setExternalCatalogUrl("");
   }
 
   function openCreate() { resetForm(); setShowForm(true); }
@@ -322,7 +338,8 @@ export default function FeeEventsScreen() {
       setPayType(detail.payment_type);
       setDueDate(detail.due_date ?? "");
       setFreeTickets(detail.free_tickets_per_member);
-      setAudience(detail.recipient_mode);
+      // target_courses mode is shown as specific_courses in the audience picker
+      setAudience(detail.recipient_mode === "target_courses" ? "specific_courses" : detail.recipient_mode);
       setLineItems(detail.line_items ?? []);
       setInstallments(
         (detail.installments ?? []).map(ins => ({
@@ -331,6 +348,12 @@ export default function FeeEventsScreen() {
           due_date:     ins.due_date,
         }))
       );
+      setSelectedCourseIds((detail.target_course_ids ?? []).map(Number));
+      setCategory(detail.category ?? "");
+      setSeasonYear(detail.season_year ?? new Date().getFullYear());
+      setOptionalItems(detail.optional_items ?? []);
+      setExtraTicketPrice(detail.extra_ticket_price_cents ?? 0);
+      setExternalCatalogUrl(detail.external_catalog_url ?? "");
       setEditId(ev.id);
       setEmailDraft(null);
       setShowForm(true);
@@ -343,6 +366,8 @@ export default function FeeEventsScreen() {
     if (!title.trim()) { Alert.alert("Title required"); return; }
     setSaving(true);
     try {
+      // "specific_courses" audience key → "target_courses" backend mode
+      const recipientMode = audience === "specific_courses" ? "target_courses" : audience;
       const payload = {
         title: title.trim(), description: desc || undefined,
         payment_type: payType,
@@ -350,10 +375,16 @@ export default function FeeEventsScreen() {
         currency: orgCurrency,
         due_date: payType === "single" ? (dueDate || undefined) : undefined,
         free_tickets_per_member: freeTickets,
-        recipient_mode: audience,
+        recipient_mode: recipientMode,
         recipient_data: {},
         line_items: lineItems,
         installments: payType === "installments" ? installments : [],
+        category: category.trim() || null,
+        season_year: seasonYear || null,
+        optional_items: optionalItems.filter(i => i.name.trim()),
+        extra_ticket_price_cents: extraTicketPrice,
+        external_catalog_url: externalCatalogUrl.trim() || null,
+        target_course_ids: audience === "specific_courses" ? selectedCourseIds : [],
       };
 
       if (editId) {
@@ -732,6 +763,29 @@ export default function FeeEventsScreen() {
                 multiline
               />
 
+              {/* ── SEASON & CATEGORY ─────────────────────────────── */}
+              <Text style={[formStyles.sectionTitle, { color: colors.foreground, marginTop: 4 }]}>SEASON & CATEGORY</Text>
+
+              <Text style={[formStyles.label, { color: colors.mutedForeground }]}>CATEGORY</Text>
+              <TextInput
+                style={[formStyles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
+                placeholder="e.g. Annual Fee, Registration, Equipment"
+                placeholderTextColor={colors.mutedForeground}
+                value={category}
+                onChangeText={setCategory}
+              />
+
+              <Text style={[formStyles.label, { color: colors.mutedForeground }]}>SEASON YEAR</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+                <Pressable style={[chipStyles.counter, { borderColor: colors.border }]} onPress={() => setSeasonYear(y => y - 1)}>
+                  <Ionicons name="remove" size={16} color={colors.foreground} />
+                </Pressable>
+                <Text style={[chipStyles.counterVal, { color: colors.foreground }]}>{seasonYear}</Text>
+                <Pressable style={[chipStyles.counter, { borderColor: colors.border }]} onPress={() => setSeasonYear(y => y + 1)}>
+                  <Ionicons name="add" size={16} color={colors.foreground} />
+                </Pressable>
+              </View>
+
               {/* org currency badge — informational only */}
               <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16, gap: 8 }}>
                 <Ionicons name="cash-outline" size={14} color={NAVY} />
@@ -802,11 +856,11 @@ export default function FeeEventsScreen() {
                 </View>
               )}
 
-              <Text style={[formStyles.sectionTitle, { color: colors.foreground, marginTop: 8 }]}>TICKETS</Text>
+              <Text style={[formStyles.sectionTitle, { color: colors.foreground, marginTop: 8 }]}>TICKETS & PASSES</Text>
               <Text style={[formStyles.hint, { color: colors.mutedForeground }]}>
-                If this event has associated tickets, set how many complimentary tickets each member receives upon payment.
+                Set how many complimentary passes each member receives. Members can purchase additional passes at the price below.
               </Text>
-              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
                 <Pressable style={[chipStyles.counter, { borderColor: colors.border }]} onPress={() => setFreeTickets(p => Math.max(0, p - 1))}>
                   <Ionicons name="remove" size={16} color={colors.foreground} />
                 </Pressable>
@@ -815,9 +869,77 @@ export default function FeeEventsScreen() {
                   <Ionicons name="add" size={16} color={colors.foreground} />
                 </Pressable>
                 <Text style={[formStyles.hint, { color: colors.mutedForeground, marginLeft: 10, flex: 1 }]}>
-                  {freeTickets === 0 ? "No complimentary tickets" : `${freeTickets} free ticket${freeTickets > 1 ? "s" : ""} per member`}
+                  {freeTickets === 0 ? "No complimentary passes" : `${freeTickets} free pass${freeTickets > 1 ? "es" : ""} per member`}
                 </Text>
               </View>
+
+              <Text style={[formStyles.label, { color: colors.mutedForeground }]}>ADDITIONAL PASS PRICE</Text>
+              <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+                <Text style={{ color: colors.mutedForeground, marginRight: 4 }}>{currSym(orgCurrency)}</Text>
+                <TextInput
+                  style={[lineStyles.amtInput, { flex: 1, borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
+                  placeholder="0.00"
+                  placeholderTextColor={colors.mutedForeground}
+                  keyboardType="decimal-pad"
+                  value={extraTicketPrice > 0 ? (extraTicketPrice / 100).toFixed(2) : ""}
+                  onChangeText={v => setExtraTicketPrice(Math.round(parseFloat(v || "0") * 100))}
+                />
+                <Text style={{ fontSize: 12, color: colors.mutedForeground, marginLeft: 8, flex: 1 }}>
+                  {extraTicketPrice === 0 ? "Free extra passes" : "per additional pass"}
+                </Text>
+              </View>
+
+              {/* ── OPTIONAL ADD-ONS ──────────────────────────────── */}
+              <View style={formStyles.sectionRow}>
+                <Text style={[formStyles.sectionTitle, { color: colors.foreground }]}>OPTIONAL ADD-ONS</Text>
+                <Pressable
+                  style={[btnStyles.small, { borderColor: NAVY }]}
+                  onPress={() => setOptionalItems(prev => [...prev, { name: "", price_cents: 0 }])}
+                >
+                  <Ionicons name="add-outline" size={14} color={NAVY} />
+                  <Text style={[btnStyles.smallText, { color: NAVY }]}>Add Item</Text>
+                </Pressable>
+              </View>
+              <Text style={[formStyles.hint, { color: colors.mutedForeground }]}>
+                Members can select and pay for these optional items when they open the fee notification. Leave empty if no add-ons are offered.
+              </Text>
+
+              {optionalItems.map((item, i) => (
+                <View key={i} style={lineStyles.row}>
+                  <TextInput
+                    style={[lineStyles.descInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
+                    placeholder="Item name"
+                    placeholderTextColor={colors.mutedForeground}
+                    value={item.name}
+                    onChangeText={v => setOptionalItems(prev => prev.map((x, idx) => idx === i ? { ...x, name: v } : x))}
+                  />
+                  <View style={lineStyles.amtRow}>
+                    <Text style={{ color: colors.mutedForeground, marginRight: 4 }}>{currSym(orgCurrency)}</Text>
+                    <TextInput
+                      style={[lineStyles.amtInput, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
+                      placeholder="0.00"
+                      placeholderTextColor={colors.mutedForeground}
+                      keyboardType="decimal-pad"
+                      value={item.price_cents > 0 ? (item.price_cents / 100).toFixed(2) : ""}
+                      onChangeText={v => setOptionalItems(prev => prev.map((x, idx) => idx === i ? { ...x, price_cents: Math.round(parseFloat(v || "0") * 100) } : x))}
+                    />
+                  </View>
+                  <Pressable onPress={() => setOptionalItems(prev => prev.filter((_, idx) => idx !== i))} style={{ marginLeft: 6 }}>
+                    <Ionicons name="close-circle" size={20} color={RED} />
+                  </Pressable>
+                </View>
+              ))}
+
+              <Text style={[formStyles.label, { color: colors.mutedForeground, marginTop: 4 }]}>EXTERNAL CATALOG URL</Text>
+              <TextInput
+                style={[formStyles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.card }]}
+                placeholder="https://... (optional link to a catalog or size guide)"
+                placeholderTextColor={colors.mutedForeground}
+                value={externalCatalogUrl}
+                onChangeText={setExternalCatalogUrl}
+                autoCapitalize="none"
+                keyboardType="url"
+              />
 
               <Text style={[formStyles.sectionTitle, { color: colors.foreground }]}>PAYMENT</Text>
               <View style={{ flexDirection: "row", marginBottom: 16, gap: 8 }}>
@@ -954,13 +1076,14 @@ export default function FeeEventsScreen() {
                   {courses.length === 0 ? (
                     <Text style={{ fontSize: 12, color: colors.mutedForeground, fontStyle: "italic" }}>No courses available</Text>
                   ) : courses.map(course => {
-                    const sel = selectedCourseIds.includes(course.id);
+                    const cid = Number(course.id);
+                    const sel = selectedCourseIds.includes(cid);
                     return (
                       <Pressable key={course.id}
                         style={{ flexDirection: "row", alignItems: "center", paddingVertical: 10, paddingHorizontal: 12,
                           borderRadius: 8, borderWidth: 1, borderColor: sel ? NAVY : colors.border,
                           backgroundColor: sel ? NAVY + "0F" : colors.card, marginBottom: 6 }}
-                        onPress={() => setSelectedCourseIds(prev => sel ? prev.filter(x => x !== course.id) : [...prev, course.id])}
+                        onPress={() => setSelectedCourseIds(prev => sel ? prev.filter(x => x !== cid) : [...prev, cid])}
                       >
                         <View style={{ width: 20, height: 20, borderRadius: 10, borderWidth: 2,
                           borderColor: sel ? NAVY : colors.border, backgroundColor: sel ? NAVY : "transparent",

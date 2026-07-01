@@ -69,6 +69,18 @@ async function resolveFeeRecipients(
       if (pids.length === 0) return [];
       query = query.in("id", pids);
     }
+  } else if (mode === "target_courses") {
+    // Multi-course: use target_course_ids stored on the fee event (passed via data)
+    const courseIds = ((data["targetCourseIds"] ?? data["target_course_ids"] ?? []) as (string | number)[]).map(Number).filter(Boolean);
+    if (courseIds.length === 0) return [];
+    const { data: enrol } = await supabase
+      .from("course_enrollments")
+      .select("parent_user_id")
+      .in("course_id", courseIds)
+      .eq("organization_id", orgId);
+    const pids = [...new Set((enrol ?? []).map((e: { parent_user_id: number }) => e.parent_user_id).filter(Boolean))];
+    if (pids.length === 0) return [];
+    query = query.in("id", pids);
   } else if (mode === "operators") {
     query = query.eq("role", "operator");
   } else if (mode === "parents") {
@@ -183,6 +195,12 @@ router.post("/fee-events", requireAuth, requireRole("admin"), async (req, res) =
     recipient_data?: Record<string, unknown>;
     line_items?: { description: string; amount_cents: number }[];
     installments?: { label?: string; amount_cents: number; due_date: string }[];
+    category?: string;
+    season_year?: number;
+    optional_items?: { name: string; price_cents: number; required?: boolean }[];
+    extra_ticket_price_cents?: number;
+    external_catalog_url?: string;
+    target_course_ids?: number[];
   };
 
   if (!body.title?.trim()) { res.status(400).json({ error: "Title is required" }); return; }
@@ -190,8 +208,9 @@ router.post("/fee-events", requireAuth, requireRole("admin"), async (req, res) =
   const { rows } = await pool.query<{ id: number }>(
     `INSERT INTO fee_events
        (organization_id, title, description, payment_type, total_amount_cents, currency,
-        due_date, free_tickets_per_member, recipient_mode, recipient_data, created_by_admin_id)
-     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+        due_date, free_tickets_per_member, recipient_mode, recipient_data, created_by_admin_id,
+        category, season_year, optional_items, extra_ticket_price_cents, external_catalog_url, target_course_ids)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
      RETURNING id`,
     [
       user.orgId, body.title.trim(), body.description ?? null,
@@ -201,6 +220,12 @@ router.post("/fee-events", requireAuth, requireRole("admin"), async (req, res) =
       body.recipient_mode ?? "all",
       JSON.stringify(body.recipient_data ?? {}),
       parseInt(user.id),
+      body.category ?? null,
+      body.season_year ?? null,
+      JSON.stringify(body.optional_items ?? []),
+      body.extra_ticket_price_cents ?? 0,
+      body.external_catalog_url ?? null,
+      JSON.stringify(body.target_course_ids ?? []),
     ],
   );
 
@@ -260,6 +285,8 @@ router.get("/fee-events/my-fees", requireAuth, async (req, res) => {
   const { rows } = await pool.query(
     `SELECT fe.id, fe.title, fe.description, fe.payment_type, fe.total_amount_cents,
             fe.currency, fe.due_date, fe.free_tickets_per_member, fe.published_at,
+            fe.category, fe.season_year, fe.optional_items, fe.extra_ticket_price_cents,
+            fe.external_catalog_url, fe.target_course_ids,
             fer.payment_status, fer.read_at, fer.delivered_at,
             COALESCE(
               json_agg(fein ORDER BY fein.installment_num) FILTER (WHERE fein.id IS NOT NULL),
@@ -321,6 +348,12 @@ router.patch("/fee-events/:id", requireAuth, requireRole("admin"), async (req, r
     recipient_data?: Record<string, unknown>;
     line_items?: { description: string; amount_cents: number }[];
     installments?: { label?: string; amount_cents: number; due_date: string }[];
+    category?: string | null;
+    season_year?: number | null;
+    optional_items?: { name: string; price_cents: number; required?: boolean }[];
+    extra_ticket_price_cents?: number;
+    external_catalog_url?: string | null;
+    target_course_ids?: number[];
   };
 
   const { rows: [ev] } = await pool.query(
@@ -334,7 +367,9 @@ router.patch("/fee-events/:id", requireAuth, requireRole("admin"), async (req, r
     `UPDATE fee_events SET
        title=$3, description=$4, payment_type=$5, total_amount_cents=$6,
        currency=$7, due_date=$8, free_tickets_per_member=$9,
-       recipient_mode=$10, recipient_data=$11
+       recipient_mode=$10, recipient_data=$11,
+       category=$12, season_year=$13, optional_items=$14,
+       extra_ticket_price_cents=$15, external_catalog_url=$16, target_course_ids=$17
      WHERE id=$1 AND organization_id=$2`,
     [
       eventId, user.orgId,
@@ -344,6 +379,12 @@ router.patch("/fee-events/:id", requireAuth, requireRole("admin"), async (req, r
       body.free_tickets_per_member ?? 0,
       body.recipient_mode ?? "all",
       JSON.stringify(body.recipient_data ?? {}),
+      body.category ?? null,
+      body.season_year ?? null,
+      JSON.stringify(body.optional_items ?? []),
+      body.extra_ticket_price_cents ?? 0,
+      body.external_catalog_url ?? null,
+      JSON.stringify(body.target_course_ids ?? []),
     ],
   );
 
@@ -492,7 +533,11 @@ router.post("/fee-events/:id/publish", requireAuth, requireRole("admin"), async 
     .single();
   const orgName = org?.name ?? "Organization";
 
-  const recipients = await resolveFeeRecipients(user.orgId ?? 0, ev.recipient_mode, ev.recipient_data as Record<string, unknown>);
+  // For target_courses mode, pass the stored course IDs from the event record
+  const recipientData = ev.recipient_mode === "target_courses"
+    ? { ...(ev.recipient_data as Record<string, unknown>), target_course_ids: ev.target_course_ids as number[] }
+    : ev.recipient_data as Record<string, unknown>;
+  const recipients = await resolveFeeRecipients(user.orgId ?? 0, ev.recipient_mode, recipientData);
 
   await pool.query(`UPDATE fee_events SET status='active', published_at=NOW() WHERE id=$1`, [eventId]);
 
@@ -682,6 +727,95 @@ router.post("/fee-events/:id/mark-paid", requireAuth, async (req, res) => {
     [eventId, parseInt(user.id)],
   ).catch(() => {});
   res.json({ ok: true });
+});
+
+// ── POST /fee-events/:id/select-items — member submits optional add-on order ──
+// ON CONFLICT DO NOTHING on (fee_event_id, user_id) prevents duplicate orders
+// if the member double-taps or the request is retried.
+
+router.post("/fee-events/:id/select-items", requireAuth, async (req, res) => {
+  const user    = (req as AuthReq).user;
+  const eventId = parseInt((req.params["id"] as string) ?? "");
+  const uid     = parseInt(user.id);
+  const body    = req.body as {
+    selected_items: { name: string; price_cents: number; qty?: number }[];
+    extra_tickets?: number;
+  };
+
+  const { rows: [ev] } = await pool.query(
+    `SELECT id, status, extra_ticket_price_cents FROM fee_events WHERE id=$1 AND organization_id=$2`,
+    [eventId, user.orgId],
+  );
+  if (!ev) { res.status(404).json({ error: "Not found" }); return; }
+  if (ev.status !== "active") { res.status(400).json({ error: "Event is not active" }); return; }
+
+  const items        = body.selected_items ?? [];
+  const extraTickets = Math.max(0, body.extra_tickets ?? 0);
+  const itemTotal    = items.reduce((s, i) => s + i.price_cents * (i.qty ?? 1), 0);
+  const ticketTotal  = extraTickets * (ev.extra_ticket_price_cents as number);
+  const total        = itemTotal + ticketTotal;
+
+  const { rows: [existing] } = await pool.query(
+    `SELECT id FROM fee_event_optional_orders WHERE fee_event_id=$1 AND user_id=$2`,
+    [eventId, uid],
+  );
+
+  if (existing) {
+    await pool.query(
+      `UPDATE fee_event_optional_orders
+         SET selected_items=$3, extra_tickets=$4, total_cents=$5, payment_status='pending'
+       WHERE fee_event_id=$1 AND user_id=$2`,
+      [eventId, uid, JSON.stringify(items), extraTickets, total],
+    ).catch(() => {});
+  } else {
+    const { rows: [me] } = await supabase
+      .from("users")
+      .select("name")
+      .eq("id", uid)
+      .single()
+      .then(r => ({ rows: [r.data] }));
+
+    await pool.query(
+      `INSERT INTO fee_event_optional_orders
+         (fee_event_id, user_id, member_name, selected_items, extra_tickets, total_cents, payment_status)
+       VALUES ($1,$2,$3,$4,$5,$6,'pending')
+       ON CONFLICT (fee_event_id, user_id) DO NOTHING`,
+      [eventId, uid, me?.name ?? "", JSON.stringify(items), extraTickets, total],
+    ).catch(() => {});
+  }
+
+  res.json({ ok: true, total_cents: total });
+});
+
+// ── GET /fee-events/:id/my-order — member: get own optional order ─────────────
+
+router.get("/fee-events/:id/my-order", requireAuth, async (req, res) => {
+  const user    = (req as AuthReq).user;
+  const eventId = parseInt((req.params["id"] as string) ?? "");
+  const { rows: [order] } = await pool.query(
+    `SELECT * FROM fee_event_optional_orders WHERE fee_event_id=$1 AND user_id=$2`,
+    [eventId, parseInt(user.id)],
+  );
+  res.json(order ?? null);
+});
+
+// ── GET /fee-events/:id/item-orders — admin: all optional orders for an event ──
+
+router.get("/fee-events/:id/item-orders", requireAuth, requireRole("admin"), async (req, res) => {
+  const user    = (req as AuthReq).user;
+  const eventId = parseInt((req.params["id"] as string) ?? "");
+
+  const { rows: [ev] } = await pool.query(
+    `SELECT id FROM fee_events WHERE id=$1 AND organization_id=$2`,
+    [eventId, user.orgId],
+  );
+  if (!ev) { res.status(404).json({ error: "Not found" }); return; }
+
+  const { rows } = await pool.query(
+    `SELECT * FROM fee_event_optional_orders WHERE fee_event_id=$1 ORDER BY created_at`,
+    [eventId],
+  );
+  res.json(rows);
 });
 
 export default router;

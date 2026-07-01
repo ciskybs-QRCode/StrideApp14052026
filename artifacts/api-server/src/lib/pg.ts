@@ -1621,6 +1621,39 @@ export async function ensureTables(): Promise<void> {
     CREATE INDEX IF NOT EXISTS fere_user_idx  ON fee_event_recipients(user_id);
   `).catch(() => {});
 
+  // ── Fee Events — extended columns (Quota Saggio / season fee add-ons) ─────
+  await pool.query(`
+    ALTER TABLE fee_events ADD COLUMN IF NOT EXISTS category               TEXT;
+    ALTER TABLE fee_events ADD COLUMN IF NOT EXISTS season_year            INTEGER;
+    ALTER TABLE fee_events ADD COLUMN IF NOT EXISTS optional_items         JSONB NOT NULL DEFAULT '[]';
+    ALTER TABLE fee_events ADD COLUMN IF NOT EXISTS extra_ticket_price_cents INTEGER NOT NULL DEFAULT 0;
+    ALTER TABLE fee_events ADD COLUMN IF NOT EXISTS external_catalog_url   TEXT;
+    ALTER TABLE fee_events ADD COLUMN IF NOT EXISTS target_course_ids      JSONB NOT NULL DEFAULT '[]';
+  `).catch(() => {});
+
+  // ── Fee Event Optional Orders ─────────────────────────────────────────────
+  // Tracks per-member optional add-on selections for a fee event.
+  // UNIQUE (fee_event_id, user_id) prevents duplicate orders if publish is
+  // called twice or two admins act simultaneously.
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS fee_event_optional_orders (
+      id                  SERIAL PRIMARY KEY,
+      fee_event_id        INTEGER NOT NULL REFERENCES fee_events(id) ON DELETE CASCADE,
+      user_id             INTEGER NOT NULL,
+      member_name         TEXT NOT NULL DEFAULT '',
+      selected_items      JSONB NOT NULL DEFAULT '[]',
+      extra_tickets       INTEGER NOT NULL DEFAULT 0,
+      total_cents         INTEGER NOT NULL DEFAULT 0,
+      payment_status      TEXT NOT NULL DEFAULT 'pending',
+      checkout_session_id TEXT,
+      paid_at             TIMESTAMPTZ,
+      created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (fee_event_id, user_id)
+    );
+    CREATE INDEX IF NOT EXISTS feoo_event_idx ON fee_event_optional_orders(fee_event_id);
+    CREATE INDEX IF NOT EXISTS feoo_user_idx  ON fee_event_optional_orders(user_id);
+  `).catch(() => {});
+
   // ── Association Expenses ──────────────────────────────────────────────────
   await pool.query(`
     CREATE TABLE IF NOT EXISTS association_expenses (

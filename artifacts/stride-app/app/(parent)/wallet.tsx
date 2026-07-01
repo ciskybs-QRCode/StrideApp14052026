@@ -67,6 +67,8 @@ function maskIBAN(iban: string): string {
 
 // ── Fee event types ───────────────────────────────────────────────────────────
 
+interface FeeOptionalItem { name: string; price_cents: number }
+
 interface MyFeeEvent {
   id: number;
   title: string;
@@ -81,6 +83,9 @@ interface MyFeeEvent {
   published_at: string | null;
   installments: { installment_num: number; label: string | null; amount_cents: number; due_date: string }[];
   line_items: { description: string; amount_cents: number }[];
+  optional_items?: FeeOptionalItem[];
+  extra_ticket_price_cents?: number;
+  external_catalog_url?: string | null;
 }
 
 const CURRENCY_SYMS: Record<string, string> = { EUR: "€", USD: "$", GBP: "£", CHF: "CHF " };
@@ -98,6 +103,13 @@ export default function WalletScreen() {
   const [pendingFees, setPendingFees]       = useState<MyFeeEvent[]>([]);
   const [feesLoading, setFeesLoading]       = useState(false);
   const [expandedFee, setExpandedFee]       = useState<number | null>(null);
+
+  // ── Optional add-ons state ───────────────────────────────────────────────────
+  const [addonsModal,         setAddonsModal]         = useState<MyFeeEvent | null>(null);
+  const [selectedAddons,      setSelectedAddons]      = useState<Set<string>>(new Set());
+  const [addonExtraTickets,   setAddonExtraTickets]   = useState(0);
+  const [addonSubmitting,     setAddonSubmitting]     = useState(false);
+  const [addonOrderMap,       setAddonOrderMap]       = useState<Record<number, { total_cents: number; status: string }>>({});
 
   // ── Active subscriptions ────────────────────────────────────────────────────
   interface ActiveSub {
@@ -175,6 +187,37 @@ export default function WalletScreen() {
   const markRead = (id: number) => {
     import("@/lib/api").then(api => api.markFeeEventRead(id)).catch(() => {});
     setPendingFees(prev => prev.map(f => f.id === id ? { ...f, read_at: new Date().toISOString() } : f));
+  };
+
+  // ── Add-ons helpers ──────────────────────────────────────────────────────────
+  const openAddons = (fee: MyFeeEvent) => {
+    setAddonsModal(fee);
+    setSelectedAddons(new Set());
+    setAddonExtraTickets(0);
+  };
+
+  const submitAddons = async () => {
+    if (!addonsModal) return;
+    setAddonSubmitting(true);
+    try {
+      const items = (addonsModal.optional_items ?? [])
+        .filter(i => selectedAddons.has(i.name))
+        .map(i => ({ name: i.name, price_cents: i.price_cents, qty: 1 }));
+      const res = await import("@/lib/api").then(m =>
+        m.request<{ ok: boolean; total_cents: number }>(
+          `/api/fee-events/${addonsModal.id}/select-items`,
+          "POST",
+          { selected_items: items, extra_tickets: addonExtraTickets },
+        )
+      );
+      setAddonOrderMap(prev => ({ ...prev, [addonsModal.id]: { total_cents: res.total_cents, status: "pending" } }));
+      setAddonsModal(null);
+      Alert.alert("Selection saved", "Your add-on order has been recorded. Proceed to cart to complete payment.");
+    } catch {
+      Alert.alert("Error", "Could not save your selection. Please try again.");
+    } finally {
+      setAddonSubmitting(false);
+    }
   };
 
   // ── Bank details state ───────────────────────────────────────────────────────
@@ -364,8 +407,43 @@ export default function WalletScreen() {
                     {fee.free_tickets_per_member > 0 && (
                       <View style={[feeStyles.ticketNote, { backgroundColor: "#FEF9EE", borderLeftColor: colors.secondary }]}>
                         <Text style={{ color: "#92400e", fontSize: 13 }}>
-                          🎟 {fee.free_tickets_per_member} complimentary ticket{fee.free_tickets_per_member > 1 ? "s" : ""} included upon payment.
+                          🎟 {fee.free_tickets_per_member} complimentary pass{fee.free_tickets_per_member > 1 ? "es" : ""} included upon payment.
+                          {(fee.extra_ticket_price_cents ?? 0) > 0
+                            ? ` Additional passes: ${fmtFee(fee.extra_ticket_price_cents!, fee.currency)} each.`
+                            : ""}
                         </Text>
+                      </View>
+                    )}
+
+                    {/* ── Optional Add-ons ── */}
+                    {(fee.optional_items ?? []).length > 0 && (
+                      <View style={[feeStyles.ticketNote, { backgroundColor: "#EFF6FF", borderLeftColor: colors.primary, marginTop: 8 }]}>
+                        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                          <View style={{ flex: 1 }}>
+                            <Text style={{ fontSize: 13, fontWeight: "700", color: colors.primary }}>
+                              Optional Add-ons Available
+                            </Text>
+                            <Text style={{ fontSize: 12, color: colors.primary, marginTop: 2 }}>
+                              {(fee.optional_items ?? []).length} item{(fee.optional_items ?? []).length > 1 ? "s" : ""} offered
+                              {addonOrderMap[fee.id]
+                                ? ` · Order recorded (${fmtFee(addonOrderMap[fee.id].total_cents, fee.currency)})`
+                                : ""}
+                            </Text>
+                          </View>
+                          <Pressable
+                            style={{ backgroundColor: colors.primary, borderRadius: 8, paddingHorizontal: 12, paddingVertical: 6 }}
+                            onPress={() => openAddons(fee)}
+                          >
+                            <Text style={{ color: colors.secondary, fontSize: 12, fontWeight: "700" }}>
+                              {addonOrderMap[fee.id] ? "Edit" : "Select"}
+                            </Text>
+                          </Pressable>
+                        </View>
+                        {fee.external_catalog_url ? (
+                          <Text style={{ fontSize: 11, color: colors.primary, marginTop: 6, textDecorationLine: "underline" }}>
+                            📎 Catalog: {fee.external_catalog_url}
+                          </Text>
+                        ) : null}
                       </View>
                     )}
 
@@ -595,6 +673,122 @@ export default function WalletScreen() {
           </View>
         )}
       </ScrollView>
+
+      {/* ── Optional Add-ons Modal ── */}
+      <Modal visible={addonsModal !== null} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setAddonsModal(null)}>
+        <View style={{ flex: 1, backgroundColor: colors.background }}>
+          <View style={{ width: 40, height: 4, borderRadius: 2, backgroundColor: "#e5e7eb", alignSelf: "center", marginTop: 10 }} />
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", paddingHorizontal: 20, paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border }}>
+            <Text style={{ fontSize: 18, fontWeight: "700", color: colors.foreground }}>Optional Add-ons</Text>
+            <Pressable onPress={() => setAddonsModal(null)}>
+              <Ionicons name="close" size={24} color={colors.foreground} />
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: insets.bottom + 60 }}>
+            <Text style={{ fontSize: 13, color: colors.mutedForeground, marginBottom: 16 }}>
+              Select the items you would like to order. Your selection will be saved and added to your next payment.
+            </Text>
+
+            {addonsModal?.external_catalog_url ? (
+              <View style={[feeStyles.ticketNote, { backgroundColor: "#EFF6FF", borderLeftColor: colors.primary, marginBottom: 16 }]}>
+                <Text style={{ fontSize: 12, color: colors.primary }}>
+                  📎 View catalog: <Text style={{ textDecorationLine: "underline" }}>{addonsModal.external_catalog_url}</Text>
+                </Text>
+              </View>
+            ) : null}
+
+            {(addonsModal?.optional_items ?? []).map((item, i) => {
+              const picked = selectedAddons.has(item.name);
+              return (
+                <Pressable
+                  key={i}
+                  style={{ flexDirection: "row", alignItems: "center", borderWidth: 1, borderRadius: 10, padding: 14, marginBottom: 10,
+                    borderColor: picked ? colors.primary : colors.border,
+                    backgroundColor: picked ? colors.primary + "0F" : colors.card }}
+                  onPress={() => {
+                    setSelectedAddons(prev => {
+                      const next = new Set(prev);
+                      if (next.has(item.name)) next.delete(item.name); else next.add(item.name);
+                      return next;
+                    });
+                  }}
+                >
+                  <View style={{ width: 22, height: 22, borderRadius: 11, borderWidth: 2,
+                    borderColor: picked ? colors.primary : colors.border,
+                    backgroundColor: picked ? colors.primary : "transparent",
+                    alignItems: "center", justifyContent: "center", marginRight: 12 }}>
+                    {picked && <Ionicons name="checkmark" size={13} color="#fff" />}
+                  </View>
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: "600", color: picked ? colors.primary : colors.foreground }}>{item.name}</Text>
+                  </View>
+                  <Text style={{ fontSize: 14, fontWeight: "700", color: colors.primary }}>
+                    {fmtFee(item.price_cents, addonsModal?.currency ?? "EUR")}
+                  </Text>
+                </Pressable>
+              );
+            })}
+
+            {(addonsModal?.extra_ticket_price_cents ?? 0) > 0 && (
+              <>
+                <Text style={{ fontSize: 13, fontWeight: "700", color: colors.foreground, marginTop: 12, marginBottom: 8 }}>
+                  Additional Passes
+                </Text>
+                <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 16 }}>
+                  <Pressable
+                    style={{ width: 32, height: 32, borderRadius: 6, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" }}
+                    onPress={() => setAddonExtraTickets(p => Math.max(0, p - 1))}
+                  >
+                    <Ionicons name="remove" size={16} color={colors.foreground} />
+                  </Pressable>
+                  <Text style={{ fontSize: 18, fontWeight: "700", color: colors.foreground, marginHorizontal: 16 }}>{addonExtraTickets}</Text>
+                  <Pressable
+                    style={{ width: 32, height: 32, borderRadius: 6, borderWidth: 1, borderColor: colors.border, alignItems: "center", justifyContent: "center" }}
+                    onPress={() => setAddonExtraTickets(p => p + 1)}
+                  >
+                    <Ionicons name="add" size={16} color={colors.foreground} />
+                  </Pressable>
+                  <Text style={{ fontSize: 12, color: colors.mutedForeground, marginLeft: 12, flex: 1 }}>
+                    × {fmtFee(addonsModal?.extra_ticket_price_cents ?? 0, addonsModal?.currency ?? "EUR")} each
+                    {addonExtraTickets > 0 ? ` = ${fmtFee(addonExtraTickets * (addonsModal?.extra_ticket_price_cents ?? 0), addonsModal?.currency ?? "EUR")}` : ""}
+                  </Text>
+                </View>
+              </>
+            )}
+
+            {/* Total */}
+            {(selectedAddons.size > 0 || addonExtraTickets > 0) && (
+              <View style={{ flexDirection: "row", justifyContent: "space-between", paddingVertical: 12, borderTopWidth: 1, borderTopColor: colors.border, marginBottom: 16 }}>
+                <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>Order total</Text>
+                <Text style={{ fontSize: 16, fontWeight: "800", color: colors.primary }}>
+                  {fmtFee(
+                    [...(addonsModal?.optional_items ?? [])].filter(i => selectedAddons.has(i.name)).reduce((s, i) => s + i.price_cents, 0)
+                    + addonExtraTickets * (addonsModal?.extra_ticket_price_cents ?? 0),
+                    addonsModal?.currency ?? "EUR"
+                  )}
+                </Text>
+              </View>
+            )}
+
+            <Pressable
+              style={{ flexDirection: "row", alignItems: "center", justifyContent: "center", backgroundColor: colors.primary,
+                borderRadius: 10, paddingVertical: 14, gap: 8, opacity: addonSubmitting ? 0.6 : 1 }}
+              onPress={() => { void submitAddons(); }}
+              disabled={addonSubmitting}
+            >
+              {addonSubmitting
+                ? <ActivityIndicator size="small" color={colors.secondary} />
+                : (<>
+                    <Ionicons name="checkmark-circle-outline" size={18} color={colors.secondary} />
+                    <Text style={{ color: colors.secondary, fontSize: 15, fontWeight: "700" }}>
+                      {selectedAddons.size === 0 && addonExtraTickets === 0 ? "Skip Add-ons" : "Save Selection"}
+                    </Text>
+                  </>)
+              }
+            </Pressable>
+          </ScrollView>
+        </View>
+      </Modal>
 
       {/* ── Bank Details Modal ── */}
       <Modal visible={showBankModal} transparent animationType="slide" onRequestClose={() => setShowBankModal(false)}>
