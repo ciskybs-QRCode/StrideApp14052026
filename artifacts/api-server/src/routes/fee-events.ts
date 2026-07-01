@@ -800,6 +800,35 @@ router.post("/fee-events/:id/select-items", requireAuth, async (req, res) => {
     .maybeSingle();
   type OrgRow = { stripe_secret_key?: string | null; currency?: string; name?: string };
   const activeKey = (orgRow as OrgRow | null)?.stripe_secret_key ?? masterKey;
+
+  // Check for Stripe Connect account in admin_settings
+  const { rows: [asRow] } = await pool.query<{ stripe_connect_account_id?: string }>(
+    `SELECT stripe_connect_account_id FROM admin_settings WHERE organization_id=$1 LIMIT 1`,
+    [user.orgId],
+  );
+  const stripeConnectId = (asRow as { stripe_connect_account_id?: string } | undefined)?.stripe_connect_account_id ?? null;
+
+  // No Stripe at all — return bank-transfer fallback instead of erroring
+  if (!activeKey && !stripeConnectId) {
+    await pool.query(
+      `UPDATE fee_event_optional_orders SET payment_status='bank_transfer_pending'
+       WHERE fee_event_id=$1 AND user_id=$2`,
+      [eventId, uid],
+    ).catch(() => {});
+    res.json({
+      ok:             true,
+      payment_method: "bank_transfer",
+      bank_details:   {
+        currency:    (orgRow as OrgRow | null)?.currency ?? "eur",
+        total_cents: total,
+        note:        "Contact the school administration to arrange payment by bank transfer.",
+      },
+      total_cents:  total,
+      checkout_url: null,
+    });
+    return;
+  }
+
   if (!activeKey) { res.status(503).json({ error: "stripe_not_configured" }); return; }
 
   const currency = (orgRow as OrgRow | null)?.currency ?? "eur";

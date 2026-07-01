@@ -186,11 +186,18 @@ router.patch("/members/:id", requireAuth, requireRole("admin", "operator"), asyn
     .eq("id", parseInt(String(id), 10)).eq("organization_id", user.orgId).maybeSingle();
   if (!existing) { res.status(403).json({ error: "Forbidden" }); return; }
 
-  // Field whitelist — prevent arbitrary column injection
-  const ALLOWED = [
+  // Role-specific field whitelists.
+  // medical_notes is Admin-only write — Operators can read it (via GET) but cannot modify it.
+  // Operators may write operator_session_notes for their own session observations.
+  const ADMIN_ALLOWED = [
     "first_name","last_name","date_of_birth","allergies",
     "notes","phone","emergency_contact","photo_uri","medical_notes",
   ] as const;
+  const OPERATOR_ALLOWED = [
+    "first_name","last_name","date_of_birth","allergies",
+    "notes","phone","emergency_contact","photo_uri","operator_session_notes",
+  ] as const;
+  const ALLOWED: readonly string[] = user.role === "admin" ? ADMIN_ALLOWED : OPERATOR_ALLOWED;
   const patch: Record<string, unknown> = {};
   for (const key of ALLOWED) {
     if (key in (req.body as Record<string, unknown>)) {

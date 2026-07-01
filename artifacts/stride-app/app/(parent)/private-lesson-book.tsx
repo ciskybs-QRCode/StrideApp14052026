@@ -35,7 +35,7 @@ type Step = "discipline" | "child" | "operator" | "datetime" | "confirm";
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function cents(c: number, sym = "€") { return `${sym}${(c / 100).toFixed(2)}`; }
+function cents(c: number, sym = "$") { return `${sym}${(c / 100).toFixed(2)}`; }
 
 function todayStr() {
   return new Date().toISOString().slice(0, 10);

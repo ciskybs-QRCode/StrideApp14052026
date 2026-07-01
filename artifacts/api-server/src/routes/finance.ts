@@ -148,9 +148,17 @@ router.post("/finance/execute-payout", requireAuth, requireRole("admin"), async 
       const destId = (recipProfile as { stripe_connect_id?: string } | null)?.stripe_connect_id;
 
       if (destId) {
+        // Resolve org currency — never hardcode EUR
+        let payoutCurrency = "eur";
+        try {
+          const { data: pcRow } = await supabase
+            .from("organizations").select("currency").eq("id", user.orgId ?? 0).maybeSingle();
+          const pc = (pcRow as { currency?: string } | null)?.currency;
+          if (pc) payoutCurrency = pc.toLowerCase();
+        } catch { /* fallback */ }
         const transfer = await stripe.transfers.create({
           amount: resolvedCents,
-          currency: "eur",
+          currency: payoutCurrency,
           destination: destId,
           transfer_group: `TX_${resolvedRefId}`,
           metadata: { referenceId: resolvedRefId, recipientName: recipientName ?? "", orgId: String(user.orgId) },

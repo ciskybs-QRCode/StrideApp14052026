@@ -2,6 +2,7 @@ import { Router, type Request } from "express";
 import Stripe from "stripe";
 import crypto from "crypto";
 import { pool } from "../lib/pg.js";
+import { supabase } from "../lib/supabase.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
 
 type AuthReq = Request & { user: TokenPayload };
@@ -244,6 +245,15 @@ router.post("/private-lessons/checkout", requireAuth, requireRole("parent"), asy
     if (!stripeKey) { res.status(400).json({ error: "Payments not configured for this association" }); return; }
     const stripe = new Stripe(stripeKey);
 
+    // Resolve org currency — never hardcode EUR
+    let lessonCurrency = "eur";
+    try {
+      const { data: lcRow } = await supabase
+        .from("organizations").select("currency").eq("id", orgId).maybeSingle();
+      const lc = (lcRow as { currency?: string } | null)?.currency;
+      if (lc) lessonCurrency = lc.toLowerCase();
+    } catch { /* fallback */ }
+
     // Operator name
     const { rows: opRows } = await pool.query(`SELECT name FROM users WHERE id=$1`, [operator_user_id]);
     const operatorName = (opRows[0] as { name?: string })?.name ?? "Instructor";
@@ -271,7 +281,7 @@ router.post("/private-lessons/checkout", requireAuth, requireRole("parent"), asy
       payment_method_types: ["card"],
       line_items: [{
         price_data: {
-          currency:     "eur",
+          currency:     lessonCurrency,
           unit_amount:  cfg.member_price_cents,
           product_data: {
             name:        `Private ${cfg.discipline_name} Lesson`,

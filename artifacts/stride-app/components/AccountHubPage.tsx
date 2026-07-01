@@ -13,6 +13,7 @@ import {
   View,
 } from "react-native";
 import { request } from "@/lib/api";
+import { getBankConfig, type BankConfig } from "@/lib/payment-regions";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useAuth } from "@/context/AuthContext";
 import { useColors } from "@/hooks/useColors";
@@ -52,11 +53,23 @@ export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [], 
   const [bankBic, setBankBic] = useState("");
   const [bankName, setBankName] = useState("");
   const [bankSaving, setBankSaving] = useState(false);
+  const [bankCfg, setBankCfg] = useState<BankConfig>(getBankConfig("IT", "EUR"));
 
   useEffect(() => {
     request<{ iban?: string; bic?: string; account_name?: string }>("GET", "/account/payout-details")
       .then(d => { setBankIban(d.iban ?? ""); setBankBic(d.bic ?? ""); setBankName(d.account_name ?? ""); })
       .catch(() => {});
+    // Detect org country/currency to show the correct banking fields
+    request<Record<string, unknown>>("GET", "/admin-settings")
+      .then(s => {
+        const rc = ((s["region_code"] as string | undefined) ?? "IT").toUpperCase();
+        const REGION_TO_ISO: Record<string, string> = {
+          EU:"EUR", IT:"EUR", DE:"EUR", FR:"EUR", ES:"EUR", NL:"EUR",
+          AU:"AUD", GB:"GBP", US:"USD", CH:"CHF", CA:"CAD", NZ:"NZD", JP:"JPY",
+        };
+        setBankCfg(getBankConfig(rc, REGION_TO_ISO[rc] ?? "EUR"));
+      })
+      .catch(() => {}); // parents may not have admin-settings access — IBAN form is a safe default
   }, []);
 
   const handleSaveBank = async () => {
@@ -250,26 +263,34 @@ export function AccountHubPage({ parentRoute, profileEditRoute, extraRows = [], 
               <Text style={[styles.modalDesc, { color: colors.mutedForeground }]}>
                 Saved here so admins can transfer reimbursements directly to your account.
               </Text>
-              <Text style={[styles.fieldLabel, { color: colors.primary }]}>IBAN / Account Number</Text>
+              {/* Currency hint — changes per org region */}
+              <Text style={{ fontSize: 11, color: colors.mutedForeground, marginBottom: 10 }}>
+                Amounts in {bankCfg.currency} ({bankCfg.currencySymbol})
+              </Text>
+              <Text style={[styles.fieldLabel, { color: colors.primary }]}>{bankCfg.accountLabel}</Text>
               <TextInput
                 style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background, marginBottom: 14 }]}
                 value={bankIban}
                 onChangeText={setBankIban}
-                placeholder="e.g. IT60 X054 2811 1010 0000 0123 456"
+                placeholder={bankCfg.accountPlaceholder}
                 placeholderTextColor={colors.mutedForeground}
                 autoCapitalize="characters"
                 autoCorrect={false}
               />
-              <Text style={[styles.fieldLabel, { color: colors.primary }]}>BIC / SWIFT (optional)</Text>
-              <TextInput
-                style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background, marginBottom: 14 }]}
-                value={bankBic}
-                onChangeText={setBankBic}
-                placeholder="e.g. UNCRITMM"
-                placeholderTextColor={colors.mutedForeground}
-                autoCapitalize="characters"
-                autoCorrect={false}
-              />
+              {bankCfg.bicLabel ? (
+                <>
+                  <Text style={[styles.fieldLabel, { color: colors.primary }]}>{bankCfg.bicLabel}</Text>
+                  <TextInput
+                    style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background, marginBottom: 14 }]}
+                    value={bankBic}
+                    onChangeText={setBankBic}
+                    placeholder="e.g. UNCRITMM"
+                    placeholderTextColor={colors.mutedForeground}
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                  />
+                </>
+              ) : null}
               <Text style={[styles.fieldLabel, { color: colors.primary }]}>Account Holder Name</Text>
               <TextInput
                 style={[styles.input, { borderColor: colors.border, color: colors.foreground, backgroundColor: colors.background }]}

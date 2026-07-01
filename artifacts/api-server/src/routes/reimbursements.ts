@@ -131,6 +131,15 @@ router.post("/reimbursements", requireAuth, async (req, res) => {
     savedIban = ppRows[0]?.payout_iban ?? null;
   } catch { /* optional */ }
 
+  // Resolve org currency — never hardcode EUR
+  let orgCurrency = "EUR";
+  try {
+    const { data: orgCurRow } = await supabase
+      .from("organizations").select("currency").eq("id", user.orgId ?? 0).maybeSingle();
+    const c = (orgCurRow as { currency?: string } | null)?.currency;
+    if (c) orgCurrency = c.toUpperCase();
+  } catch { /* fallback EUR */ }
+
   const { data, error } = await supabase
     .from(TABLE)
     .insert({
@@ -140,7 +149,7 @@ router.post("/reimbursements", requireAuth, async (req, res) => {
       claimant_role:   claimantRole,
       description,
       amount:          (amountCents / 100).toFixed(2),
-      currency:        "EUR",
+      currency:        orgCurrency,
       receipt_url:     receiptUri ?? null,
       status:          "pending",
       payee_iban:      savedIban,
@@ -348,9 +357,17 @@ router.patch("/reimbursements/:id", requireAuth, requireRole("admin"), async (re
       if (stripeKey) {
         const Stripe = (await import("stripe")).default;
         const stripe = new Stripe(stripeKey);
+        // Resolve org currency for the transfer — never hardcode EUR
+        let transferCurrency = "eur";
+        try {
+          const { data: tcRow } = await supabase
+            .from("organizations").select("currency").eq("id", user.orgId ?? 0).maybeSingle();
+          const tc = (tcRow as { currency?: string } | null)?.currency;
+          if (tc) transferCurrency = tc.toLowerCase();
+        } catch { /* fallback */ }
         await stripe.transfers.create({
           amount:      resolvedCents,
-          currency:    "eur",
+          currency:    transferCurrency,
           destination: stripeConnectId,
           metadata: {
             reimbursement_id: String(id),

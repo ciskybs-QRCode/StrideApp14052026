@@ -22,6 +22,7 @@ import { Router } from "express";
 import { randomUUID } from "crypto";
 import { pool, getPlatformStripeKey } from "../lib/pg.js";
 import { requireAuth, requireRole, type TokenPayload } from "../lib/auth.js";
+import { supabase } from "../lib/supabase.js";
 import type { Request, Response } from "express";
 
 type AuthReq = Request & { user: TokenPayload };
@@ -209,6 +210,15 @@ router.post("/events/purchase", requireAuth, async (req: Request, res: Response)
     const event = eventRows[0];
     if (!event) { res.status(404).json({ error: "Event not found" }); return; }
 
+    // Resolve org currency — never hardcode EUR
+    let eventCurrency = "eur";
+    try {
+      const { data: evOrg } = await supabase
+        .from("organizations").select("currency").eq("id", event.org_id).maybeSingle();
+      const ec = (evOrg as { currency?: string } | null)?.currency;
+      if (ec) eventCurrency = ec.toLowerCase();
+    } catch { /* fallback */ }
+
     const domains = (process.env["REPLIT_DOMAINS"] ?? "").split(",").filter(Boolean);
     const baseUrl = domains[0] ? `https://${domains[0]}` : "https://example.com";
 
@@ -221,7 +231,7 @@ router.post("/events/purchase", requireAuth, async (req: Request, res: Response)
       line_items: [{
         quantity: paidInOrder,
         price_data: {
-          currency: "eur",
+          currency: eventCurrency,
           unit_amount: ticketType.price_cents,
           product_data: { name: productName },
         },

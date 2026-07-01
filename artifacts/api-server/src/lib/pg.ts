@@ -352,9 +352,13 @@ export async function ensureTables(): Promise<void> {
   await pool.query(`ALTER TABLE IF EXISTS reimbursement_requests ADD COLUMN IF NOT EXISTS approved_amount_cents INTEGER;`).catch(() => {});
 
   // Parent payout bank details (mirrors operator_profiles pattern)
-  await pool.query(`ALTER TABLE IF EXISTS parent_profiles ADD COLUMN IF NOT EXISTS payout_iban TEXT;`).catch(() => {});
-  await pool.query(`ALTER TABLE IF EXISTS parent_profiles ADD COLUMN IF NOT EXISTS payout_bic TEXT;`).catch(() => {});
-  await pool.query(`ALTER TABLE IF EXISTS parent_profiles ADD COLUMN IF NOT EXISTS payout_account_name TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS parent_profiles ADD COLUMN IF NOT EXISTS payout_iban           TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS parent_profiles ADD COLUMN IF NOT EXISTS payout_bic            TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS parent_profiles ADD COLUMN IF NOT EXISTS payout_account_name  TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS parent_profiles ADD COLUMN IF NOT EXISTS payout_account_number TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS parent_profiles ADD COLUMN IF NOT EXISTS payout_bsb            TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS parent_profiles ADD COLUMN IF NOT EXISTS payout_sort_code      TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS parent_profiles ADD COLUMN IF NOT EXISTS payout_routing_number TEXT;`).catch(() => {});
 
   // Org public profile — social links + opening hours (moved off device-local AsyncStorage)
   await pool.query(`
@@ -1932,8 +1936,9 @@ export async function ensureTables(): Promise<void> {
   await pool.query(`ALTER TABLE IF EXISTS members ADD COLUMN IF NOT EXISTS emergency_contact TEXT`).catch(() => {});
   await pool.query(`ALTER TABLE IF EXISTS members ADD COLUMN IF NOT EXISTS allergies        TEXT`).catch(() => {});
   await pool.query(`ALTER TABLE IF EXISTS members ADD COLUMN IF NOT EXISTS photo_uri        TEXT`).catch(() => {});
-  await pool.query(`ALTER TABLE IF EXISTS members ADD COLUMN IF NOT EXISTS medical_notes    TEXT`).catch(() => {});
-  await pool.query(`ALTER TABLE IF EXISTS members ADD COLUMN IF NOT EXISTS status           TEXT NOT NULL DEFAULT 'active'`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS members ADD COLUMN IF NOT EXISTS medical_notes         TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS members ADD COLUMN IF NOT EXISTS operator_session_notes TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS members ADD COLUMN IF NOT EXISTS status                 TEXT NOT NULL DEFAULT 'active'`).catch(() => {});
 
   // ── emergency_pulses — category + patient_name columns ─────────────────────
   await pool.query(`ALTER TABLE emergency_pulses ADD COLUMN IF NOT EXISTS category     TEXT NOT NULL DEFAULT 'FIRE'`).catch(() => {});
@@ -1983,6 +1988,10 @@ export async function ensureTables(): Promise<void> {
     ALTER TABLE IF EXISTS operator_profiles
     ADD COLUMN IF NOT EXISTS skills_completed BOOLEAN NOT NULL DEFAULT FALSE;
   `).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS operator_profiles ADD COLUMN IF NOT EXISTS bank_account_number TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS operator_profiles ADD COLUMN IF NOT EXISTS bank_bsb            TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS operator_profiles ADD COLUMN IF NOT EXISTS bank_sort_code      TEXT;`).catch(() => {});
+  await pool.query(`ALTER TABLE IF EXISTS operator_profiles ADD COLUMN IF NOT EXISTS bank_routing_number TEXT;`).catch(() => {});
 
   // ── Notification read receipts (replaces Supabase read column) ──────────
   await pool.query(`
