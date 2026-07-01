@@ -9,9 +9,14 @@ import PaymentBatchPage     from "./pages/PaymentBatch";
 import BillingSuccessPage   from "./pages/BillingSuccess";
 import BillingCancelPage    from "./pages/BillingCancel";
 import StripeReturnPage     from "./pages/StripeReturn";
-import TermsPage            from "./pages/Terms";
-import PrivacyPage          from "./pages/Privacy";
-import ContactPage          from "./pages/Contact";
+import TermsPage                from "./pages/Terms";
+import PrivacyPage              from "./pages/Privacy";
+import ReimbursementPolicyPage  from "./pages/ReimbursementPolicy";
+import MediaPolicyPage          from "./pages/MediaPolicy";
+import AcceptableUsePage        from "./pages/AcceptableUse";
+import CookiePolicyPage         from "./pages/CookiePolicy";
+import DataRetentionPage        from "./pages/DataRetention";
+import ContactPage              from "./pages/Contact";
 import AboutPage            from "./pages/About";
 import PricingPage          from "./pages/Pricing";
 import FaqPage              from "./pages/Faq";
@@ -39,6 +44,11 @@ export default function App() {
         <Route path="/stripe-return"         component={StripeReturnPage} />
         <Route path="/terms"                 component={TermsPage} />
         <Route path="/privacy"               component={PrivacyPage} />
+        <Route path="/reimbursement-policy"  component={ReimbursementPolicyPage} />
+        <Route path="/media-policy"          component={MediaPolicyPage} />
+        <Route path="/acceptable-use"        component={AcceptableUsePage} />
+        <Route path="/cookie-policy"         component={CookiePolicyPage} />
+        <Route path="/data-retention"        component={DataRetentionPage} />
         <Route path="/contact"               component={ContactPage} />
         <Route path="/about"                 component={AboutPage} />
         <Route path="/pricing"               component={PricingPage} />

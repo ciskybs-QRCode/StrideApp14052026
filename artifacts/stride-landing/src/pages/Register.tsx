@@ -40,87 +40,204 @@ const STEP_LABELS = ["Association", "Account", "Payments", "Legal", "Launch"];
 const LEGAL_DOCS = [
   {
     id: "tc",
-    title: "Terms of Service",
+    title: "Terms & Conditions",
     required: true,
-    checkLabel: "I have read and accept the Stride Terms of Service",
-    body: `These Terms of Service ("Terms") constitute a legally binding agreement between you ("Association", "Operator", "you") and Stride Platform ("Stride", "we", "us") governing your access to and use of the Stride platform and services.
+    checkLabel: "I have read and accept the Stride Terms & Conditions",
+    body: `Stride Technologies ("Stride", "we", "us", "our") provides a software-as-a-service platform (the "Platform") accessible at stride-ops.com that helps associations, schools, clubs, academies and similar organisations (the "Association", "you", "your") manage members, schedules, attendance, communications, payments and related administrative activities.
 
-1. SUBSCRIPTION AND FEES. Stride operates on a subscription basis. You agree to pay the applicable fees as set out in your selected plan. Fees are billed monthly or annually in advance and are non-refundable. Stride reserves the right to modify fees with 30 days' notice. Failure to pay may result in suspension of services.
+Stride provides SOFTWARE AND TECHNICAL SERVICES ONLY. Stride is not an association, school, club, employer, insurer, payment institution, legal or tax adviser, safeguarding authority or provider of any regulated or in-person activity. We supply a tool; how that tool is used is entirely your decision and your responsibility.
 
-2. PERMITTED USE. You may use Stride solely for managing your association's operations including member management, scheduling, attendance, payments, and communications. You must not use the platform for unlawful purposes, to transmit harmful content, or to violate any third party's rights.
+1. THE ASSOCIATION IS SOLELY RESPONSIBLE. By creating an account and using the Platform you confirm that: you are solely and exclusively responsible for your Association, its activities, its staff, its volunteers, its members, and all data you enter into or generate through the Platform; you are solely responsible for ensuring your use complies with every applicable local, national and international law including (without limitation) data protection (GDPR, Australian Privacy Act 1988), child safeguarding, health and safety, employment, tax, consumer protection and financial services law; Stride is NOT and WILL NEVER BE responsible for your data, your members' data, your content, your decisions or the consequences of how you run your Association.
 
-3. DATA RESPONSIBILITY. As the association administrator, you are the data controller for your members' personal data. Stride acts as a data processor. You are responsible for obtaining appropriate consents from your members and complying with applicable data protection legislation including GDPR where applicable.
+2. LICENCE TO USE THE PLATFORM. Subject to these Terms and payment of applicable fees, Stride grants you a limited, non-exclusive, non-transferable, revocable licence to access and use the Platform solely for the internal administration of your Association. You may not resell, sublicense, copy, reverse-engineer or attempt to extract source code from the Platform.
 
-4. INTELLECTUAL PROPERTY. All rights in the Stride platform, software, and documentation remain the property of Stride. You are granted a limited, non-exclusive, non-transferable licence to use the platform during your subscription period.
+3. ACCEPTABLE USE. You agree not to use the Platform to: store or transmit unlawful, harmful, fraudulent, infringing or abusive content; violate any person's rights; upload personal data you have no lawful basis to process; introduce malicious code; or interfere with the security or operation of the Platform. Breach may result in immediate suspension or termination without refund.
 
-5. LIMITATION OF LIABILITY. To the maximum extent permitted by law, Stride's total liability shall not exceed the fees paid by you in the 3 months preceding the claim. Stride shall not be liable for any indirect, incidental, or consequential damages.
+4. THIRD-PARTY SERVICES. The Platform relies on third-party services including Stripe, Twilio, email providers and cloud hosting. Your use of those services is also subject to their own terms. Stride is not responsible for the acts, omissions, availability or data practices of any third party.
 
-6. TERMINATION. Either party may terminate this agreement with 30 days' written notice. Upon termination, your data will be retained for 30 days and then permanently deleted in accordance with our Data Deletion Policy.
+5. SERVICE LEVEL AND AVAILABILITY. Stride targets reasonable availability but does not guarantee uninterrupted or error-free operation. The Platform is provided "AS IS" and "AS AVAILABLE" without warranties of any kind, to the fullest extent permitted by applicable law.
 
-7. GOVERNING LAW. These Terms are governed by applicable law in the jurisdiction where Stride is registered. Disputes shall be resolved through binding arbitration before recourse to courts.`,
+6. FEES AND PAYMENT. Subscription and service fees are as described at stride-ops.com/pricing. Fees are charged in advance and are non-refundable unless expressly stated otherwise in writing or required by mandatory consumer-protection law. Stride may change fees on reasonable notice; continued use constitutes acceptance.
+
+7. INTELLECTUAL PROPERTY. All intellectual property rights in the Platform are owned by or licensed to Stride. Nothing in these Terms transfers any intellectual property rights to you. You retain ownership of all data you upload to the Platform.
+
+8. LIMITATION OF LIABILITY. To the fullest extent permitted by applicable law: Stride's total aggregate liability shall not exceed the greater of (a) fees paid by you in the twelve months preceding the claim or (b) EUR 500 / AUD 800; Stride shall not be liable for any indirect, incidental, special, consequential or punitive damages.
+
+9. INDEMNITY. You agree to defend, indemnify and hold harmless Stride, its directors, officers, employees and agents from and against any claims, damages, fines, penalties, losses and costs arising out of your use of the Platform, your breach of these Terms, your Association's activities, or any claim by a third party arising from your use.
+
+10. TERM AND TERMINATION. Either party may terminate on 30 days' written notice. Stride may suspend or terminate immediately (without refund) for material breach, non-payment, or use causing harm to others. On termination, your data will be deleted in accordance with Stride's Data Retention & Deletion Policy, typically within 90 days.
+
+11. MODIFICATIONS. Stride may update these Terms from time to time. Material changes will be notified at least 14 days before they take effect. Continued use after the effective date constitutes acceptance.
+
+12. GOVERNING LAW. Australia (WA): laws of Western Australia, courts of Western Australia. EU/Italy: laws of Italy, courts of Milan. All other cases: laws of Western Australia.
+
+Version 1.1-draft — Questions: info@stride-ops.com — © Stride Technologies`,
   },
   {
     id: "privacy",
     title: "Privacy Policy",
     required: true,
     checkLabel: "I have read and accept the Stride Privacy Policy",
-    body: `This Privacy Policy explains how Stride Platform ("Stride") collects, uses, stores, and protects personal data in connection with our association management services.
+    body: `Part A — Privacy Policy
 
-DATA WE COLLECT. We collect data you provide during registration (name, email, address, phone, organisational details), data generated through use of the platform (activity logs, attendance records, payment transactions), and technical data (IP addresses, device identifiers, browser information) for security and operational purposes.
+A1. WHO THIS POLICY APPLIES TO. This policy explains how Stride Technologies processes personal data in connection with the Platform and sets out the respective responsibilities of Stride and the Association. It applies to personal data processed through stride-ops.com and the Stride mobile/web application.
 
-HOW WE USE YOUR DATA. Your data is used to: (a) provide and maintain the Stride service; (b) process payments via Stripe; (c) communicate with you about your account and service updates; (d) comply with legal obligations; (e) improve the platform through anonymised analytics.
+A2. ROLES UNDER DATA-PROTECTION LAW. Your Association is the DATA CONTROLLER — you determine the purposes and means of processing personal data of your members, their children/dependants, your staff and your contacts. Stride is a DATA PROCESSOR — Stride processes personal data only to provide, secure, maintain and improve the Platform, and only on your documented instructions. Where Stride processes data for its own purposes (e.g. billing, security logs), Stride acts as an independent data controller for those limited purposes.
 
-DATA SHARING. We share personal data only with: (i) your designated administrators and operators within your account; (ii) payment processor Stripe for transaction processing; (iii) cloud infrastructure providers (AWS, Supabase) under data processing agreements; (iv) law enforcement or regulatory bodies when legally required.
+A3. WHAT DATA IS PROCESSED. The Platform may process: names, contact details, addresses, dates of birth, emergency contacts, medical information, attendance records, payment information, photographs, digital signatures and communications. You control what data is entered; Stride processes it only as necessary to operate the Platform.
 
-YOUR RIGHTS. Under applicable data protection law, you have the right to: access your personal data; correct inaccurate data; request erasure ("right to be forgotten"); restrict processing; data portability; and object to processing. To exercise these rights, contact info@stride-ops.com.
+A4. LAWFUL BASIS FOR PROCESSING. You are solely responsible for identifying and documenting a valid lawful basis for every processing activity you carry out through the Platform. Where processing involves children's data or special-category data (such as health information), heightened obligations apply. Stride does not verify your lawful basis.
 
-RETENTION. We retain active account data for the duration of your subscription plus 30 days following account closure. Financial transaction records may be retained for up to 7 years for legal and tax compliance. Anonymised aggregated statistics may be retained indefinitely.
+A5. SUB-PROCESSORS. Stride uses reputable third-party sub-processors including cloud infrastructure, database hosting, email delivery, SMS/WhatsApp messaging and payment processing (Stripe). All sub-processors are bound by appropriate data-processing agreements. A current list is available at stride-ops.com/legal or on request at info@stride-ops.com.
 
-SECURITY. We implement industry-standard security measures including encryption at rest and in transit, access controls, and regular security audits. No system is completely secure; please notify us immediately of any suspected breach.
+A6. INTERNATIONAL TRANSFERS. Personal data may be transferred to countries outside your own. Where such transfers occur, Stride applies appropriate safeguards such as Standard Contractual Clauses under GDPR or equivalent mechanisms. You are responsible for informing your data subjects of international transfers where required by applicable law.
 
-CONTACT. For privacy queries: info@stride-ops.com.`,
+A7. SECURITY. Stride applies technical and organisational measures including encryption in transit and at rest, access controls, audit logging and regular security reviews. In the event of a personal-data breach affecting your data, Stride will notify you without undue delay as required by law.
+
+A8. RETENTION. You control the retention of your members' data within the Platform. Stride will delete or anonymise your data within 90 days of account termination, except where longer retention is required by law.
+
+A9. DATA-SUBJECT RIGHTS. Your members' rights (access, rectification, erasure, restriction, portability, objection) must be fulfilled by you as the data controller. Stride will assist you to the extent technically possible. Contact info@stride-ops.com where Stride's direct involvement is technically necessary.
+
+A10. CHILDREN'S DATA. Where the Platform is used to process personal data of children, you are solely responsible for compliance with all applicable child-protection and data-protection requirements, including obtaining valid parental or guardian consent where required. Stride applies additional access restrictions to children's sensitive data within the Platform.
+
+A11. APPLICABLE LAW. EU/Italy: GDPR and applicable national implementing legislation. Australia: Privacy Act 1988 (Cth) and Australian Privacy Principles. Other jurisdictions: you are responsible for identifying and complying with your local data-protection law.
+
+Version 1.1-draft — Questions: info@stride-ops.com — © Stride Technologies`,
   },
   {
     id: "dpa",
     title: "Data Processing Agreement (DPA)",
     required: true,
     checkLabel: "I accept the Data Processing Agreement (Article 28 GDPR)",
-    body: `This Data Processing Agreement ("DPA") forms part of the agreement between the Association ("Controller") and Stride Platform ("Processor") and applies where Stride processes personal data on behalf of the Association.
+    body: `Part B — Data Processing Agreement (DPA)
 
-1. ROLES. The Association is the data controller and determines the purposes and means of processing. Stride is the data processor and processes personal data solely on documented instructions from the Controller.
+This Data Processing Agreement forms part of the agreement between Stride Technologies (Processor) and the Association (Controller) and is required under Article 28 GDPR. It applies automatically to all Associations subject to GDPR.
 
-2. PROCESSING DETAILS. Subject matter: Association management services. Duration: For the term of the subscription. Nature and purpose: Storage, retrieval, organisation, and transmission of member data. Types of data: Names, contact details, attendance records, payment data. Categories of data subjects: Association members, dependants, and staff.
+B1. SUBJECT MATTER AND DURATION. Stride processes personal data on behalf of the Association for the duration of the Association's use of the Platform and for the period necessary to fulfil the obligations described in this DPA.
 
-3. PROCESSOR OBLIGATIONS. Stride undertakes to: (a) process personal data only on documented instructions; (b) ensure that authorised personnel are bound by confidentiality; (c) implement appropriate technical and organisational security measures under Article 32 GDPR; (d) assist the Controller in responding to data subject rights requests; (e) notify the Controller without undue delay upon becoming aware of a personal data breach; (f) delete or return all personal data upon termination of services; (g) provide all information necessary to demonstrate compliance.
+B2. NATURE AND PURPOSE OF PROCESSING. Stride processes personal data solely to provide, maintain, secure and improve the Platform as described in the Terms & Conditions, and to fulfil its legal obligations. Stride does not process Association data for its own commercial purposes, including profiling or marketing.
 
-4. SUB-PROCESSORS. Stride uses the following approved sub-processors: Supabase Inc. (database hosting), Amazon Web Services (infrastructure), Stripe Inc. (payment processing). Stride will notify the Controller of any intended changes to sub-processors with 30 days' advance notice.
+B3. TYPES OF PERSONAL DATA AND CATEGORIES OF DATA SUBJECTS. Personal data processed may include: identification data, contact data, health/medical data, financial data and communications data. Data subjects include the Association's members, members' children/dependants, staff and volunteers.
 
-5. INTERNATIONAL TRANSFERS. Where personal data is transferred outside the EEA, Stride relies on Standard Contractual Clauses approved by the European Commission to ensure adequate protection.
+B4. PROCESSOR OBLIGATIONS. Stride shall: process personal data only on documented instructions from the Association, except where required by applicable law; ensure that authorised persons are bound by confidentiality; implement appropriate technical and organisational security measures; not engage a new sub-processor without prior general or specific authorisation; assist the Association in fulfilling data-subject rights requests and data-protection impact assessments; delete or return all personal data on termination; make available all information necessary to demonstrate compliance and allow for audits with reasonable notice.
 
-6. SECURITY MEASURES. Stride implements: encryption of personal data at rest (AES-256) and in transit (TLS 1.3); access control and authentication measures; regular security testing; incident response procedures; and physical security controls at hosting facilities.`,
+B5. CONTROLLER OBLIGATIONS. The Association shall: provide lawful, documented instructions for processing; ensure it has a valid lawful basis for all processing activities; provide data subjects with required privacy notices; and ensure Stride's processing on its behalf complies with applicable law.
+
+B6. LIABILITY. Each party shall be liable for damage caused by its own breach of applicable data-protection law. Where both parties are liable for the same damage, liability shall be apportioned in accordance with their respective responsibility. The liability limitations in the Terms & Conditions apply to this DPA to the extent permitted by law.
+
+Version 1.1-draft — Questions: info@stride-ops.com — © Stride Technologies`,
   },
   {
     id: "deletion",
-    title: "Data Deletion Policy",
+    title: "Data Retention & Deletion Policy",
     required: true,
-    checkLabel: "I understand and accept the Data Deletion Policy (30-day auto-deletion)",
-    body: `This Data Deletion Policy describes how Stride Platform manages the deletion of personal data upon account termination or cancellation.
+    checkLabel: "I have read and accept the Data Retention & Deletion Policy",
+    body: `This policy explains how long Stride retains data associated with your Association account, what happens when an account is cancelled or lapses, and how data is permanently deleted.
 
-ACCOUNT CLOSURE PROCESS. When an association account is closed (whether by the association's request, non-payment, or expiry), the following deletion schedule applies:
+1. ACTIVE ACCOUNT RETENTION. While your account is active and your subscription is current, Stride retains all data you have entered for as long as your account remains active. You control what data is stored and can delete individual records at any time through the Platform's administrative tools.
 
-IMMEDIATE (Day 0): Access to the platform is revoked. No new data may be processed. All sessions are invalidated.
+2. SUBSCRIPTION AND TRIAL PERIODS. New Association accounts receive a 60-day free trial with full Platform functionality. At the end of the trial, the account transitions to a paid subscription. If no payment is activated, the account enters the grace period described below. Paid subscriptions are billed on a recurring basis on the same calendar day each month as the date the paid subscription was first activated.
 
-GRACE PERIOD (Days 1–30): Data is preserved in a restricted-access backup state. During this period, you may contact info@stride-ops.com to request data export or account reinstatement. No routine access is available during this period.
+3. ACCOUNT SUSPENSION AND GRACE PERIOD. If a subscription payment fails or a trial expires without a subscription being activated: Stride will send notification to the registered Admin email; the account enters a grace period during which data is retained but access may be restricted; if unpaid for 30 days after the payment due date, the account is marked for deletion.
 
-AUTOMATIC DELETION (Day 30): All personal data associated with the account is permanently and irrecoverably deleted from Stride's active systems, including: member profiles and contact information; attendance and activity records; document signatures; uploaded files and media; communications and notifications; QR codes and access tokens.
+4. DATA DELETION PROCESS. When marked for deletion, Stride will send a deletion warning email stating that all data will be permanently deleted 30 days from the date of the email, with a link to reactivate the account. If no action is taken, permanent deletion removes: all member profiles, contact details and personal data; all children/dependent profiles and associated health and medical data; all attendance records, check-in logs and activity history; all payment records and financial data (subject to legal retention obligations — see below); all documents, signatures and consent records; all messages, notifications and communications; all media uploaded through the Platform. An anonymised tombstone record (organisation ID, name marked as [DELETED], and deletion timestamp — no personal data) is retained for audit and fraud-prevention purposes. DELETION IS PERMANENT AND IRREVERSIBLE.
 
-RETAINED DATA. The following categories of data may be retained beyond 30 days for legal and regulatory compliance: anonymised and aggregated statistics (with no personally identifiable information); financial transaction records required for tax and accounting purposes (retained for up to 7 years); audit logs related to security incidents (retained for up to 3 years).
+5. LEGAL RETENTION OBLIGATIONS. Financial and billing records may be retained for up to 7 years for tax and accounting compliance. Records of legal disputes may be retained until the matter is fully resolved. The anonymised tombstone is retained indefinitely.
 
-MEMBER DATA AFTER ASSOCIATION DELETION. Where a member's personal data was collected by the association, the association (as controller) is responsible for notifying members of account closure and data deletion. Stride will not independently notify individual members unless legally required.
+6. INDIVIDUAL MEMBER ACCOUNT DELETION. Members may request deletion through their Profile settings in the Stride app. Deleting a member account removes their personal profile, contact details and login credentials. Records of their participation retained by the Association as required by law are unaffected. Deletion does not automatically cancel active enrolments. Requests are processed within 30 days.
 
-DATA EXPORT. Before account closure, we recommend exporting your data using the Export function in Admin Settings. Stride cannot guarantee data recovery after the 30-day grace period expires.
+7. YOUR RIGHTS. Under applicable data-protection law (including GDPR and the Australian Privacy Act), you may have the right to access, correct, export or request deletion of your personal data. Contact: info@stride-ops.com. Stride will respond within the timeframe required by applicable law (typically 30 days under GDPR).
 
-TO REQUEST DELETION: Email info@stride-ops.com with your account details and "DATA DELETION REQUEST" in the subject line.`,
+Version 1.0-draft — Questions: info@stride-ops.com — © Stride Technologies`,
+  },
+  {
+    id: "reimbursement",
+    title: "Reimbursement & Payment Policy",
+    required: true,
+    checkLabel: "I have read and accept the Reimbursement & Payment Policy",
+    body: `This policy explains how payments, refunds and reimbursements work in relation to the Platform. There are two distinct payment relationships: (A) fees you pay to Stride to use the Platform; and (B) money your members pay to your Association, and money your Association reimburses to members or staff, through payment tools in the Platform.
+
+1. STRIDE IS A SOFTWARE FACILITATOR ONLY. Stride is NOT a bank, payment institution, escrow agent or money-services business. Where the Platform facilitates payment collection or reimbursement, those payments are processed by an independent third-party payment processor (Stripe) and are settled to or from YOUR account. Stride does not hold, own or control your Association's funds or your members' funds at any time.
+
+2. MEMBER PAYMENTS TO YOUR ASSOCIATION. Your Association is solely and exclusively responsible for: setting your own pricing, payment terms and enrolment conditions and communicating them clearly to members; ensuring all payment amounts are correct before activating them; complying with all consumer-protection, tax and accounting obligations; handling any dispute, chargeback or complaint from a member. The Platform processes payments through Stripe — Stripe's own terms and fees apply. Stride is not responsible for Stripe's fees, processing delays, account holds or reversals.
+
+3. EXPENSE REIMBURSEMENTS TO MEMBERS AND STAFF. The Platform includes a reimbursement feature allowing members and staff to submit expense claims to your Association.
+
+RECEIPT THRESHOLD. Your Administrator can configure a receipt-free threshold (default approximately EUR 50 / AUD 80). Claims above this threshold require a supporting document before submission. Stride does not verify the authenticity of uploaded documents.
+
+APPROVAL. All claims require explicit approval by an authorised Administrator before any payment is made. The Platform does not process any payment automatically without Administrator approval. The approving Administrator bears sole responsibility for verifying the claim is legitimate and the amount is correct.
+
+PAYMENT METHODS. (a) Stripe Refund — to original payment card, where a linked Stripe transaction exists. (b) Stripe Transfer — to a connected Stripe Connect account, where available. (c) Bank Transfer (IBAN/BSB/local account) — the Platform records the claim and displays bank details to the Administrator; the Administrator executes the transfer externally. (d) Cash — the Administrator confirms immediate cash payment; no electronic transfer occurs.
+
+DOUBLE-PAYMENT PROTECTION. Once a claim is marked as paid, subsequent attempts to approve the same claim will be rejected. All Administrators are notified when any reimbursement is paid or rejected.
+
+PARTIAL APPROVALS AND REJECTIONS. An Administrator may approve a lesser amount or reject a claim entirely, with a mandatory reason. The claimant is notified. Stride is not responsible for disputes arising from partial approvals or rejections.
+
+4. FEES YOU PAY TO STRIDE. Unless expressly stated otherwise in writing or required by mandatory consumer-protection law, fees paid to Stride are non-refundable. Stride may offer pro-rata refunds at its discretion for unused prepaid periods on termination initiated by Stride without cause.
+
+5. STRIDE IS NEVER RESPONSIBLE FOR YOUR MONEY. Stride is NOT and WILL NEVER BE responsible for any loss of funds, mispayment, failed payout, chargeback, tax liability, accounting error or dispute connected to money collected by, owed by or reimbursed by your Association, including any failure or error by Stripe or any other third-party payment processor.
+
+6. CURRENCY. All payment amounts are denominated in the currency configured for your Organisation. It is your responsibility to ensure the correct currency is configured before processing any payments. Stride is not responsible for losses arising from incorrect currency configuration.
+
+7. INDEMNITY. You agree to defend, indemnify and hold harmless Stride from and against any claims, damages, fines, penalties, losses and costs arising out of or related to payments, refunds, reimbursements or chargebacks connected to your Association.
+
+Version 1.1-draft — Questions: info@stride-ops.com — © Stride Technologies`,
+  },
+  {
+    id: "media",
+    title: "Media Responsibility Policy",
+    required: true,
+    checkLabel: "I have read and accept the Media Responsibility Policy",
+    body: `The Platform provides optional tools that allow your Association to capture, upload, store and share photographs and video (collectively, "Media") — for example progress clips, event photos and member profile images. This policy makes clear who is responsible for that Media and the consents required.
+
+1. THE ASSOCIATION IS THE SOLE CONTROLLER OF MEDIA. You acknowledge and accept that: you are solely and exclusively responsible for all Media captured, uploaded, stored, displayed or shared through the Platform by you, your staff or your members; you are solely responsible for obtaining, recording and retaining valid, informed and (where the subject is a minor) parental or guardian consent BEFORE any Media is captured, uploaded or shared; you are solely responsible for honouring any refusal or withdrawal of consent, including ceasing to capture Media and removing previously stored Media where required; Stride does NOT verify, validate or police consent. Any consent indicators inside the Platform are administrative aids for your staff only — they do not constitute legal consent and do not transfer any responsibility to Stride.
+
+2. CHILDREN AND VULNERABLE PERSONS. Where Media depicts minors or vulnerable persons, you accept sole responsibility for: obtaining explicit written parental or guardian consent before capturing, storing or publishing any Media featuring a minor; restricting access to Media featuring minors to authorised staff only; immediately removing any Media if consent is withdrawn or if the Media is found to be inappropriate; complying with applicable child-safeguarding, data-protection and privacy requirements including Australian child-protection legislation and/or GDPR where applicable. Stride bears no responsibility for safeguarding outcomes arising from your use of the Platform.
+
+3. STRIDE IS NEVER RESPONSIBLE FOR MEDIA. Stride is NOT and WILL NEVER BE responsible for: Media captured or shared without proper consent; Media that is unlawful, harmful, infringing or inappropriate; the publication of Media on social media, websites or elsewhere; or any claim, complaint, fine or damage arising from Media. If Media is misused, that is your responsibility alone.
+
+4. LAWFUL BASIS AND PUBLICATION. You confirm that you have a valid lawful basis for every use of Media and that, before any public use (social media, marketing, website, promotional material), you have obtained explicit consent appropriate to that use from all identifiable persons depicted, or their legal guardians where applicable. You are responsible for the conduct of any third party (for example a photographer or social-media manager) you allow access for Media purposes.
+
+5. STORAGE AND SECURITY. Media uploaded to the Platform is stored using third-party cloud infrastructure subject to reasonable technical security measures. You remain responsible for deciding what Media to upload and for the lawfulness of doing so. You should not upload Media that you do not have a lawful basis to store and share.
+
+6. APPLICABLE LAW. Australia: Privacy Act 1988 (Cth), Australian Privacy Principles, and applicable state child-protection legislation. EU/Italy: GDPR and applicable national implementing legislation regarding image rights and child data.
+
+7. INDEMNITY. You agree to defend, indemnify and hold harmless Stride from and against any and all claims, damages, fines, penalties, losses and costs arising out of or related to Media captured, stored, displayed, shared or published through the Platform by you, your staff or your members.
+
+Version 1.1-draft — Questions: info@stride-ops.com — © Stride Technologies`,
+  },
+  {
+    id: "aup",
+    title: "Acceptable Use Policy",
+    required: true,
+    checkLabel: "I have read and accept the Acceptable Use Policy",
+    body: `This Acceptable Use Policy ("AUP") sets out the rules that apply to all use of the Stride Platform by Associations, their Administrators, staff (Operators) and members. Use of the Platform constitutes acceptance of this AUP. This AUP forms part of the Terms & Conditions.
+
+1. GENERAL PRINCIPLES. The Platform is provided for the legitimate administrative management of associations, schools, clubs and similar organisations. You must use the Platform in a lawful, ethical and responsible manner. You are responsible for all use of the Platform under your account, including use by your staff and members.
+
+2. PROHIBITED USES.
+
+ILLEGAL OR HARMFUL ACTIVITY. You must not: engage in any activity that violates applicable local, national or international law; store, transmit or share content that is unlawful, defamatory, obscene, offensive, threatening, abusive or hateful; harass, intimidate or harm any person, including members, staff or children; engage in fraud, deception or misrepresentation of any kind.
+
+DATA AND PRIVACY VIOLATIONS. You must not: collect, store or process personal data without a valid lawful basis under applicable data-protection law; process data of children without valid parental or guardian consent; share members' personal data with third parties without authorisation and a lawful basis; use the Platform to build profiles of individuals for purposes other than legitimate association management; attempt to access personal data of members of other organisations.
+
+SECURITY AND TECHNICAL VIOLATIONS. You must not: attempt to circumvent, disable or interfere with any security feature of the Platform; introduce malware, viruses, ransomware or other malicious code; conduct unauthorised penetration testing, vulnerability scanning or reverse engineering of the Platform; attempt to gain unauthorised access to other users' accounts, data or systems; use automated bots, scrapers or data extraction tools against the Platform without Stride's prior written consent; overload or disrupt the Platform's infrastructure (denial-of-service attacks).
+
+FINANCIAL AND PAYMENT VIOLATIONS. You must not: use the Platform's payment features to process payments for purposes other than legitimate association fees and services; attempt to manipulate pricing, discount codes or payment flows to obtain services fraudulently; use the Platform to facilitate money laundering, tax evasion or any other financial crime.
+
+INTELLECTUAL PROPERTY. You must not: copy, reproduce, modify or distribute any part of the Platform's code, design or content without Stride's prior written consent; remove or alter any copyright, trademark or proprietary notices; use Stride's name, logo or trademarks without prior written permission.
+
+CHILDREN'S SAFETY. You must not: upload, store or share any content that exploits, sexualises, endangers or is otherwise harmful to minors; use the Platform to circumvent child-safeguarding measures or to contact minors without proper authorisation from their guardians; store photographs or video of minors without valid parental consent on file.
+
+3. CONTENT STANDARDS. All content you upload, store or share through the Platform must: be accurate and not misleading; comply with applicable law including copyright, data protection and consumer protection law; not infringe any third party's intellectual property, privacy or other rights; be appropriate for an audience that includes minors where children are enrolled in your Association.
+
+4. CONSEQUENCES OF BREACH. Stride reserves the right, at its sole discretion and without prior notice where necessary, to: remove any content that violates this AUP; suspend or terminate access to the Platform; report illegal activity to the relevant authorities; seek damages and other legal remedies. Termination for breach does not entitle you to a refund of any prepaid subscription fees.
+
+5. REPORTING VIOLATIONS. If you become aware of a violation of this AUP, please report it to: info@stride-ops.com. Include as much detail as possible. Stride will investigate all reports in good faith and take appropriate action.
+
+6. RELATIONSHIP TO OTHER POLICIES. This AUP must be read alongside the Stride Terms & Conditions, Privacy Policy, Data Processing Agreement, Reimbursement Policy and Media Responsibility Policy. In case of conflict, the Terms & Conditions prevail.
+
+Version 1.0-draft — Questions: info@stride-ops.com — © Stride Technologies`,
   },
 ];
 

@@ -1523,10 +1523,15 @@ export default function Landing() {
           <span className="text-blue-400 text-xs text-center">
             &copy; {new Date().getFullYear()} Stride Platform &mdash; All transactions secured by Stripe.
           </span>
-          <div className="flex gap-5 text-xs text-blue-300">
-            <a href="/privacy" className="hover:text-white transition-colors no-underline">Privacy</a>
-            <a href="/terms"   className="hover:text-white transition-colors no-underline">Terms</a>
-            <a href="/contact" className="hover:text-white transition-colors no-underline">Contact</a>
+          <div className="flex flex-wrap gap-x-5 gap-y-1.5 text-xs text-blue-300 justify-center sm:justify-end">
+            <a href="/privacy"              className="hover:text-white transition-colors no-underline">Privacy</a>
+            <a href="/terms"                className="hover:text-white transition-colors no-underline">Terms</a>
+            <a href="/acceptable-use"       className="hover:text-white transition-colors no-underline">Acceptable Use</a>
+            <a href="/reimbursement-policy" className="hover:text-white transition-colors no-underline">Reimbursement</a>
+            <a href="/media-policy"         className="hover:text-white transition-colors no-underline">Media Policy</a>
+            <a href="/cookie-policy"        className="hover:text-white transition-colors no-underline">Cookies</a>
+            <a href="/data-retention"       className="hover:text-white transition-colors no-underline">Data Retention</a>
+            <a href="/contact"              className="hover:text-white transition-colors no-underline">Contact</a>
           </div>
         </div>
       </footer>
