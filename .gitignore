@@ -58,3 +58,5 @@ Thumbs.db
 .local/
 StrideApp_source.zip
 artifacts/stride-landing/public/StrideApp_source.zip
+stride-source.tar.gz
+*.tar.gz

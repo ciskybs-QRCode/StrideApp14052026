@@ -83,8 +83,13 @@ export function PageShell({ children, dark = false }: PageShellProps) {
           <div>
             <p className="text-white text-xs font-black uppercase tracking-wider mb-3">Legal</p>
             <div className="flex flex-col gap-2">
-              <a href="/privacy" className="text-blue-300 text-xs hover:text-white transition-colors">Privacy Policy</a>
-              <a href="/terms"   className="text-blue-300 text-xs hover:text-white transition-colors">Terms of Service</a>
+              <a href="/privacy"              className="text-blue-300 text-xs hover:text-white transition-colors">Privacy Policy</a>
+              <a href="/terms"                className="text-blue-300 text-xs hover:text-white transition-colors">Terms &amp; Conditions</a>
+              <a href="/acceptable-use"       className="text-blue-300 text-xs hover:text-white transition-colors">Acceptable Use</a>
+              <a href="/reimbursement-policy" className="text-blue-300 text-xs hover:text-white transition-colors">Reimbursement Policy</a>
+              <a href="/media-policy"         className="text-blue-300 text-xs hover:text-white transition-colors">Media Policy</a>
+              <a href="/cookie-policy"        className="text-blue-300 text-xs hover:text-white transition-colors">Cookie Policy</a>
+              <a href="/data-retention"       className="text-blue-300 text-xs hover:text-white transition-colors">Data Retention</a>
             </div>
           </div>
         </div>
